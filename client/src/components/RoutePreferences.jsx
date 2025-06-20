@@ -33,8 +33,8 @@ export default function RoutePreferences({ preferences, setPreferences }) {
                     <input
                         type="range"
                         min="0"
-                        max="50"
-                        step="1"
+                        max="125"
+                        step="5"
                         value={preferences.distanceTarget || 0}
                         onChange={handleChange('distanceTarget')}
                         className="w-full"
@@ -49,7 +49,7 @@ export default function RoutePreferences({ preferences, setPreferences }) {
                     <input
                         type="range"
                         min="0"
-                        max="5000"
+                        max="10000"
                         step="100"
                         value={preferences.elevationTarget || 0}
                         onChange={handleChange('elevationTarget')}
@@ -72,9 +72,7 @@ export default function RoutePreferences({ preferences, setPreferences }) {
 
             </div>
 
-            <Button as="a" href="/chill_hills.gpx" download="chill_hills.gpx">
-                Generate Route
-            </Button>
+
 
 
         </Card>

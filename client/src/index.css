@@ -1,7 +1,6 @@
 @import "tailwindcss";
 @import 'leaflet/dist/leaflet.css';
 
-
 body {
   background-color: #FFFFFA; /* Pale beige */
   font-family: system-ui, sans-serif;
@@ -46,14 +45,6 @@ a {
 }
 a:hover {
   color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
 }
 
 h1 {
