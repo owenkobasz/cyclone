@@ -38,35 +38,48 @@ export default function RouteDisplay() {
     });
 
     // generate routes when button clicked
+    // TODO: implement, should run when triggered via button or page loads
     useEffect(() => {
         // TODO: create route to backend for route generation
     }, []);
 
     return (
         <div className="bg-base min-h-screen text-gray-800">
-            <div className="max-w-screen-xl mx-auto grid grid-cols-1 md:grid-cols-5 gap-4 p-4">
-                <div>
-                    <Card className="mb-4">
-                        <StatsCard stats={rawStats} unitSystem={unitSystem} setUnitSystem={setUnitSystem} />
-                    </Card>
-                    <CueSheet cueSheet={cueSheet} />
-                </div>
-                <div className="col-span-3 flex flex-col items-center space-y-2">
-                    <Header className="font-semibold" level={2}>{routeName}</Header>
-                    <MapContainer className="h-[300px] md:h-[400px] w-full rounded-xl shadow-md z-0" center={[39.95, -75.16]} zoom={13}>
-                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                        <GpxLoader onStatsReady={setRawStats} onCuesReady={setCueSheet} />
-                    </MapContainer>
-                </div>
-                <div className="col-span-1">
-                    <RoutePreferences preferences={preferences} setPreferences={setPreferences} />
-                    {/* TODO: Swap current filler for actual button
-                    Step 1: Export the current route.
-                    Step 2: Be able to save the route in the user's library.
-                    */}
-                    <Button as="a" href="/chill_hills.gpx" download="chill_hills.gpx">
-                        Export GPX
-                    </Button>
+            <div className="w-full">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    {/* Left Sidebar - Route Preferences */}
+                    <div className="lg:col-span-3">
+                        <div className="space-y-4">
+                            <RoutePreferences preferences={preferences} setPreferences={setPreferences} />
+                            <Button className="w-full">
+                                Generate Route
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Center - Map and Route Name */}
+                    <div className="lg:col-span-6 flex flex-col items-center space-y-4">
+                        <Header className="font-semibold text-center" level={2}>{routeName}</Header>
+                        <div className="w-full h-[400px] lg:h-[500px] xl:h-[600px] rounded-xl shadow-lg overflow-hidden">
+                            <MapContainer className="h-full w-full" center={[39.95, -75.16]} zoom={13}>
+                                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                                <GpxLoader onStatsReady={setRawStats} onCuesReady={setCueSheet} />
+                            </MapContainer>
+                        </div>
+                    </div>
+
+                    {/* Right Sidebar - Stats and Cue Sheet */}
+                    <div className="lg:col-span-3">
+                        <div className="space-y-4">
+                            <Card>
+                                <StatsCard stats={rawStats} unitSystem={unitSystem} setUnitSystem={setUnitSystem} />
+                            </Card>
+                            <CueSheet cueSheet={cueSheet} />
+                            <Button as="a" href="/chill_hills.gpx" download="chill_hills.gpx" className="w-full">
+                                Export GPX
+                            </Button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
