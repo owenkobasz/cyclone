@@ -6,7 +6,9 @@ import RouteDisplay from './pages/RouteDisplay';
 import Map from './pages/Map';
 
 // TODO: Improve scaling on the nav bar
-// TODO: add logo to navbar 
+// TODO: add logo to navbar
+// TODO: add loged in/logged out functionality
+// TODO: make it so the page you're currently on isn't displayed
 
 function AppLayout() {
   const location = useLocation();
@@ -19,10 +21,9 @@ function AppLayout() {
           <div className="w-full flex justify-between items-center">
             <h1 className="text-2xl font-bold">Cyclone</h1>
             <nav className="flex space-x-6">
-                {/*TODO: Add login/logout button, profile button when logged in, remove map */}
               <Link to="/" className="px-4 py-2 text-xl font-bold text-white !text-white bg-blue-500 border border-2 border-white hover:bg-blue-600 hover:underline rounded transition-colors">Home</Link>
               <Link to="/routes" className="px-4 py-2 text-xl font-bold text-white !text-white bg-blue-500 border border-2 border-white hover:bg-blue-600 hover:underline rounded transition-colors">Routes</Link>
-              <Link to="/map" className="px-4 py-2 text-xl font-bold text-white !text-white bg-blue-500 border border-2 border-white hover:bg-blue-600 hover:underline rounded transition-colors">Map</Link>
+              <Link to="/map" className="px-4 py-2 text-xl font-bold text-white !text-white bg-blue-500 border border-2 border-white hover:bg-blue-600 hover:underline rounded transition-colors">Login</Link>
             </nav>
           </div>
         </header>
