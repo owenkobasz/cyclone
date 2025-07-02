@@ -3,7 +3,7 @@ import './App.css'
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom'
 import HomePage from './pages/HomePage.jsx'
 import RouteDisplay from './pages/RouteDisplay';
-import Map from './pages/Map';
+import Login from './pages/Login.jsx';
 import BackendTest from './components/BackendTest';
 
 // TODO: Improve scaling on the nav bar
@@ -22,10 +22,10 @@ function AppLayout() {
           <div className="w-full flex justify-between items-center">
             <h1 className="text-2xl font-bold">Cyclone</h1>
             <nav className="flex space-x-6">
-                {/*TODO: Add login/logout button, profile button when logged in, remove map */}
+                {/*TODO: Add login/logout button, profile button when logged in */}
               <Link to="/" className="px-4 py-2 text-xl font-bold text-white !text-white bg-blue-500 border border-2 border-white hover:bg-blue-600 hover:underline rounded transition-colors">Home</Link>
               <Link to="/routes" className="px-4 py-2 text-xl font-bold text-white !text-white bg-blue-500 border border-2 border-white hover:bg-blue-600 hover:underline rounded transition-colors">Routes</Link>
-              <Link to="/map" className="px-4 py-2 text-xl font-bold text-white !text-white bg-blue-500 border border-2 border-white hover:bg-blue-600 hover:underline rounded transition-colors">Map</Link>
+              <Link to="/login" className="px-4 py-2 text-xl font-bold text-white !text-white bg-blue-500 border border-2 border-white hover:bg-blue-600 hover:underline rounded transition-colors">Login</Link>
             </nav>
           </div>
         </header>
@@ -34,7 +34,7 @@ function AppLayout() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/routes" element={<RouteDisplay />} />
-          <Route path="/map" element={<Map />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/backend-test" element={<BackendTest />} />
         </Routes>
       </main>
