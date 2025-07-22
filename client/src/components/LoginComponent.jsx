@@ -46,30 +46,49 @@ const LoginComponent = () => {
                     setMessage(`Error logging in`);
                 }
             } else {
-                setLoggedin(false);
-                setUsername("");
-                setPassword("");
-                setMessage("");
+                // send post request to log out, change session
+                try {
+                    // send a POST request to server
+                    const res = await fetch('http://localhost:3000/api/logout', {
+                        method: 'POST',
+                        credentials: 'include',
+                        body: JSON.stringify({username, password})
+                    });
+                    if (res.ok) {
+                        setLoggedin(false);
+                        setUsername("");
+                        setPassword("");
+                        setMessage("Logged out successfully");
+
+                    } else {
+                        setMessage("Logout failed");
+                    }
+                        
+                    } catch(err) {
+                        setMessage("Error logging out");
+                    }
+                }
             }
                        
-        };
+        
 
     return (
 
-        <div className='flex flex-col justify-center items-center'>
-            <h1 className='pb-4'>Welcome Please Login!</h1>
-                <form className='flex flex-col border p-3 rounded-2xl'
+        <div className='flex flex-col justify-center items-center font-medium bg-white'>
+            <div className='border p-4 rounded shadow-md items-center space-y-10'>
+                <h1 className='border p-4 text-center items-center bg-blue-500 text-white rounded border-black'>Cyclone Login</h1>
+
+                <form className='w-100 flex flex-col pl-4 pr-4 rounded-2xl font-medium'
                 onSubmit={submit}>
-                        <label>Username</label>
-                        <input className="outline mb-4" type="text" value={username}
+                        <input className="w-72 mx-auto outline mb-4 rounded bg-center p-2" type="text" placeholder='Username' value={username}
                         onChange={(e) => setUsername(e.target.value)}/>
-                        <label>Password</label>
-                        <input className="outline mb-4" type="password" value ={password}
+                        <input className="w-72 mx-auto outline mb-4 rounded my-2 p-2" type="password" placeholder='Password' value ={password}
                         onChange={(e) => setPassword(e.target.value)}/>
                         <p className='text-center'>{message}</p>
-                        <input className="outline my-4 bg-blue-200 hover:bg-amber-200 rounded-2xl" 
+                        <input className="w-72 mx-auto block outline outline-black my-2 bg-blue-500 hover:bg-blue-400 rounded text-white p-2 " 
                                 type="submit" value={button}/>
                 </form>
+            </div>
         </div>
  
     )
