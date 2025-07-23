@@ -14,6 +14,7 @@ import BackendTest from './components/BackendTest';
 function AppLayout() {
   const location = useLocation();
   const isHomePage = location.pathname === '/';
+  const isLogin = location.pathname ==='/login';
 
   return (
     <div className="min-h-screen">
@@ -30,12 +31,11 @@ function AppLayout() {
           </div>
         </header>
       )}
-      <main className={!isHomePage ? "px-4 py-6" : ""}>
+      <main className={(!isHomePage && !isLogin) ? "px-4 py-6" : ""}>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/routes" element={<RouteDisplay />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/backend-test" element={<BackendTest />} />
         </Routes>
       </main>
     </div>
