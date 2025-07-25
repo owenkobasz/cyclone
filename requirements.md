@@ -34,6 +34,37 @@ npm install -D @vitejs/plugin-react eslint eslint-plugin-react
 
 ## Backend (server)
 
+### Python (FastAPI Routing Backend)
+
+**Main dependencies:**
+- fastapi
+- uvicorn
+- osmnx
+- networkx
+- pydantic
+- geopandas
+- shapely
+- numpy
+- pandas
+- requests
+
+**Install:**
+```sh
+cd server
+python3 -m venv venv
+source venv/bin/activate
+pip install fastapi uvicorn osmnx networkx pydantic geopandas shapely numpy pandas requests
+```
+
+Or for all osmnx features:
+```sh
+pip install 'osmnx[all]'
+```
+
+---
+
+### Node.js (Express Auth Backend, if used)
+
 **Main dependencies:**
 - express
 - cors

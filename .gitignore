@@ -44,7 +44,7 @@ __pycache__/
 *.pyc
 
 # Graph data and cache
-server/philly_bike.graphml
+fastapi/philly_bike.graphml
 server/cache/
 
 # Duplicate cleanups
