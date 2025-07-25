@@ -15,6 +15,11 @@ button {
   transition: background 0.2s ease;
 }
 
+input {
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
 a {
   color: #4ED7F1;
   text-decoration: none;
