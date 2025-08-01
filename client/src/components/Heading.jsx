@@ -2,7 +2,7 @@ import { useRef, useEffect } from "react";
 import { motion, useAnimation, useInView } from "framer-motion";
 
 const Heading = ({ title }) => {
-  const words = title.split(" ");
+  const words = title.split(" ").filter(w => w.trim() !== "");
   const controls = useAnimation();
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-20% 0px" });
@@ -17,37 +17,36 @@ const Heading = ({ title }) => {
     hidden: { opacity: 1 },
     show: {
       opacity: 1,
-      transition: {
+        transition: {
         staggerChildren: 0.10,
       },
     },
   };
 
   const word = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0 },
     show: {
       opacity: 1,
-      y: 0,
       transition: { duration: 0.4, ease: "easeOut" },
     },
   };
 
   return (
-    <div ref={ref} className="md:max-w-md lg:max-w-lg mb-6 text-left">
-      <h2 className="h2">
-        <motion.span
+    <div ref={ref} className="mb-6 text-left">
+      <div className="body-3 text-2xl md:text-3xl lg:text-5xl">
+        <motion.div
           variants={container}
           initial="hidden"
           animate={controls}
-          className="inline-block"
+          className="inline"
         >
           {words.map((w, i) => (
-            <motion.span key={i} variants={word} className="inline-block mr-2">
+            <motion.span key={i} variants={word}>
               {w}
             </motion.span>
-          ))}
-        </motion.span>
-      </h2>
+          )).reduce((prev, curr) => [prev, ' ', curr])}
+        </motion.div>
+      </div>
     </div>
   );
 };

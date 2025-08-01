@@ -55,6 +55,7 @@ export default {
         sans: ["var(--font-sora)", ...fontFamily.sans],
         code: "var(--font-code)",
         grotesk: "var(--font-grotesk)",
+        silkscreen: ["Silkscreen", "sans-serif"],
       },
       letterSpacing: {
         tagline: ".15em",
@@ -124,6 +125,9 @@ export default {
         },
         ".body-2": {
           "@apply font-light text-[0.875rem] leading-6 md:text-base": {},
+        },
+        ".body-3": {
+          "@apply font-silkscreen text-5xl leading-5": {},
         },
         ".caption": {
           "@apply text-sm": {},

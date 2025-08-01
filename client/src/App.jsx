@@ -1,9 +1,9 @@
 import './index.css';
 import ButtonGradient from './assets/svg/ButtonGradient';
-import Button from './components/Button';
 import Header from './components/Header';
 import Home from './components/Home';
 import About from './components/About';
+import GenerateRoutes from './components/GenerateRoutes';
 import ErrorBoundary from './components/ErrorBoundary';
 
 // TODO: Improve scaling on the nav bar
@@ -11,10 +11,10 @@ import ErrorBoundary from './components/ErrorBoundary';
 // TODO: add logged in/logged out functionality
 // TODO: make it so the page you're currently on isn't displayed
 
-function AppLayout() {
-  const location = useLocation();
-  const isHomePage = location.pathname === '/';
-  const isLogin = location.pathname ==='/login';
+// function AppLayout() {
+//   const location = useLocation();
+//   const isHomePage = location.pathname === '/';
+//   const isLogin = location.pathname ==='/login';
 
 const App = () => {
   return (
@@ -45,6 +45,7 @@ const App = () => {
         <Header/>
         <Home />
         <About />
+        <GenerateRoutes />
       </div>
       <ButtonGradient />
     </ErrorBoundary>

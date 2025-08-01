@@ -44,7 +44,7 @@ const Home = () => {
             transition={{ duration: 0.8 }}
             className="h1 mb-6"
           >
-            Stress-free training routes, <span className="text-color-1 italic mr-1">personalized</span> for you by{" "}
+            Stress-free biking routes, <span className="text-color-1 italic mr-1">personalized</span> for you by{" "}
             <span className="inline-block relative">
               <img 
                 src={CYCLONE}
