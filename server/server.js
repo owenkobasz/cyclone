@@ -6,6 +6,7 @@ const port = 3000;
 const dbUsers = require('./dbUsers.js'); // import users database
 const bcrypt = require('bcrypt');
 const session = require(`express-session`);
+const SQLiteStore = require('connect-sqlite3')(session);
 
 //TODO: add session handling
 //TODO: add password requirements
@@ -40,18 +41,24 @@ app.use(cors({
 
 // Set up sessions
 app.use(session({
-  secret: 'cycloneisagreatapplicationandeveryonelovesitsomuch',  // change this to something secure!
+  store: new SQLiteStore({
+    db: 'sessions.db', // default, you can customize the name
+    dir: './databases'      // optional: where to store the session DB file
+  }),
+  secret: 'cycloneisagreatapplicationandeveryonelovesitsomuch',
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
+  cookie: {
+    secure: false,    // true if using HTTPS
+    httpOnly: true,   // prevents JS access
+    sameSite: 'lax'   // CSRF protection
+  }
 }));
 
 // post and gets
 
 // this method does logging in and registering
 app.post('/api/login', async (req, res) => {
-
-    // encryption stuff
-    const saltRounds = 10;
 
     // destructure request
     const {username, password} = req.body;
@@ -151,6 +158,7 @@ app.post('/api/register', async (req, res) => {
                             console.error(err);
                             return res.status(500).json({ message: 'Database issue preventing registration', ok: false });
                         }
+                        
                         req.session.user = { username }; // save user info in session
                         return res.json({ message: 'User registered and logged in!', ok: true });
                     }
@@ -164,18 +172,27 @@ app.post('/api/register', async (req, res) => {
 
 // check if user is logged in with this method
 app.get('/api/status', (req, res) => {
+  console.log('Session user:', req.session.user);
   if (req.session.user) {
-    res.json({ loggedin: true, username: req.session.user.username });
+    res.json({ loggedIn: true, username: req.session.user.username });
   } else {
-    res.json({ loggedin: false });
+    res.json({ loggedIn: false });
   }
 });
 
 // logging out
 app.post('/api/logout', (req, res) => {
-  req.session.destroy();
-  console.log("Logged out!");
-  return res.json({ message: "Logged out successfully" });
+  req.session.destroy(err => {
+    if (err) {
+      console.error('Error destroying session:', err);
+      return res.status(500).json({ message: 'Logout failed' });
+    }
+
+    res.clearCookie('connect.sid'); // Clear the session cookie on client
+
+    console.log("Logged out!");
+    return res.json({ message: "Logged out successfully" });
+  });
 });
 
 // verifies backend has started

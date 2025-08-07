@@ -14,7 +14,7 @@ const LoginComponent = () => {
             fetch('http://localhost:3000/api/status', { credentials: 'include' })
                 .then(res => res.json())
                 .then(data => {
-                setLoggedin(data.loggedin);
+                setLoggedin(data.loggedIn);
                 });
         }, []);
 
@@ -106,10 +106,27 @@ const LoginComponent = () => {
                 }
             }
         }
-  
-        
 
-    return (
+    if (loggedin) {
+        return(
+        <div className='flex flex-col justify-center items-center font-medium'>
+            <div className='backdrop-blur border border-white p-4 rounded shadow-md items-center space-y-10'>
+                <h1 className='p-4 text-center items-center text-white my-1'>Cyclone Logout</h1>
+                <p className='text-center items-center text-white text-2xl my-2'>Welcome, {username}!</p>
+                <form className='w-100 flex flex-col pl-4 pr-4 rounded-2xl font-medium'
+                onSubmit={submit}>
+                        <div className="flex">
+                            <input className="w-36 mx-auto block outline outline-white bg-blue-500 hover:bg-blue-400 rounded text-white p-2 text-xl" 
+                                type="submit" name="action" value={button}/>
+                        </div>
+                        <p className='text-center pt-2'>{message}</p>
+                </form>
+            </div>
+        </div>
+        )
+        
+    } else {
+        return (
 
         <div className='flex flex-col justify-center items-center font-medium'>
             <div className='backdrop-blur border border-white p-4 rounded shadow-md items-center space-y-10'>
@@ -120,18 +137,18 @@ const LoginComponent = () => {
                         onChange={(e) => setUsername(e.target.value)}/>
                         <input className="w-72 mx-auto outline outline-white mb-4 rounded my-2 p-2" type="password" placeholder='Password' value ={password}
                         onChange={(e) => setPassword(e.target.value)}/>
-                        <p className='text-center'>{message}</p>
                         <div className="flex">
                             <input className="w-36 mx-auto block outline outline-white my-2 bg-blue-500 hover:bg-blue-400 rounded text-white p-2" 
                                 type="submit" name="action" value={button}/>
-                            {!loggedin && (<input className="w-36 mx-auto block outline outline-white my-2 bg-blue-500 hover:bg-blue-400 rounded text-white p-2 " 
-                                type="submit" name="action" value="Register"/>)}
+                            <input className="w-36 mx-auto block outline outline-white my-2 bg-blue-500 hover:bg-blue-400 rounded text-white p-2 " 
+                                type="submit" name="action" value="Register"/>
                         </div>
+                        <p className='text-center pt-2'>{message}</p>
                 </form>
             </div>
         </div>
- 
-    )
+        )
+    }    
 }
 
 export default LoginComponent
