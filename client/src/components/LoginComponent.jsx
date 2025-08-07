@@ -112,7 +112,7 @@ const LoginComponent = () => {
         <div className='flex flex-col justify-center items-center font-medium'>
             <div className='backdrop-blur border border-white p-4 rounded shadow-md items-center space-y-10'>
                 <h1 className='p-4 text-center items-center text-white my-1'>Cyclone Logout</h1>
-                <p className='text-center items-center text-white text-2xl my-2'>Welcome, {username}!</p>
+                <p className='text-center items-center text-white text-2xl my-2'>Welcome!</p>
                 <form className='w-100 flex flex-col pl-4 pr-4 rounded-2xl font-medium'
                 onSubmit={submit}>
                         <div className="flex">

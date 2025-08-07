@@ -5,6 +5,7 @@ import HomePage from './pages/HomePage.jsx'
 import RouteDisplay from './pages/RouteDisplay';
 import Login from './pages/Login.jsx';
 import BackendTest from './components/BackendTest';
+import { useEffect, useState } from 'react';
 
 // TODO: Improve scaling on the nav bar
 // TODO: add logo to navbar
@@ -15,6 +16,20 @@ function AppLayout() {
   const location = useLocation();
   const isHomePage = location.pathname === '/';
   const isLogin = location.pathname ==='/login';
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  // check login status
+  useEffect(() => {
+    fetch('http://localhost:3000/api/status', { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => {
+        setLoggedIn(data.loggedIn);
+      })
+      .catch(err => {
+         console.error(`Failed to fetch login status: ${err.message}`);
+        setLoggedIn(false);
+      });
+  }, [loggedIn])
 
   return (
     <div className="min-h-screen">
@@ -26,7 +41,7 @@ function AppLayout() {
                 {/*TODO: Add login/logout button, profile button when logged in */}
               <Link to="/" className="px-4 py-2 text-xl font-bold text-white !text-white bg-blue-500 border border-2 border-white hover:bg-blue-600 hover:underline rounded transition-colors">Home</Link>
               <Link to="/routes" className="px-4 py-2 text-xl font-bold text-white !text-white bg-blue-500 border border-2 border-white hover:bg-blue-600 hover:underline rounded transition-colors">Routes</Link>
-              <Link to="/login" className="px-4 py-2 text-xl font-bold text-white !text-white bg-blue-500 border border-2 border-white hover:bg-blue-600 hover:underline rounded transition-colors">Login</Link>
+              <Link to="/login" className="px-4 py-2 text-xl font-bold text-white !text-white bg-blue-500 border border-2 border-white hover:bg-blue-600 hover:underline rounded transition-colors">{loggedIn ? 'Logout' : 'Login'}</Link>
             </nav>
           </div>
         </header>

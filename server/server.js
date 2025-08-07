@@ -30,14 +30,14 @@ function validUsername(username) {
     return true;
 }
 
-// allow json parsing
-app.use(express.json());
-
 // Enable CORS for all routes
 app.use(cors({
     origin: 'http://localhost:5173',  // frontend origin
     credentials: true                // allow cookies to be sent
 }));
+
+// allow json parsing
+app.use(express.json());
 
 // Set up sessions
 app.use(session({
@@ -158,7 +158,7 @@ app.post('/api/register', async (req, res) => {
                             console.error(err);
                             return res.status(500).json({ message: 'Database issue preventing registration', ok: false });
                         }
-                        
+
                         req.session.user = { username }; // save user info in session
                         return res.json({ message: 'User registered and logged in!', ok: true });
                     }
