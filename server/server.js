@@ -151,6 +151,7 @@ app.post('/api/register', async (req, res) => {
                             console.error(err);
                             return res.status(500).json({ message: 'Database issue preventing registration', ok: false });
                         }
+                        req.session.user = { username }; // save user info in session
                         return res.json({ message: 'User registered and logged in!', ok: true });
                     }
 
