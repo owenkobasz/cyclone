@@ -1,14 +1,14 @@
-<<<<<<< HEAD
 // pages/RouteDisplay.jsx
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { MapContainer, TileLayer, Polyline, Marker, Popup } from 'react-leaflet';
-import GpxLoader from '../components/GpxLoader';
-import StatsCard from '../components/StatsCard';
+import Header from '../components/Header';
+import Button from '../components/Button';
+import ButtonGradient from '../assets/svg/ButtonGradient';
+import RouteStats from '../components/RouteStats';
 import RoutePreferences from '../components/RoutePreferences';
 import CueSheet from '../components/CueSheet';
-import Button from '../components/ui/Button';
-import Card from '../components/ui/Card';
-import Header from '../components/ui/Header';
 import { generateRoute } from '../utils/routeApi';
 
 function calculateRouteStats(route) {
@@ -35,6 +35,10 @@ function calculateRouteStats(route) {
 }
 
 export default function RouteDisplay() {
+    const location = useLocation();
+    const navigate = useNavigate();
+    const routePreferences = location.state?.preferences || {};
+    
     const [cueSheet, setCueSheet] = useState([]);
     // default units = imperial
     const [unitSystem, setUnitSystem] = useState("imperial");
@@ -42,28 +46,35 @@ export default function RouteDisplay() {
     const [rawStats, setRawStats] = useState({ distanceKm: null, elevationM: null });
     // name of current route
     // TODO: possible AI integration can be naming routs
-    const [routeName, setRouteName] = useState("Default Route");
+    const [routeName, setRouteName] = useState("Generated Route");
     const [stats, setStats] = useState({ distanceKm: null, elevationM: null });
 
-    // route preferences/parameters
+    // route preferences/parameters - use passed state or defaults
     // basic: starting point, target distance, target elevation
     // advanced: bike routes weight, poi weight
     // TODO: use location to set default starting point, otherwise make it city hall
     // TODO: default distace: 20 miles; default elevation: 1000ft
     const [preferences, setPreferences] = useState({
-        start_lat: 39.95,
-        start_lon: -75.16,
-        end_lat: 39.98,
-        end_lon: -75.20,
-        distance_target: 8.0,
-        elevation_target: 100,
-        bike_lanes: true,
-        points_of_interest: false,
-        avoid_hills: true,
+        start_lat: routePreferences.startLat || 39.95,
+        start_lon: routePreferences.startLon || -75.16,
+        end_lat: routePreferences.endLat || 39.98,
+        end_lon: routePreferences.endLon || -75.20,
+        distance_target: routePreferences.distanceTarget || 8.0,
+        elevation_target: routePreferences.elevationTarget || 100,
+        bike_lanes: routePreferences.bikeLanes || true,
+        points_of_interest: routePreferences.pointsOfInterest || false,
+        avoid_hills: routePreferences.avoidHills || true,
     });
     const [route, setRoute] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+
+    // Auto-generate route when component mounts with preferences
+    useEffect(() => {
+        if (routePreferences && Object.keys(routePreferences).length > 0) {
+            handleGenerateRoute();
+        }
+    }, []);
 
     const handleGenerateRoute = async () => {
         setLoading(true);
@@ -72,7 +83,13 @@ export default function RouteDisplay() {
             const data = await generateRoute(preferences);
             setRoute(data.route);
             setRouteName(`Route (${data.total_length_km?.toFixed(2) || '?'} km)`);
-            setStats(calculateRouteStats(data.route));
+            
+            // Include total ride time from API response
+            const routeStats = calculateRouteStats(data.route);
+            routeStats.totalRideTime = data.total_ride_time;
+            routeStats.totalRideTimeMinutes = data.total_ride_time_minutes;
+            
+            setStats(routeStats);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -81,147 +98,134 @@ export default function RouteDisplay() {
     };
 
     return (
-        <div className="bg-base min-h-screen text-gray-800">
-            <div className="w-full">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    {/* Left Sidebar - Route Preferences */}
-                    <div className="lg:col-span-3">
-                        <div className="space-y-4">
-                            <RoutePreferences preferences={preferences} setPreferences={setPreferences} />
-                            <Button className="w-full" onClick={handleGenerateRoute} disabled={loading}>
-                                {loading ? 'Generating...' : 'Generate Route'}
+        <>
+            <div className="pt-[4.75rem] lg:pt-[6.25rem] overflow-hidden">
+                <Header/>
+                <div className="min-h-screen bg-gradient-to-br from-n-8 via-n-7 to-n-6 text-n-1 p-4">
+                    <motion.div 
+                        className="container mx-auto"
+                        initial={{ opacity: 0, y: 40 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                    >
+                        {/* Back Button */}
+                        <motion.div 
+                            className="mb-6"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.6, delay: 0.2 }}
+                        >
+                            <Button 
+                                onClick={() => navigate('/')}
+                                className="flex items-center gap-2"
+                                outline
+                            >
+                                ← Back to Home
                             </Button>
-                            {error && <div className="text-red-600 mt-2">{error}</div>}
-                        </div>
-                    </div>
+                        </motion.div>
 
-                    {/* Center - Map and Route Name */}
-                    <div className="lg:col-span-6 flex flex-col items-center space-y-4">
-                        <Header className="font-semibold text-center" level={2}>{routeName}</Header>
-                        <div className="w-full h-[400px] lg:h-[500px] xl:h-[600px] rounded-xl shadow-lg overflow-hidden">
-                            <MapContainer className="h-full w-full" center={[39.95, -75.16]} zoom={13}>
-                                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                                {route && (
-                                    <>
-                                        <Polyline positions={route.map(pt => [pt.lat, pt.lon])} color="blue" />
-                                        {/* Start Marker */}
-                                        <Marker position={[route[0].lat, route[0].lon]}>
-                                            <Popup>Start</Popup>
-                                        </Marker>
-                                        {/* End Marker */}
-                                        <Marker position={[route[route.length - 1].lat, route[route.length - 1].lon]}>
-                                            <Popup>End</Popup>
-                                        </Marker>
-                                    </>
-                                )}
-                                {/* <GpxLoader onStatsReady={setRawStats} onCuesReady={setCueSheet} /> */}
-                            </MapContainer>
-                        </div>
-                    </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                            {/* Left Sidebar - Route Preferences */}
+                            <motion.div 
+                                className="lg:col-span-3"
+                                initial={{ opacity: 0, x: -40 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ duration: 0.8, delay: 0.3 }}
+                            >
+                                <div className="space-y-4">
+                                    <div className="bg-n-8/40 backdrop-blur-sm rounded-2xl border border-n-2/20 p-6">
+                                        <h3 className="text-lg font-semibold mb-4">Route Preferences</h3>
+                                        <RoutePreferences preferences={preferences} setPreferences={setPreferences} />
+                                    </div>
+                                    <Button className="w-full" onClick={handleGenerateRoute} disabled={loading}>
+                                        {loading ? 'Generating...' : 'Generate New Route'}
+                                    </Button>
+                                    {error && (
+                                        <motion.div 
+                                            className="p-4 bg-color-3/20 border border-color-3/50 rounded-xl"
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ duration: 0.3 }}
+                                        >
+                                            <p className="text-color-3 text-sm font-medium">{error}</p>
+                                        </motion.div>
+                                    )}
+                                </div>
+                            </motion.div>
 
-                    {/* Right Sidebar - Stats and Cue Sheet */}
-                    <div className="lg:col-span-3">
-                        <div className="space-y-4">
-                            <Card>
-                                <StatsCard stats={stats} unitSystem={unitSystem} setUnitSystem={setUnitSystem} />
-                            </Card>
-                            <CueSheet cueSheet={cueSheet} />
-                            <Button as="a" href="/chill_hills.gpx" download="chill_hills.gpx" className="w-full">
-                                Export GPX
-                            </Button>
+                            {/* Center - Map and Route Name */}
+                            <motion.div 
+                                className="lg:col-span-6 flex flex-col items-center space-y-4"
+                                initial={{ opacity: 0, y: 40 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.8, delay: 0.4 }}
+                            >
+                                <h2 className="text-2xl font-bold text-center">{routeName}</h2>
+                                <div className="w-full h-[400px] lg:h-[500px] xl:h-[600px] rounded-2xl shadow-xl overflow-hidden border border-n-2/20">
+                                    <MapContainer className="h-full w-full" center={[39.95, -75.16]} zoom={13}>
+                                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                                        {route && (
+                                            <>
+                                                <Polyline positions={route.map(pt => [pt.lat, pt.lon])} color="#ac6cff" weight={4} />
+                                                {/* Start Marker */}
+                                                <Marker position={[route[0].lat, route[0].lon]}>
+                                                    <Popup>Start</Popup>
+                                                </Marker>
+                                                {/* End Marker */}
+                                                <Marker position={[route[route.length - 1].lat, route[route.length - 1].lon]}>
+                                                    <Popup>End</Popup>
+                                                </Marker>
+                                            </>
+                                        )}
+                                    </MapContainer>
+                                </div>
+                            </motion.div>
+
+                            {/* Right Sidebar - Stats and Cue Sheet */}
+                            <motion.div 
+                                className="lg:col-span-3"
+                                initial={{ opacity: 0, x: 40 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ duration: 0.8, delay: 0.5 }}
+                            >
+                                <div className="space-y-4">
+                                    <div className="bg-n-8/40 backdrop-blur-sm rounded-2xl border border-n-2/20 p-6">
+                                        <RouteStats stats={stats} unitSystem={unitSystem} setUnitSystem={setUnitSystem} />
+                                    </div>
+                                    
+                                    <div className="bg-n-8/40 backdrop-blur-sm rounded-2xl border border-n-2/20 p-6">
+                                        <CueSheet cueSheet={cueSheet} />
+                                    </div>
+                                    
+                                    <div className="space-y-3">
+                                        <Button 
+                                            className="w-full" 
+                                            onClick={() => {
+                                                // TODO: Generate and download actual GPX file
+                                                console.log("Exporting route as GPX...");
+                                            }}
+                                        >
+                                            Export GPX
+                                        </Button>
+                                        
+                                        <Button 
+                                            className="w-full" 
+                                            onClick={() => {
+                                                // TODO: Share route functionality
+                                                console.log("Sharing route...");
+                                            }}
+                                            outline
+                                        >
+                                            Share Route
+                                        </Button>
+                                    </div>
+                                </div>
+                            </motion.div>
                         </div>
-                    </div>
+                    </motion.div>
                 </div>
             </div>
-        </div>
+            <ButtonGradient />
+        </>
     );
 }
-=======
-// // pages/RouteDisplay.jsx
-// import React, {useEffect, useState} from 'react';
-// import config from '../config';
-
-// import { MapContainer, TileLayer } from 'react-leaflet';
-
-// // import componenets
-// import GpxLoader from '../components/GpxLoader';
-// import StatsCard from '../components/StatsCard';
-// import RoutePreferences from '../components/RoutePreferences';
-// import CueSheet from '../components/CueSheet';
-// import Button from '../components/ui/Button';
-// import Card from '../components/ui/Card';
-// import Header from '../components/ui/Header';
-
-// export default function RouteDisplay() {
-//     const [cueSheet, setCueSheet] = useState([]);
-//     // default units = imperial
-//     const [unitSystem, setUnitSystem] = useState("imperial");
-//     // gpx info is in metric
-//     const [rawStats, setRawStats] = useState({ distanceKm: null, elevationM: null });
-//     // name of current route
-//     // TODO: possible AI integration can be naming routs
-//     const [routeName, setRouteName] = useState("Default Route");
-
-//     // route preferences/parameters
-//     // basic: starting point, target distance, target elevation
-//     // advanced: bike routes weight, poi weight
-//     // TODO: use location to set default starting point, otherwise make it city hall
-//     // TODO: default distace: 20 miles; default elevation: 1000ft
-//     const [preferences, setPreferences] = useState({
-//         startingPoint: null,
-//         endingPoint: null,
-//         distanceTarget: null,
-//         elevationTarget: null,
-//         bikeLanes: false,
-//         pointsOfInterest: false,
-//     });
-
-//     // generate routes when button clicked
-//     // TODO: implement, should run when triggered via button or page loads
-//     useEffect(() => {
-//         // TODO: create route to backend for route generation
-//     }, []);
-
-//     return (
-//         <div className="bg-base min-h-screen text-gray-800">
-//             <div className="w-full">
-//                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-//                     {/* Left Sidebar - Route Preferences */}
-//                     <div className="lg:col-span-3">
-//                         <div className="space-y-4">
-//                             <RoutePreferences preferences={preferences} setPreferences={setPreferences} />
-//                             <Button className="w-full">
-//                                 Generate Route
-//                             </Button>
-//                         </div>
-//                     </div>
-
-//                     {/* Center - Map and Route Name */}
-//                     <div className="lg:col-span-6 flex flex-col items-center space-y-4">
-//                         <Header className="font-semibold text-center" level={2}>{routeName}</Header>
-//                         <div className="w-full h-[400px] lg:h-[500px] xl:h-[600px] rounded-xl shadow-lg overflow-hidden">
-//                             <MapContainer className="h-full w-full" center={[39.95, -75.16]} zoom={13}>
-//                                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-//                                 <GpxLoader onStatsReady={setRawStats} onCuesReady={setCueSheet} />
-//                             </MapContainer>
-//                         </div>
-//                     </div>
-
-//                     {/* Right Sidebar - Stats and Cue Sheet */}
-//                     <div className="lg:col-span-3">
-//                         <div className="space-y-4">
-//                             <Card>
-//                                 <StatsCard stats={rawStats} unitSystem={unitSystem} setUnitSystem={setUnitSystem} />
-//                             </Card>
-//                             <CueSheet cueSheet={cueSheet} />
-//                             <Button as="a" href="/chill_hills.gpx" download="chill_hills.gpx" className="w-full">
-//                                 Export GPX
-//                             </Button>
-//                         </div>
-//                     </div>
-//                 </div>
-//             </div>
-//         </div>
-//     );
-// }
->>>>>>> 85abfde (Home page and about section. Redesigned the UI)

@@ -1,14 +1,17 @@
-// components/StatsCard.jsx
 import { motion } from "framer-motion";
 
-export default function StatsCard({ stats, unitSystem, setUnitSystem }) {
+export default function RouteStats({ stats, unitSystem, setUnitSystem }) {
     return (
         <motion.div
-            className="relative p-6 bg-n-8/40 backdrop-blur-sm rounded-2xl border border-n-2/20 transition-all duration-300 hover:border-color-2/50"
+            className="relative p-6 bg-n-8/40 backdrop-blur-sm rounded-2xl border border-n-2/20 transition-all duration-300 hover:border-color-1/50 hover:shadow-[0_0_25px_rgba(172,108,255,0.3)] hover:scale-105"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.2, delay: 0.1, ease: "easeOut" }}
             viewport={{ once: true }}
+            whileHover={{ 
+                scale: 1.05,
+                transition: { duration: 0.2 }
+            }}
         >
             <h3 className="h3 mb-4 text-n-1">Route Stats</h3>
             
@@ -22,6 +25,14 @@ export default function StatsCard({ stats, unitSystem, setUnitSystem }) {
                                 : stats.distanceKm.toFixed(2) + ' km'}
                         </span>
                     </div>
+                    {stats.totalRideTime && (
+                        <div className="flex justify-between items-center">
+                            <span className="body-2 text-n-3">Ride Time:</span>
+                            <span className="body-1 text-color-1 font-semibold">
+                                {stats.totalRideTime}
+                            </span>
+                        </div>
+                    )}
                     <div className="flex justify-between items-center">
                         <span className="body-2 text-n-3">Elevation Gain:</span>
                         <span className="body-1 text-color-1 font-semibold">
@@ -57,7 +68,7 @@ export default function StatsCard({ stats, unitSystem, setUnitSystem }) {
             
             <button
                 onClick={() => setUnitSystem(prev => prev === 'imperial' ? 'metric' : 'imperial')}
-                className="w-full mt-4 px-4 py-2 bg-n-7 hover:bg-n-6 border border-n-6 hover:border-color-1 rounded-xl text-n-3 hover:text-color-1 transition-all duration-300"
+                className="w-full mt-4 px-4 py-2 bg-n-7 hover:bg-n-6 border border-n-6 hover:border-color-1 rounded-xl text-n-3 hover:text-color-1 transition-all duration-300 hover:shadow-[0_0_15px_rgba(172,108,255,0.2)] hover:scale-105"
             >
                 Switch to {unitSystem === 'imperial' ? 'Metric' : 'Imperial'}
             </button>

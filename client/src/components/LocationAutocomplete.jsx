@@ -1,11 +1,22 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const LocationAutocomplete = ({ value, onChange, placeholder, className = "", userLocation = null }) => {
+const LocationAutocomplete = ({ 
+  value, 
+  onChange, 
+  placeholder, 
+  className = "", 
+  userLocation = null, 
+  onLocationSelect = null,
+  id = null,
+  name = null,
+  ariaLabel = null
+}) => {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [showCurrentLocationOption, setShowCurrentLocationOption] = useState(false);
   const inputRef = useRef(null);
   const suggestionsRef = useRef(null);
   const debounceRef = useRef(null);
@@ -19,12 +30,46 @@ const LocationAutocomplete = ({ value, onChange, placeholder, className = "", us
         !suggestionsRef.current.contains(event.target)
       ) {
         setShowSuggestions(false);
+        if (!value || value.trim() === '') {
+          setShowCurrentLocationOption(true);
+        } else {
+          setShowCurrentLocationOption(false);
+        }
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [value]); // Add value as dependency
+
+  // Handle current location selection
+  const handleCurrentLocationSelect = () => {
+    if (navigator.geolocation) {
+      setIsLoading(true);
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const coords = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          onChange('Current Location');
+          if (onLocationSelect) {
+            onLocationSelect(coords);
+          }
+          setShowSuggestions(false);
+          setShowCurrentLocationOption(false);
+          setIsLoading(false);
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          alert("Unable to get your current location. Please ensure location services are enabled.");
+          setIsLoading(false);
+        }
+      );
+    } else {
+      alert("Geolocation is not supported by this browser.");
+    }
+  };
 
   // Calculate distance between two coordinates
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
@@ -38,7 +83,7 @@ const LocationAutocomplete = ({ value, onChange, placeholder, className = "", us
     return R * c;
   };
 
-  // Format location name for better display - prioritize business/location names
+  // Formats location name for better display. Prioritizes business/location names
   const formatLocationName = (address) => {
     // First priority: Named places, businesses, and points of interest
     if (address?.name) return address.name;
@@ -61,7 +106,7 @@ const LocationAutocomplete = ({ value, onChange, placeholder, className = "", us
     if (address?.neighbourhood) return address.neighbourhood;
     if (address?.suburb) return address.suburb;
     
-    // Last resort: City/town names
+    // Last priority: City/town names
     if (address?.city) return address.city;
     if (address?.town) return address.town;
     if (address?.village) return address.village;
@@ -74,7 +119,7 @@ const LocationAutocomplete = ({ value, onChange, placeholder, className = "", us
     const parts = [];
     const primaryName = formatLocationName(address);
     
-    // If primary name is a business/POI, show the street address first
+    // If primary name is a business/name of a place that exists, show the street address first
     if ((address?.name || address?.amenity || address?.shop || address?.tourism || 
          address?.leisure || address?.office || address?.building) && 
         address?.road && !primaryName.includes(address.road)) {
@@ -104,8 +149,20 @@ const LocationAutocomplete = ({ value, onChange, placeholder, className = "", us
     return parts.slice(0, 3).join(', ');
   };
 
+  // Ensure distance is a number before formatting
+  const formatDistance = (distance) => {
+    if (typeof distance === 'number') {
+      return distance < 0.1
+        ? `${Math.round(distance * 5280)} ft` // Convert miles to feet
+        : `${distance.toFixed(1)} miles`;
+    }
+    return null;
+  };
+
   const searchLocations = async (query) => {
+    console.log('searchLocations called with:', query); // Debug log
     if (!query || query.length < 2) {
+      console.log('Query too short, clearing suggestions'); // Debug log
       setSuggestions([]);
       setShowSuggestions(false);
       return;
@@ -120,41 +177,55 @@ const LocationAutocomplete = ({ value, onChange, placeholder, className = "", us
       let extraParams = '';
       
       if (userLocation) {
-        // Use viewbox to prioritize results near user location
-        const buffer = 0.1; // Degrees buffer around user location
-        extraParams = `&viewbox=${userLocation.lng-buffer},${userLocation.lat+buffer},${userLocation.lng+buffer},${userLocation.lat-buffer}&bounded=0`;
-        console.log("Using location bias with user location:", userLocation);
+        // Use viewbox to prioritize results near user location, but don't bound strictly
+        const buffer = 0.05; // Buffer degree of around 3.5 miles based on user's current location
+        
+        // Handle both object format {lat, lng} and array format [lat, lng]
+        const lat = userLocation.lat || userLocation[0];
+        const lng = userLocation.lng || userLocation[1];
+        
+        if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
+          // Use viewbox for prioritization and proximity for sorting, but don't bound results (bounded=0)
+          // This way we still get distant results if no local ones are found
+          extraParams = `&viewbox=${lng-buffer},${lat+buffer},${lng+buffer},${lat-buffer}&bounded=0&proximity=${lat},${lng}`;
+          console.log("Using location bias with user location:", { lat, lng, buffer });
+        } else {
+          console.log("Invalid user location data:", userLocation);
+        }
       }
       
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=15&addressdetails=1&extratags=1${extraParams}`
       );
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
       console.log("Received raw suggestions:", data.length);
+
+      // Ensure data is an array
+      if (!Array.isArray(data)) {
+        console.warn("API response is not an array:", data);
+        setSuggestions([]);
+        setShowSuggestions(false);
+        setSelectedIndex(-1);
+        return;
+      }
 
       let formattedSuggestions = data.map(item => {
         const primaryName = formatLocationName(item.address);
         const secondaryInfo = formatSecondaryInfo(item.address);
-        const distance = userLocation ? 
-          calculateDistance(userLocation.lat, userLocation.lng, parseFloat(item.lat), parseFloat(item.lon)) : null;
-
-        // Calculate relevance score for sorting
-        let relevanceScore = 0;
         
-        // Boost score for named places/businesses
-        if (item.address?.name || item.address?.amenity || item.address?.shop || 
-            item.address?.tourism || item.address?.leisure) {
-          relevanceScore += 100;
-        }
-        
-        // Boost score for exact matches in name
-        if (primaryName.toLowerCase().includes(query.toLowerCase())) {
-          relevanceScore += 50;
-        }
-        
-        // Boost score for closer distances (if user location available)
-        if (distance !== null) {
-          relevanceScore += Math.max(0, 25 - distance); // Closer = higher score
+        // Calculate distance if user location is available
+        let distance = null;
+        if (userLocation) {
+          const lat = userLocation.lat || userLocation[0];
+          const lng = userLocation.lng || userLocation[1];
+          if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
+            distance = calculateDistance(lat, lng, parseFloat(item.lat), parseFloat(item.lon));
+          }
         }
 
         return {
@@ -164,18 +235,33 @@ const LocationAutocomplete = ({ value, onChange, placeholder, className = "", us
           lat: parseFloat(item.lat),
           lon: parseFloat(item.lon),
           address: item.address,
-          distance: distance,
+          distance: formatDistance(distance), // Format distance for display
           class: item.class,
           type: item.type,
-          relevanceScore: relevanceScore
+          relevanceScore: 0 // Placeholder for relevance score
         };
       });
 
-      // Filter out very distant results if user location is available
+      // Filter out very distant results if user location is available, but be more flexible
       if (userLocation) {
-        formattedSuggestions = formattedSuggestions.filter(suggestion => 
-          !suggestion.distance || suggestion.distance <= 100 // Within 100 miles
-        );
+        const lat = userLocation.lat || userLocation[0];
+        const lng = userLocation.lng || userLocation[1];
+        if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
+          // First, try to find local results within 25 miles
+          const localResults = formattedSuggestions.filter(suggestion => 
+            !suggestion.distance || suggestion.distance <= 25
+          );
+          
+          // If we have few local results, include more distant ones to ensure good suggestions
+          if (localResults.length < 3) {
+            console.log("Few local results found, including distant locations");
+            // Keep all results. Don't filter by distance if local results are sparse
+            formattedSuggestions = formattedSuggestions;
+          } else {
+            // Use local results if we have enough
+            formattedSuggestions = localResults;
+          }
+        }
       }
       
       // Sort by relevance score (descending), then by distance (ascending)
@@ -208,7 +294,15 @@ const LocationAutocomplete = ({ value, onChange, placeholder, className = "", us
 
   const handleInputChange = (e) => {
     const query = e.target.value;
+    console.log('Input changed:', query); // Debug log
     onChange(query);
+
+    // Hide current location option when user starts typing
+    if (query.trim().length > 0) {
+      setShowCurrentLocationOption(false);
+    } else {
+      setShowCurrentLocationOption(true);
+    }
 
     // Debounce the API call
     if (debounceRef.current) {
@@ -216,6 +310,7 @@ const LocationAutocomplete = ({ value, onChange, placeholder, className = "", us
     }
 
     debounceRef.current = setTimeout(() => {
+      console.log('Calling searchLocations with:', query); // Debug log
       searchLocations(query);
     }, 200);
   };
@@ -224,10 +319,23 @@ const LocationAutocomplete = ({ value, onChange, placeholder, className = "", us
     onChange(suggestion.primary_name);
     setShowSuggestions(false);
     setSelectedIndex(-1);
+    
+    // Call the location select callback if provided
+    if (onLocationSelect) {
+      onLocationSelect({
+        lat: suggestion.lat,
+        lng: suggestion.lon,
+        name: suggestion.primary_name,
+        formatted_address: suggestion.display_name
+      });
+    }
   };
 
   const handleKeyDown = (e) => {
-    if (!showSuggestions || suggestions.length === 0) return;
+    if (!showSuggestions || (!showCurrentLocationOption && suggestions.length === 0)) return;
+
+    const totalOptions = suggestions.length + (showCurrentLocationOption ? 1 : 0);
+    const minIndex = showCurrentLocationOption ? -1 : 0; // -1 for current location option
 
     switch (e.key) {
       case 'ArrowDown':
@@ -238,11 +346,13 @@ const LocationAutocomplete = ({ value, onChange, placeholder, className = "", us
         break;
       case 'ArrowUp':
         e.preventDefault();
-        setSelectedIndex(prev => prev > 0 ? prev - 1 : -1);
+        setSelectedIndex(prev => prev > minIndex ? prev - 1 : minIndex);
         break;
       case 'Enter':
         e.preventDefault();
-        if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
+        if (showCurrentLocationOption && selectedIndex === -1) {
+          handleCurrentLocationSelect();
+        } else if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
           handleSuggestionSelect(suggestions[selectedIndex]);
         }
         break;
@@ -258,41 +368,80 @@ const LocationAutocomplete = ({ value, onChange, placeholder, className = "", us
       <div className="relative">
         <input
           ref={inputRef}
+          id={id}
+          name={name}
           type="text"
           value={value}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           onFocus={() => {
-            if (suggestions.length > 0) {
+            // Show current location option if input is empty or focused
+            if (!value || value.trim() === '') {
+              setShowCurrentLocationOption(true);
+              setShowSuggestions(true);
+            } else if (suggestions.length > 0) {
               setShowSuggestions(true);
             }
           }}
           placeholder={placeholder}
-          className={`w-full px-4 py-3 pr-10 bg-n-7 border border-n-6 rounded-xl text-n-1 placeholder-n-4 focus:border-color-1 focus:outline-none transition-colors ${className}`}
+          aria-label={ariaLabel || placeholder}
+          aria-autocomplete="list"
+          aria-expanded={showSuggestions}
+          aria-haspopup="listbox"
+          role="combobox"
+          className={`w-full px-4 py-3 pr-10 bg-n-7 border border-n-6 rounded-xl text-n-1 placeholder-n-4 focus:border-color-1 focus:outline-none transition-all duration-300 focus:shadow-[0_0_15px_rgba(172,108,255,0.3)] focus:scale-105 ${className}`}
         />
+
+        {/* Loading indicator */}
         {isLoading && (
-          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+          <div className="absolute right-10 top-1/2 transform -translate-y-1/2">
             <div className="w-4 h-4 border-2 border-color-1 border-t-transparent rounded-full animate-spin"></div>
           </div>
         )}
       </div>
 
+      {/* Custom suggestions dropdown */}
       <AnimatePresence>
-        {showSuggestions && suggestions.length > 0 && (
+        {showSuggestions && (showCurrentLocationOption || suggestions.length > 0) && (
           <motion.div
             ref={suggestionsRef}
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="absolute z-50 w-full mt-1 bg-n-8 border border-n-6 rounded-xl shadow-lg max-h-60 overflow-y-auto"
+            className="absolute z-[9999] w-full mt-1 bg-n-8 border border-n-6 rounded-xl shadow-lg max-h-60 overflow-y-auto"
+            style={{ zIndex: 9999 }}
           >
+            {/* Current Location Option */}
+            {showCurrentLocationOption && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0 }}
+                className={`px-4 py-3 cursor-pointer transition-colors border-b border-n-7 ${
+                  selectedIndex === -1 
+                    ? 'bg-color-1/10 text-color-1' 
+                    : 'hover:bg-n-7 text-n-2'
+                }`}
+                onClick={handleCurrentLocationSelect}
+              >
+                <div className="flex items-center">
+                  <span className="mr-3 text-lg">📍</span>
+                  <div>
+                    <div className="font-medium">Current Location</div>
+                    <div className="text-sm text-n-4">Use your current location</div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+            
+            {/* Search Results */}
             {suggestions.map((suggestion, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: index * 0.05 }}
+                transition={{ delay: (showCurrentLocationOption ? index + 1 : index) * 0.05 }}
                 className={`px-4 py-3 cursor-pointer transition-colors border-b border-n-7 last:border-b-0 ${
                   index === selectedIndex 
                     ? 'bg-color-1/10 text-color-1' 
@@ -313,10 +462,7 @@ const LocationAutocomplete = ({ value, onChange, placeholder, className = "", us
                   </div>
                   {suggestion.distance !== null && (
                     <div className="text-xs text-color-1 font-medium ml-2 flex-shrink-0 bg-color-1/10 px-2 py-1 rounded">
-                      {suggestion.distance < 1 
-                        ? `${(suggestion.distance * 5280).toFixed(0)} ft`
-                        : `${suggestion.distance.toFixed(1)} mi`
-                      }
+                      {suggestion.distance}
                     </div>
                   )}
                 </div>

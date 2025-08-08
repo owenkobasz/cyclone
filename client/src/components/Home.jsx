@@ -5,13 +5,15 @@ import { BackgroundCircles, BottomLine, Gradient } from "./design/Home";
 import { ScrollParallax } from "react-just-parallax";
 import { motion } from "framer-motion";
 import { useRef } from "react";
+import AuthModal from "./AuthModal";
+import { useAuthModal } from "../contexts/AuthModalContext";
 
-// TODO: add login button
 // TODO: make webmaster betyter visable + an email link
 // TODO: add custom greeting if signed in
 
 const Home = () => {
-    const parallaxRef = useRef(null);
+  const parallaxRef = useRef(null);
+  const { authModal, openAuthModal, closeAuthModal, switchAuthType } = useAuthModal();
   return (
     <Section
       className="pt-[12rem] -mt-[5.25rem]"
@@ -71,13 +73,21 @@ const Home = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.2 }}
+            className="flex flex-col sm:flex-row gap-4 justify-center items-center"
           >
-            <Button href="/sign-up" white>
+            <Button onClick={() => openAuthModal('signup')} white>
               Get started
             </Button>
           </motion.div>
         </div>
       </div>
+
+      <AuthModal
+        isOpen={authModal.isOpen}
+        onClose={closeAuthModal}
+        type={authModal.type}
+        onSwitchType={switchAuthType}
+      />
     </Section>
   );
 };

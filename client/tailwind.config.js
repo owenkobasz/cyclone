@@ -1,25 +1,8 @@
 /** @type {import('tailwindcss').Config} */
-<<<<<<< HEAD
-export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
-  theme: {
-    extend: {
-      colors: {
-        'base': '#f8f9fa',
-        'accent': '#4ecdc4',
-      }
-    },
-  },
-  plugins: [],
-}
-=======
-import { fontFamily } from "tailwindcss/defaultTheme";
-import plugin from "tailwindcss/plugin";
+const { fontFamily } = require("tailwindcss/defaultTheme");
+const plugin = require("tailwindcss/plugin");
 
-export default {
+module.exports = {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
@@ -151,4 +134,3 @@ export default {
     }),
   ],
 };
->>>>>>> 85abfde (Home page and about section. Redesigned the UI)

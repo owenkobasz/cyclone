@@ -2,8 +2,8 @@ import { motion } from "framer-motion";
 
 const Toggle = ({ checked, onChange, label }) => {
   return (
-    <label className="flex items-center justify-between cursor-pointer group">
-      <span className="body-2 text-n-3 group-hover:text-n-2 transition-colors">{label}</span>
+    <label className="flex items-center justify-between cursor-pointer group transition-all duration-300">
+      <span className="body-2 text-n-3 transition-all duration-300">{label}</span>
       <div className="relative">
         <input
           type="checkbox"
@@ -12,9 +12,9 @@ const Toggle = ({ checked, onChange, label }) => {
           className="sr-only"
         />
         <motion.div
-          className={`w-12 h-6 rounded-full transition-all duration-300 ${
+          className={`w-12 h-6 rounded-full transition-all duration-300 hover:shadow-[0_0_10px_rgba(172,108,255,0.3)] ${
             checked 
-              ? 'bg-gradient-to-r from-color-1 to-color-3' 
+              ? 'bg-gradient-to-r from-color-1 to-color-3 shadow-[0_0_15px_rgba(172,108,255,0.4)]' 
               : 'bg-n-6 hover:bg-n-5'
           }`}
         >

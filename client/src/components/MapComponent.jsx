@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { motion } from "framer-motion";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import LocationAutocomplete from './LocationAutocomplete';
 
-// Fix for default markers in react-leaflet
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -39,15 +39,77 @@ function LocationControl({ onLocationFound, onLocationError }) {
     locationControl.onAdd = function() {
       const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
       
-      // Override any default Leaflet styles
       div.style.cssText = `
         background: #18181B !important;
         border: none !important;
-        border-radius: 6px !important;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+        border-radius: 8px !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+        transition: all 0.3s ease !important;
+        overflow: hidden !important;
       `;
       
-      // Create the button HTML initially
+      const style = document.createElement('style');
+      style.textContent = `
+        .location-control-button {
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          width: 36px !important;
+          height: 36px !important;
+          color: #F4F4F5 !important;
+          text-decoration: none !important;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          position: relative !important;
+          background: transparent !important;
+          border: none !important;
+          cursor: pointer !important;
+        }
+        
+        .location-control-button:hover {
+          color: #AC6AFF !important;
+          background: rgba(172, 106, 255, 0.1) !important;
+          transform: scale(1.05) !important;
+          box-shadow: 0 0 20px rgba(172, 106, 255, 0.3) !important;
+        }
+        
+        .location-control-button:active {
+          transform: scale(0.95) !important;
+          box-shadow: 0 0 15px rgba(172, 106, 255, 0.5) !important;
+        }
+        
+        .location-control-button svg {
+          transition: transform 0.3s ease !important;
+          width: 18px !important;
+          height: 18px !important;
+        }
+        
+        .location-control-button:hover svg {
+          transform: rotate(45deg) !important;
+        }
+        
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        
+        @keyframes pulse {
+          0%, 100% { 
+            box-shadow: 0 0 0 0 rgba(172, 106, 255, 0.7);
+            transform: scale(1);
+          }
+          50% { 
+            box-shadow: 0 0 0 10px rgba(172, 106, 255, 0);
+            transform: scale(1.05);
+          }
+        }
+        
+        .location-control-button.loading {
+          animation: pulse 2s infinite !important;
+        }
+      `;
+      document.head.appendChild(style);
+      
+      // Create the button HTML 
       div.innerHTML = `
         <a href="#" title="Click to set your current location" role="button" aria-label="Set current location" class="location-control-button">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -59,7 +121,6 @@ function LocationControl({ onLocationFound, onLocationError }) {
       const linkElement = div.querySelector('a');
 
       const updateButton = () => {
-        // Reset to normal crosshair icon
         linkElement.innerHTML = `
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8M3.05,13H1V11H3.05C3.5,6.83 6.83,3.5 11,3.05V1H13V3.05C17.17,3.5 20.5,6.83 20.95,11H23V13H20.95C20.5,17.17 17.17,20.5 13,20.95V23H11V20.95C6.83,20.5 3.5,17.17 3.05,13M12,5A7,7 0 0,0 5,12A7,7 0 0,0 12,19A7,7 0 0,0 19,12A7,7 0 0,0 12,5Z"/>
@@ -71,7 +132,8 @@ function LocationControl({ onLocationFound, onLocationError }) {
         L.DomEvent.stopPropagation(e);
         L.DomEvent.preventDefault(e);
 
-        // Add loading state
+        // Add loading 
+        linkElement.classList.add('loading');
         linkElement.innerHTML = `
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="animation: spin 1s linear infinite;">
             <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
@@ -81,6 +143,7 @@ function LocationControl({ onLocationFound, onLocationError }) {
 
         if (!navigator.geolocation) {
           onLocationError("Geolocation is not supported by your browser.");
+          linkElement.classList.remove('loading');
           updateButton(); // Reset button
           return;
         }
@@ -91,7 +154,7 @@ function LocationControl({ onLocationFound, onLocationError }) {
             const newCenter = [latitude, longitude];
             map.setView(newCenter, 16);
             onLocationFound(newCenter);
-            // Show success briefly, then return to normal crosshair
+            linkElement.classList.remove('loading');
             linkElement.innerHTML = `
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/>
@@ -105,7 +168,7 @@ function LocationControl({ onLocationFound, onLocationError }) {
           },
           (err) => {
             onLocationError("Unable to retrieve your precise location.");
-            // Show error briefly, then return to normal crosshair
+            linkElement.classList.remove('loading');
             linkElement.innerHTML = `
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
@@ -133,17 +196,93 @@ function LocationControl({ onLocationFound, onLocationError }) {
   return null;
 }
 
-// Component to handle zoom controls positioning
+// Handles zoom controls positioning
 function ZoomControl() {
   const map = useMap();
   
   useEffect(() => {
-    // Add zoom control to top left
     const zoomControl = L.control.zoom({ position: 'topleft' });
     zoomControl.addTo(map);
     
+    const zoomStyle = document.createElement('style');
+    zoomStyle.textContent = `
+      .leaflet-control-zoom {
+        border: none !important;
+        border-radius: 8px !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+        overflow: hidden !important;
+        background: #18181B !important;
+      }
+      
+      .leaflet-control-zoom a {
+        background: #18181B !important;
+        border: none !important;
+        color: #F4F4F5 !important;
+        width: 36px !important;
+        height: 36px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        text-decoration: none !important;
+        font-size: 18px !important;
+        font-weight: bold !important;
+        line-height: 1 !important;
+        opacity: 1 !important;
+        filter: none !important;
+        position: relative !important;
+      }
+      
+      .leaflet-control-zoom a:hover {
+        color: #AC6AFF !important;
+        background: #18181B !important;
+        transform: scale(1.05) !important;
+        box-shadow: 0 0 20px rgba(172, 106, 255, 0.3) !important;
+        opacity: 1 !important;
+        filter: none !important;
+      }
+      
+      .leaflet-control-zoom a:active {
+        transform: scale(0.95) !important;
+        box-shadow: 0 0 15px rgba(172, 106, 255, 0.5) !important;
+      }
+      
+      .leaflet-control-zoom a:focus {
+        color: #AC6AFF !important;
+        outline: none !important;
+        box-shadow: 0 0 20px rgba(172, 106, 255, 0.3) !important;
+      }
+      
+      .leaflet-control-zoom a:first-child {
+        border-top-left-radius: 8px !important;
+        border-top-right-radius: 8px !important;
+        margin-bottom: 1px !important;
+      }
+      
+      .leaflet-control-zoom a:last-child {
+        border-bottom-left-radius: 8px !important;
+        border-bottom-right-radius: 8px !important;
+      }
+      
+      .leaflet-control-zoom a.leaflet-disabled {
+        background: #18181B !important;
+        opacity: 0.5 !important;
+        color: #6B7280 !important;
+      }
+      
+      .leaflet-control-zoom a.leaflet-disabled:hover {
+        transform: none !important;
+        box-shadow: none !important;
+        color: #6B7280 !important;
+      }
+    `;
+    document.head.appendChild(zoomStyle);
+    
     return () => {
       map.removeControl(zoomControl);
+      if (zoomStyle.parentNode) {
+        zoomStyle.parentNode.removeChild(zoomStyle);
+      }
     };
   }, [map]);
 
@@ -175,14 +314,19 @@ function MapResizeHandler() {
   return null;
 }
 
-const MapComponent = ({ location, setLocation, error, setError }) => {
+const MapComponent = ({ location, setLocation, error, setError, routeData, isGenerating = false }) => {
   const mapRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
   const [hasInitialLocation, setHasInitialLocation] = useState(false);
   const [showPreciseLocationPrompt, setShowPreciseLocationPrompt] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [glow, setGlow] = useState(true);
 
-  // Get approximate location based on IP on component mount
+  const handleAnimationComplete = () => {
+    setGlow(false);
+  };
+
+  // Get approximate location based on IP if no location is set
   useEffect(() => {
     if (!location && !hasInitialLocation) {
       getApproximateLocation();
@@ -194,7 +338,6 @@ const MapComponent = ({ location, setLocation, error, setError }) => {
       setIsLoading(true);
       console.log("Attempting to get IP-based location...");
       
-      // Try ip-api.com first (free, no rate limiting for personal use)
       const response = await fetch('http://ip-api.com/json/?fields=status,lat,lon,city,region,country');
       const data = await response.json();
       console.log("IP location service response:", data);
@@ -207,19 +350,19 @@ const MapComponent = ({ location, setLocation, error, setError }) => {
         setError(null);
       } else {
         console.warn("IP detection failed:", data);
-        // Set default location (US center) so map still shows
+        // Set default location the center of the US so map still shows if there's an error with fetching the user's IP location
         setLocation([39.8283, -98.5795]);
         setHasInitialLocation(true);
         setShowPreciseLocationPrompt(true);
-        setError("Unable to determine your exact location. Please use the search bar or target icon to set your precise location.");
+        setError("Unable to determine your exact location. Please use the target icon to set your precise location.");
       }
     } catch (err) {
       console.error("Location detection error:", err);
-      // Set default location (US center) so map still shows
+      // Set default location the center of the US so map still shows if there's an error with fetching the user's IP location
       setLocation([39.8283, -98.5795]);
       setHasInitialLocation(true);
       setShowPreciseLocationPrompt(true);
-      setError("Unable to determine your exact location. Please use the search bar or target icon to set your precise location.");
+      setError("Unable to determine your exact location. Please use the target icon to set your precise location.");
     } finally {
       setIsLoading(false);
     }
@@ -247,9 +390,7 @@ const MapComponent = ({ location, setLocation, error, setError }) => {
     );
   };
 
-  const handleLocationSearch = async (event) => {
-    event.preventDefault();
-    
+  const handleLocationSearch = async () => {
     if (!searchQuery.trim()) return;
 
     try {
@@ -283,32 +424,23 @@ const MapComponent = ({ location, setLocation, error, setError }) => {
 
   return (
     <motion.div
-      className="relative p-6 bg-n-8/40 backdrop-blur-sm rounded-2xl border border-n-2/20 transition-all duration-300 hover:border-color-2/50"
+      className={`relative p-6 bg-n-8/40 backdrop-blur-sm rounded-2xl border transition-all duration-300 hover:border-color-1/50 hover:shadow-[0_0_25px_rgba(172,108,255,0.3)] hover:scale-105 cursor-pointer ${glow ? 'border-color-1/50' : 'border-n-2/20'}`}
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 1.2, delay: 0.3, ease: "easeOut" }}
       viewport={{ once: true }}
+      onAnimationComplete={handleAnimationComplete}
+      whileHover={{ 
+        scale: 1.05,
+        transition: { duration: 0.2 }
+      }}
     >
       {/* Title and Search Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
         <h3 className="h3 text-n-1">Route Map</h3>
         <div className="flex-1 max-w-md">
-          <form onSubmit={handleLocationSearch} className="flex gap-2">
-            <input
-              type="text"
-              name="query"
-              placeholder="Search to set your location"
-              className="flex-1 px-4 py-3 bg-n-7 border border-n-6 rounded-xl text-n-1 placeholder-n-4 focus:border-color-1 focus:outline-none transition-colors text-sm"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <button
-              type="submit"
-              className="px-4 py-3 bg-n-7 hover:bg-n-6 border border-n-6 hover:border-color-1 text-n-3 hover:text-color-1 rounded-xl transition-all"
-            >
-              Set
-            </button>
-          </form>
+          <div className="flex gap-2">
+          </div>
         </div>
       </div>
       
@@ -355,12 +487,12 @@ const MapComponent = ({ location, setLocation, error, setError }) => {
                     📍 Location Set
                   </h4>
                   <p className="text-xs text-n-3">
-                    We've detected your approximate area. Use the crosshair icon on the map for pinpoint accuracy.
+                    We've detected your approximate area. Use the crosshair icon on the map for precise location.
                   </p>
                 </div>
                 <button
                   onClick={() => setShowPreciseLocationPrompt(false)}
-                  className="ml-4 px-3 py-1.5 bg-n-8/80 hover:bg-n-7 text-n-3 hover:text-n-1 rounded-lg text-xs transition-all border border-n-6 hover:border-color-1/30"
+                  className="ml-4 px-3 py-1.5 bg-n-8/80 hover:bg-n-7 text-n-3 hover:text-n-1 rounded-lg text-xs transition-all duration-300 border border-n-6 hover:border-color-1/30 hover:shadow-[0_0_10px_rgba(172,108,255,0.2)] hover:scale-105"
                 >
                   ✓ Got it
                 </button>
@@ -415,11 +547,20 @@ const MapComponent = ({ location, setLocation, error, setError }) => {
         </div>
       ) : (
         <div className="mb-4 h-96 md:h-[500px] lg:h-[700px] rounded-xl overflow-hidden border border-n-6 relative">
-          {isLoading && (
+          {(isLoading || isGenerating) && (
             <div className="absolute inset-0 bg-n-8/80 flex items-center justify-center z-10">
               <div className="text-center">
                 <div className="w-8 h-8 border-2 border-color-1 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-                <p className="body-2 text-n-4">Updating location...</p>
+                <p className="body-2 text-n-4">
+                  {isGenerating ? "Generating your route..." : "Updating location..."}
+                </p>
+                {isGenerating && (
+                  <div className="flex justify-center gap-1 mt-2">
+                    <div className="w-1 h-1 bg-color-1 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-1 h-1 bg-color-1 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-1 h-1 bg-color-1 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -438,19 +579,68 @@ const MapComponent = ({ location, setLocation, error, setError }) => {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               maxZoom={19}
             />
-            <Marker position={location}>
-              <Popup>
-                <div className="text-sm text-center">
-                  <strong>Your Location</strong><br />
-                  Lat: {location[0].toFixed(4)}<br />
-                  Lng: {location[1].toFixed(4)}
-                </div>
-              </Popup>
-            </Marker>
+            
+            {/* Current Location Marker. This will only show if location is set and no route generated */}
+            {location && !routeData && (
+              <Marker position={location}>
+                <Popup>
+                  <div className="text-sm text-center">
+                    <strong>Current Location</strong><br />
+                    Click "Generate Route" to create your cycling route
+                  </div>
+                </Popup>
+              </Marker>
+            )}
+            
+            {/* Route Start and Destination Markers */}
+            {routeData && routeData.route && routeData.route.length > 0 && (
+              <>
+                {/* Start Marker */}
+                <Marker 
+                  position={[routeData.route[0].lat, routeData.route[0].lon]}
+                >
+                  <Popup>
+                    <div className="text-sm text-center">
+                      <strong>Route Start</strong>
+                    </div>
+                  </Popup>
+                </Marker>
+                
+                {/* Destination Marker */}
+                <Marker 
+                  position={[
+                    routeData.route[routeData.route.length - 1].lat, 
+                    routeData.route[routeData.route.length - 1].lon
+                  ]}
+                >
+                  <Popup>
+                    <div className="text-sm text-center">
+                      <strong>Destination</strong><br />
+                      <span className="text-xs text-gray-600">
+                        Total distance: {routeData.total_length_formatted || `${routeData.total_length_km?.toFixed(1)} km`}
+                      </span>
+                    </div>
+                  </Popup>
+                </Marker>
+              </>
+            )}
+            
+            {/* Display route polyline if route data is available */}
+            {routeData && routeData.route && (
+              <Polyline
+                positions={routeData.route.map(point => [point.lat, point.lon])}
+                color="#3B82F6"
+                weight={4}
+                opacity={0.8}
+                smoothFactor={1}
+              />
+            )}
+            
             <LocationControl 
               onLocationFound={(newLocation) => {
                 setLocation(newLocation);
                 setShowPreciseLocationPrompt(false);
+                setError(null); // Clear any existing errors when location is found
               }}
               onLocationError={setError}
             />
