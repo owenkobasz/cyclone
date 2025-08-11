@@ -1,4 +1,7 @@
 import React, {useState, useEffect} from 'react'
+import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
+import Button from './Button'
 
 const LoginComponent = () => {
         
@@ -106,48 +109,94 @@ const LoginComponent = () => {
             }
         }
 
-    if (loggedin) {
-        return(
-        <div className='flex flex-col justify-center items-center font-medium'>
-            <div className='backdrop-blur border border-white p-4 rounded shadow-md items-center space-y-10'>
-                <h1 className='p-4 text-center items-center text-white my-1'>Cyclone Logout</h1>
-                <p className='text-center items-center text-white text-2xl my-2'>Welcome!</p>
-                <form className='w-100 flex flex-col pl-4 pr-4 rounded-2xl font-medium'
-                onSubmit={submit}>
-                        <div className="flex">
-                            <input className="w-36 mx-auto block outline outline-white bg-blue-500 hover:bg-blue-400 rounded text-white p-2 text-xl" 
-                                type="submit" name="action" value={button}/>
-                        </div>
-                        <p className='text-center pt-2'>{message}</p>
-                </form>
-            </div>
+    return (
+        <div className='flex flex-col justify-center items-center min-h-screen font-medium'>
+            <motion.div 
+                className='backdrop-blur-sm bg-n-8/40 border border-n-2/20 p-8 rounded-2xl shadow-xl items-center space-y-8 max-w-md w-full hover:border-color-1/50 transition-all duration-300 hover:shadow-[0_0_30px_rgba(172,108,255,0.3)]'
+                initial={{ opacity: 0, y: 40 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                whileHover={{ 
+                    scale: 1.02,
+                    transition: { duration: 0.2 }
+                }}
+            >
+                <motion.h1 
+                    className='text-center text-n-1 text-2xl font-bold'
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.2 }}
+                >
+                    Cyclone Login
+                </motion.h1>
+                
+                <motion.form 
+                    className='w-full flex flex-col space-y-6 font-medium'
+                    onSubmit={submit}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.4 }}
+                >
+                    <input 
+                        className="w-full px-4 py-3 bg-n-7 border border-n-6 rounded-xl text-n-1 placeholder-n-3 focus:border-color-1 focus:outline-none transition-all duration-300 focus:shadow-[0_0_15px_rgba(172,108,255,0.3)] focus:scale-105" 
+                        type="text" 
+                        placeholder='Username' 
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                    />
+                    <input 
+                        className="w-full px-4 py-3 bg-n-7 border border-n-6 rounded-xl text-n-1 placeholder-n-3 focus:border-color-1 focus:outline-none transition-all duration-300 focus:shadow-[0_0_15px_rgba(172,108,255,0.3)] focus:scale-105" 
+                        type="password" 
+                        placeholder='Password' 
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                    />
+                    
+                    {message && (
+                        <motion.p 
+                            className='text-center text-color-1'
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            {message}
+                        </motion.p>
+                    )}
+                    
+                    <div className="flex gap-4">
+                        <Button
+                            className="flex-1"
+                            onClick={submit}
+                            type="submit"
+                            name="action" 
+                            value={button}
+                        >
+                            {button}
+                        </Button>
+                        {!loggedin && (
+                            <Button
+                                className="flex-1"
+                                onClick={submit}
+                                type="submit"
+                                name="action" 
+                                value="Register"
+                                outline
+                            >
+                                Register
+                            </Button>
+                        )}
+                    </div>
+                    
+                    <p className="text-center text-n-3">
+                        Don't have an account?{' '}
+                        <Link to="/signup" className="text-color-1 hover:underline">
+                            Create one
+                        </Link>
+                    </p>
+                </motion.form>
+            </motion.div>
         </div>
-        )
-        
-    } else {
-        return (
-
-        <div className='flex flex-col justify-center items-center font-medium'>
-            <div className='backdrop-blur border border-white p-4 rounded shadow-md items-center space-y-10'>
-                <h1 className='p-4 pb-2 text-center items-center text-white'>Cyclone Login</h1>
-                <form className='w-100 flex flex-col pl-4 pr-4 rounded-2xl font-medium'
-                onSubmit={submit}>
-                        <input className="w-72 mx-auto outline outline-white mb-4 rounded bg-center p-2" type="text" placeholder='Username' value={username}
-                        onChange={(e) => setUsername(e.target.value)}/>
-                        <input className="w-72 mx-auto outline outline-white mb-4 rounded my-2 p-2" type="password" placeholder='Password' value ={password}
-                        onChange={(e) => setPassword(e.target.value)}/>
-                        <div className="flex">
-                            <input className="w-36 mx-auto block outline outline-white my-2 bg-blue-500 hover:bg-blue-400 rounded text-white p-2" 
-                                type="submit" name="action" value={button}/>
-                            <input className="w-36 mx-auto block outline outline-white my-2 bg-blue-500 hover:bg-blue-400 rounded text-white p-2 " 
-                                type="submit" name="action" value="Register"/>
-                        </div>
-                        <p className='text-center pt-2'>{message}</p>
-                </form>
-            </div>
-        </div>
-        )
-    }    
+    )
 }
 
 export default LoginComponent

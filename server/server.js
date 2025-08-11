@@ -1,8 +1,11 @@
+require('dotenv').config({ path: '../.env' });
 const express = require('express')
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
+const { generateRoute } = require('./api_router.js');
+const { getLocationFromIP, getClientIP } = require('./utils/geolocation.js');
 const app = express();
-const port = 3000;
+const port = 8000;
 const dbUsers = require('./dbUsers.js'); // import users database
 const bcrypt = require('bcrypt');
 const session = require(`express-session`);
@@ -28,7 +31,7 @@ function validUsername(username) {
 
 // Enable CORS for all routes
 app.use(cors({
-    origin: 'http://localhost:5173',  // frontend origin
+    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],  // frontend origins
     credentials: true                // allow cookies to be sent
 }));
 
@@ -202,6 +205,99 @@ app.post('/api/logout', (req, res) => {
     console.log("Logged out!");
     return res.json({ message: "Logged out successfully" });
   });
+});
+
+// Get user location based on IP
+app.get('/api/location', async (req, res) => {
+  try {
+    const clientIP = getClientIP(req);
+    const locationData = await getLocationFromIP(clientIP);
+    
+    console.log(`Location request from IP ${clientIP}: ${locationData.city}, ${locationData.region}`);
+    
+    res.json({
+      success: true,
+      location: locationData,
+      ip: clientIP
+    });
+  } catch (error) {
+    console.error('Error getting user location:', error);
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to get location",
+      location: {
+        lat: 39.9526,
+        lon: -75.1652,
+        city: 'Philadelphia',
+        region: 'Pennsylvania',
+        country: 'US',
+        place: 'Philadelphia, Pennsylvania, USA'
+      }
+    });
+  }
+});
+
+// Route generation endpoint
+app.post('/api/generate-custom-route', async (req, res) => {
+  const {
+    start_lat,
+    start_lon,
+    end_lat,
+    end_lon,
+    avoid_hills = false,
+    use_bike_lanes = true,
+    target_distance = 5.0,
+    max_elevation_gain = 100.0,
+    unit_system = "imperial",
+    route_type = "scenic",
+    avoid_traffic = false
+  } = req.body;
+
+  // Validate required parameters
+  if (!start_lat || !start_lon) {
+    return res.status(422).json({ 
+      detail: [
+        { type: "missing", loc: ["body", "start_lat"], msg: "Field required" },
+        { type: "missing", loc: ["body", "start_lon"], msg: "Field required" }
+      ]
+    });
+  }
+
+  try {
+    // Get user's location based on IP for OSM graph selection
+    const clientIP = getClientIP(req);
+    const locationData = await getLocationFromIP(clientIP);
+    
+    console.log(`Generating route for user from ${locationData.city}, ${locationData.region} (IP: ${clientIP})`);
+
+    const routeData = await generateRoute({
+      start: {
+        lat: parseFloat(start_lat),
+        lon: parseFloat(start_lon)
+      },
+      end: end_lat && end_lon ? {
+        lat: parseFloat(end_lat),
+        lon: parseFloat(end_lon)
+      } : null,
+      options: {
+        target_distance: parseFloat(target_distance),
+        route_type,
+        use_bike_lanes,
+        avoid_hills,
+        avoid_traffic,
+        unit_system,
+        max_elevation_gain
+      },
+      userLocation: locationData  // Pass location data to route generation
+    });
+
+    res.json(routeData);
+  } catch (error) {
+    console.error('Route generation error:', error);
+    res.status(500).json({ 
+      detail: "Route generation failed: " + error.message 
+    });
+  }
 });
 
 // verifies backend has started
