@@ -8,10 +8,6 @@ const bcrypt = require('bcrypt');
 const session = require(`express-session`);
 const SQLiteStore = require('connect-sqlite3')(session);
 
-//TODO: add session handling
-//TODO: add password requirements
-//TODO: move hosting over to raspberry pi
-
 
 // helper functions
 function validPassword(password) {
@@ -49,6 +45,7 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
+    maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
     secure: false,    // true if using HTTPS
     httpOnly: true,   // prevents JS access
     sameSite: 'lax'   // CSRF protection
@@ -87,6 +84,14 @@ app.post('/api/login', async (req, res) => {
                     if(match) {
                         console.log(`${username} succesfully logged in.`);
                         req.session.user = { username }; // save user info in session
+    
+                        req.session.save(err => {
+                            if (err) {
+                                console.error('Session save error:', err);
+                                return res.status(500).json({ error: 'Could not save session' });
+                            }
+                            return res.json({ message: "Succesful login", ok: true });
+                        });
                         return res.json({message:"Succesful login", ok: true});
                         
                     } else {
@@ -159,8 +164,11 @@ app.post('/api/register', async (req, res) => {
                             return res.status(500).json({ message: 'Database issue preventing registration', ok: false });
                         }
 
-                        req.session.user = { username }; // save user info in session
-                        return res.json({ message: 'User registered and logged in!', ok: true });
+                        // let user know they have succesfully registered
+                        return res.json({
+                            message: 'User registered successfully! Please log in.',
+                            ok: true
+                        });
                     }
 
                     )
@@ -169,6 +177,7 @@ app.post('/api/register', async (req, res) => {
         }
     );
 });
+
 
 // check if user is logged in with this method
 app.get('/api/status', (req, res) => {

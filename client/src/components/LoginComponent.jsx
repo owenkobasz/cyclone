@@ -99,7 +99,6 @@ const LoginComponent = () => {
                         setMessage(`${data.message}`);
                     } else {
                         setMessage(`${data.message}`);
-                        setLoggedin(true);
                     } 
                 } catch(err) {
                     setMessage(`Error registering account.`);
