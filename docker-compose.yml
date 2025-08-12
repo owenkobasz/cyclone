@@ -4,14 +4,14 @@ services:
       context: ./fastapi
     ports:
       - "8000:8000"
-    volumes:
-      - ./fastapi:/app
     env_file:
       - .env
     environment:
       - PYTHONUNBUFFERED=1
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      - LOG_LEVEL=INFO
+      - LOG_TO_FILE=false
+      - GRAPH_FILE=philly_bike.graphml
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
       interval: 30s
@@ -24,7 +24,6 @@ services:
       context: ./server
     ports:
       - "3000:3000"
-    command: npm start
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/status"]
       interval: 30s
@@ -36,13 +35,9 @@ services:
     build:
       context: ./client
     ports:
-      - "5173:5173"
-    volumes:
-      - ./client:/app
-      - /app/node_modules
-    command: npm run dev -- --host 0.0.0.0
+      - "80:80"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5173"]
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
       interval: 30s
       timeout: 10s
       retries: 3

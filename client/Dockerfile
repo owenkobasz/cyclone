@@ -1,4 +1,4 @@
-FROM node:18-slim
+FROM node:18-slim AS builder
 
 # Install curl for health checks
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
@@ -8,12 +8,24 @@ WORKDIR /app
 # Copy package files first
 COPY package.json package-lock.json ./
 
-# Install dependencies
-RUN npm install
+# Install ALL dependencies (including dev dependencies needed for build)
+RUN npm ci
 
 # Copy the rest of the application
 COPY . .
 
-EXPOSE 5173
+# Build the application
+RUN npm run build
 
-CMD ["npm", "run", "dev"]
+# Production stage
+FROM nginx:alpine
+
+# Copy built assets from builder stage
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Copy nginx configuration if you have custom config
+# COPY nginx.conf /etc/nginx/nginx.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
