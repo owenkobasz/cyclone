@@ -6,9 +6,12 @@ services:
       - "8000:8000"
     volumes:
       - ./fastapi:/app
+    env_file:
+      - .env
     environment:
       - PYTHONUNBUFFERED=1
-    command: uvicorn route_backend:app --host 0.0.0.0 --port 8000 --reload
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
       interval: 30s
@@ -34,6 +37,9 @@ services:
       context: ./client
     ports:
       - "5173:5173"
+    volumes:
+      - ./client:/app
+      - /app/node_modules
     command: npm run dev -- --host 0.0.0.0
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5173"]

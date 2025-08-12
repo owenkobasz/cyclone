@@ -10,3 +10,5 @@ pandas
 requests
 tqdm
 scikit-learn 
+openai 
+python-dotenv 

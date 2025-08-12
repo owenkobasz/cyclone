@@ -8,7 +8,7 @@ import CueSheet from '../components/CueSheet';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import Header from '../components/ui/Header';
-import { generateRoute } from '../utils/routeApi';
+import { generateRoute, generateRouteWithGPT, generateRouteWithGPTGraphHopper } from '../utils/routeApi';
 
 function calculateRouteStats(route) {
     if (!route || route.length < 2) return { distanceKm: null, elevationM: null };
@@ -79,6 +79,36 @@ export default function RouteDisplay() {
         }
     };
 
+    const handleGenerateRouteGPT = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const data = await generateRouteWithGPT(preferences);
+            setRoute(data.route);
+            setRouteName(`GPT Route (${data.total_length_km?.toFixed(2) || '?'} km)`);
+            setStats(calculateRouteStats(data.route));
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGenerateRouteGPTGraphHopper = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const data = await generateRouteWithGPTGraphHopper(preferences);
+            setRoute(data.route);
+            setRouteName(`GPT+GraphHopper Route (${data.total_length_km?.toFixed(2) || '?'} km)`);
+            setStats(calculateRouteStats(data.route));
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="bg-base min-h-screen text-gray-800">
             <div className="w-full">
@@ -89,6 +119,12 @@ export default function RouteDisplay() {
                             <RoutePreferences preferences={preferences} setPreferences={setPreferences} />
                             <Button className="w-full" onClick={handleGenerateRoute} disabled={loading}>
                                 {loading ? 'Generating...' : 'Generate Route'}
+                            </Button>
+                            <Button className="w-full" variant="secondary" onClick={handleGenerateRouteGPT} disabled={loading}>
+                                {loading ? 'Generating...' : 'Generate Route (GPT)'}
+                            </Button>
+                            <Button className="w-full" onClick={handleGenerateRouteGPTGraphHopper} disabled={loading}>
+                                {loading ? 'Generating...' : 'Generate Route (GPT + GraphHopper)'}
                             </Button>
                             {error && <div className="text-red-600 mt-2">{error}</div>}
                         </div>
