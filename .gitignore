@@ -46,6 +46,7 @@ __pycache__/
 # Graph data and cache
 fastapi/philly_bike.graphml
 server/cache/
+server/temp/
 
 # Duplicate cleanups
 .DS_Store
