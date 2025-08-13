@@ -3,6 +3,8 @@ import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import Button from './Button'
 
+// Update to work with Mandy's changes
+
 const LoginComponent = () => {
         
         // hooks for username, password, and errors during form submission

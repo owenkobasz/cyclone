@@ -5,7 +5,6 @@ import Button from './Button';
 const AuthModal = ({ isOpen, onClose, type, onSwitchType }) => {
   const [formData, setFormData] = useState({
     username: '',
-    email: '',
     password: ''
   });
 
@@ -18,7 +17,88 @@ const AuthModal = ({ isOpen, onClose, type, onSwitchType }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // TODO: Implement actual authentication logic
+    // submission function
+        const submit = async (e) => {
+            
+            // prevent reload
+            e.preventDefault();
+
+            // handle various actions of submit form
+            const action = e.nativeEvent.submitter.value;
+
+            // handle action values
+            if (type === "login") {
+                // login
+                try {
+                    // send a POST request to server
+                    const res = await fetch('http://localhost:3000/api/login', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({username, password}),
+                        credentials: 'include'
+                    });
+
+                    // set data to response from backend
+                    const data = await res.json();
+
+                    if(!res.ok) {
+                        setMessage(`${data.message}`);
+                    } else {
+                        setMessage(`${data.message}`);
+                        setLoggedin(true);
+                    } 
+                } catch(err) {
+                    setMessage(`Error logging in`);
+                }
+                
+            } else if (action === "Logout") {
+                // logout
+                try {
+                    // send a POST request to server
+                    const res = await fetch('http://localhost:3000/api/logout', {
+                        method: 'POST',
+                        credentials: 'include'
+                    });
+
+                    // set data to response from backend
+                    const data = await res.json();
+
+                    if(!res.ok) {
+                        setMessage(`${data.message}`);
+                    } else {
+                        setUsername("");
+                        setPassword("");
+                        setMessage(`${data.message}`);
+                        setLoggedin(false);
+                    } 
+                } catch(err) {
+                    setMessage(`Error logging out.`);
+                }
+            } else if (type == "signup") {
+                // register
+                try {
+                    // send a POST request to server
+                    const res = await fetch('http://localhost:3000/api/register', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({username, password, passwordConf}),
+                        credentials: 'include'
+                    });
+
+                    // set data to response from backend
+                    const data = await res.json();
+
+                    if(!res.ok) {
+                        setMessage(`${data.message}`);
+                    } else {
+                        setMessage(`${data.message}`);
+                    } 
+                } catch(err) {
+                    setMessage(`Error registering account.`);
+                }
+            }
+        }
+
     console.log(`${type} submitted:`, formData);
     onClose();
   };
@@ -76,24 +156,13 @@ const AuthModal = ({ isOpen, onClose, type, onSwitchType }) => {
               transition={{ duration: 0.6, delay: 0.2 }}
               onSubmit={handleSubmit}
             >
-              {type === 'signup' && (
-                <input
-                  className="w-full px-4 py-3 bg-n-7/50 border border-n-6 rounded-xl text-n-1 placeholder-n-3 focus:border-color-1 focus:outline-none transition-all duration-300 focus:shadow-[0_0_15px_rgba(172,108,255,0.3)] focus:scale-105 backdrop-blur-sm"
-                  type="text"
-                  name="username"
-                  placeholder="Username"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  required
-                />
-              )}
               
               <input
                 className="w-full px-4 py-3 bg-n-7/50 border border-n-6 rounded-xl text-n-1 placeholder-n-3 focus:border-color-1 focus:outline-none transition-all duration-300 focus:shadow-[0_0_15px_rgba(172,108,255,0.3)] focus:scale-105 backdrop-blur-sm"
-                type="email"
-                name="email"
-                placeholder="Email"
-                value={formData.email}
+                type="text"
+                name="username"
+                placeholder="Username"
+                value={formData.username}
                 onChange={handleInputChange}
                 required
               />
@@ -107,6 +176,16 @@ const AuthModal = ({ isOpen, onClose, type, onSwitchType }) => {
                 onChange={handleInputChange}
                 required
               />
+
+              {type=='signup' && (<input
+                className="w-full px-4 py-3 bg-n-7/50 border border-n-6 rounded-xl text-n-1 placeholder-n-3 focus:border-color-1 focus:outline-none transition-all duration-300 focus:shadow-[0_0_15px_rgba(172,108,255,0.3)] focus:scale-105 backdrop-blur-sm"
+                type="password"
+                name="passwordConf"
+                placeholder="Confirm"
+                value={formData.passwordCheck}
+                onChange={handleInputChange}
+                required
+              />)}
 
               <Button className="w-full mt-4" type="submit">
                 {type === 'login' ? 'Sign In' : 'Create Account'}

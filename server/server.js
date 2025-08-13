@@ -5,12 +5,14 @@ const sqlite3 = require('sqlite3').verbose();
 const { generateRoute } = require('./api_router.js');
 const { getLocationFromIP, getClientIP } = require('./utils/geolocation.js');
 const app = express();
-const port = 8000;
+const port = 3000;
 const dbUsers = require('./dbUsers.js'); // import users database
 const bcrypt = require('bcrypt');
 const session = require(`express-session`);
 const SQLiteStore = require('connect-sqlite3')(session);
 
+
+// fix to work with Mandy's changes
 
 // helper functions
 function validPassword(password) {
@@ -29,6 +31,14 @@ function validUsername(username) {
     return true;
 }
 
+function validEmail(email) {
+    if (email === "" && !email.contains('@')) {
+        return false;
+    }
+
+    return true;
+}
+
 // Enable CORS for all routes
 app.use(cors({
     origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],  // frontend origins
@@ -41,17 +51,17 @@ app.use(express.json());
 // Set up sessions
 app.use(session({
   store: new SQLiteStore({
-    db: 'sessions.db', // default, you can customize the name
-    dir: './databases'      // optional: where to store the session DB file
+    db: 'sessions.db', 
+    dir: './databases'     
   }),
   secret: 'cycloneisagreatapplicationandeveryonelovesitsomuch',
   resave: false,
   saveUninitialized: false,
   cookie: {
     maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-    secure: false,    // true if using HTTPS
-    httpOnly: true,   // prevents JS access
-    sameSite: 'lax'   // CSRF protection
+    secure: false,    
+    httpOnly: true,   
+    sameSite: 'lax'   
   }
 }));
 
@@ -120,8 +130,8 @@ app.post('/api/register', async (req, res) => {
     const saltRounds = 10;
 
     // destructure request
-    const {username, password} = req.body;
-    console.log(username);
+    const {username, password, passwordConf} = req.body;
+    console.log(`{username}`);
 
     // handle registration / login
     dbUsers.get(
@@ -144,6 +154,10 @@ app.post('/api/register', async (req, res) => {
                 
                 if (!validUsername(username)) {
                     return res.status(401).json({ message: 'Invalid username, must be non-empty', ok: false});
+                }
+
+                if (password != passwordConf) {
+                    return res.status(401).json({ message: 'Password and confirmation must match.', ok: false});
                 }
 
 
