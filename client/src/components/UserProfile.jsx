@@ -5,27 +5,25 @@ import { useNavigate } from 'react-router-dom';
 
 export default function UserProfile() {
   const [user, setUser] = useState(null);
+  const [storedUser, setStoredUser] = useState(null);
   const [stats, setStats] = useState({ distanceKm: 0, elevationM: 0 });
   const [routes, setRoutes] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    /*const storedUser = JSON.parse(localStorage.getItem('user'));
-    if (!storedUser?.id) {
-      navigate('/login');
-      return;
-    }*/
+    let localUser = JSON.parse(localStorage.getItem('user'));
 
-    // Dummy user for testing only
-    let storedUser = JSON.parse(localStorage.getItem('user'));
-    if (!storedUser?.id) {
-      storedUser = { id: 'user123' };
-      localStorage.setItem('user', JSON.stringify(storedUser));
+    // For testing: create dummy if missing
+    if (!localUser?.id) {
+      localUser = { id: 'user123' };
+      localStorage.setItem('user', JSON.stringify(localUser));
     }
+
+    setStoredUser(localUser);
 
     const fetchProfile = async () => {
       try {
-        const res = await fetch(`/api/user/profile?userId=${storedUser.id}`);
+        const res = await fetch(`/api/user/profile?userId=${localUser.id}`);
         const profileData = await res.json();
         if (res.ok) setUser(profileData);
       } catch (err) {
@@ -35,7 +33,7 @@ export default function UserProfile() {
 
     const fetchStats = async () => {
       try {
-        const res = await fetch(`/api/user/stats?userId=${storedUser.id}`);
+        const res = await fetch(`/api/user/stats?userId=${localUser.id}`);
         const data = await res.json();
         if (res.ok) setStats(data);
       } catch (err) {
@@ -45,7 +43,7 @@ export default function UserProfile() {
 
     const fetchRoutes = async () => {
       try {
-        const res = await fetch(`/api/user/routes?userId=${storedUser.id}`);
+        const res = await fetch(`/api/user/routes?userId=${localUser.id}`);
         const data = await res.json();
         if (res.ok) setRoutes(data);
       } catch (err) {
@@ -58,8 +56,12 @@ export default function UserProfile() {
     fetchRoutes();
   }, [navigate]);
 
-  if (!user) {
-    return <div className="p-4 text-center text-gray-600">Please log in to view your profile.</div>;
+  if (!storedUser) {
+    return (
+      <div className="p-4 text-center text-gray-600">
+        Please log in to view your profile.
+      </div>
+    );
   }
 
   return (
@@ -69,13 +71,13 @@ export default function UserProfile() {
 
         <Card className="flex flex-col md:flex-row items-center gap-6 p-6">
           <img
-            src={user.profilePicture || '/default-avatar.png'}
+            src={user?.profilePicture || '/default-avatar.png'}
             alt="Profile"
             className="w-32 h-32 rounded-full object-cover border"
           />
           <div className="flex-1 space-y-2">
-            <p><strong>Name:</strong> {user.name || 'N/A'}</p>
-            <p><strong>Address:</strong> {user.address || 'Not set'}</p>
+            <p><strong>Name:</strong> {user?.name || 'N/A'}</p>
+            <p><strong>Address:</strong> {user?.address || 'Not set'}</p>
             <p><strong>Total Distance:</strong> {stats.distanceKm.toFixed(1)} km</p>
             <p><strong>Total Elevation:</strong> {stats.elevationM.toFixed(0)} m</p>
           </div>
@@ -90,7 +92,6 @@ export default function UserProfile() {
             {routes.map((route, idx) => {
               const start = route.waypoints[0];
               const end = route.waypoints[route.waypoints.length - 1];
-
               return (
                 <li key={route.id || idx} className="border border-gray-200 rounded p-4 bg-white shadow-sm">
                   <p className="font-semibold">{route.routeName || 'Unnamed Route'}</p>
