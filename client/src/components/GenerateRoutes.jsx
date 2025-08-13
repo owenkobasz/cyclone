@@ -12,11 +12,10 @@ import RouteStats from "./RouteStats";
 import { generateRoute } from "../utils/routeApi";
 
 const GenerateRoutes = () => {
-  // Ref for scrolling to results
-  const resultsRef = useRef(null);
   const navigate = useNavigate();
 
   // State management
+  const [location, setLocation] = useState(null);
   const [preferences, setPreferences] = useState({
     startingPoint: '',
     startingPointCoords: null, // Store coordinates from LocationAutocomplete
@@ -34,15 +33,17 @@ const GenerateRoutes = () => {
     unitSystem: 'imperial', // Default to imperial
   });
 
-  const [location, setLocation] = useState(null);
-  const [error, setError] = useState(null);
-  const [cueSheet, setCueSheet] = useState([]);
+  const [routeData, setRouteData] = useState(null);
+  const [stats, setStats] = useState({ distanceKm: null, elevationM: null });
+  const [elevationProfile, setElevationProfile] = useState([]);
+  const [elevationStats, setElevationStats] = useState(null);
   const [instructions, setInstructions] = useState([]); // Store OpenRouteService instructions
   const [unitSystem, setUnitSystem] = useState("imperial");
-  const [stats, setStats] = useState({ distanceKm: null, elevationM: null });
-  const [isGenerating, setIsGenerating] = useState(false);
   const [hasGeneratedRoute, setHasGeneratedRoute] = useState(false);
-  const [routeData, setRouteData] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState(null);
+  const resultsRef = useRef(null);
+  const [cueSheet, setCueSheet] = useState([]); // State for the CueSheet component
 
   const handleGenerateRoute = async () => {
     // Check if we have any form of starting location
@@ -81,11 +82,15 @@ const GenerateRoutes = () => {
       // Set route data and statistics
       setRouteData(data);
       setStats({
-        distanceKm: data.total_length_km || null,
+        distanceKm: data.total_distance_km || data.total_length_km || null,
         distanceFormatted: data.total_length_formatted || null,
-        elevationM: data.total_elevation_gain || null,
+        elevationM: data.elevation_gain_m || data.total_elevation_gain || null,
         totalRideTime: data.total_ride_time || null
       });
+      
+      // Set elevation data
+      setElevationProfile(data.elevation_profile || []);
+      setElevationStats(data.elevation_stats || null);
       
       // Update unit system from preferences
       setUnitSystem(preferences.unitSystem || 'imperial');
@@ -97,7 +102,7 @@ const GenerateRoutes = () => {
       } else {
         const generatedCueSheet = [
           `Start your route`,
-          `Route distance: ${data.total_length_formatted || `${(data.total_length_km || 0).toFixed(2)} km`}`,
+          `Route distance: ${data.total_length_formatted || `${(data.total_distance_km || data.total_length_km || 0).toFixed(2)} km`}`,
           `Arrive at destination`
         ];
         setCueSheet(generatedCueSheet);
@@ -223,7 +228,7 @@ const GenerateRoutes = () => {
         {hasGeneratedRoute && (
           <motion.div
             ref={resultsRef}
-            className="grid lg:grid-cols-2 gap-8"
+            className="grid lg:grid-cols-3 gap-8"
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
@@ -234,6 +239,8 @@ const GenerateRoutes = () => {
                 stats={stats}
                 unitSystem={unitSystem}
                 setUnitSystem={setUnitSystem}
+                elevationProfile={elevationProfile}
+                elevationStats={elevationStats}
               />
               
               {stats.distanceKm && (
