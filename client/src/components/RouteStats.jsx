@@ -1,6 +1,30 @@
 import { motion } from "framer-motion";
 
-export default function RouteStats({ stats, unitSystem, setUnitSystem }) {
+export default function RouteStats({ stats, unitSystem, setUnitSystem, elevationProfile, elevationStats }) {
+    const formatElevation = (meters) => {
+        if (unitSystem === 'imperial') {
+            return (meters * 3.28084).toFixed(0) + ' ft';
+        }
+        return meters.toFixed(0) + ' m';
+    };
+
+    const formatDistance = (km) => {
+        if (unitSystem === 'imperial') {
+            return (km * 0.621371).toFixed(2) + ' mi';
+        }
+        return km.toFixed(2) + ' km';
+    };
+
+    const getDifficultyRating = (elevationGain, distance) => {
+        if (!elevationGain || !distance) return 'Unknown';
+        
+        const ratio = elevationGain / distance; // m/km
+        if (ratio < 20) return 'Easy';
+        if (ratio < 50) return 'Moderate';
+        if (ratio < 100) return 'Challenging';
+        return 'Difficult';
+    };
+
     return (
         <motion.div
             className="relative p-6 bg-n-8/40 backdrop-blur-sm rounded-2xl border border-n-2/20 transition-all duration-300 hover:border-color-1/50 hover:shadow-[0_0_25px_rgba(172,108,255,0.3)] hover:scale-105"
@@ -20,11 +44,10 @@ export default function RouteStats({ stats, unitSystem, setUnitSystem }) {
                     <div className="flex justify-between items-center">
                         <span className="body-2 text-n-3">Distance:</span>
                         <span className="body-1 text-color-1 font-semibold">
-                            {unitSystem === 'imperial'
-                                ? (stats.distanceKm * 0.621371).toFixed(2) + ' mi'
-                                : stats.distanceKm.toFixed(2) + ' km'}
+                            {formatDistance(stats.distanceKm)}
                         </span>
                     </div>
+                    
                     {stats.totalRideTime && (
                         <div className="flex justify-between items-center">
                             <span className="body-2 text-n-3">Ride Time:</span>
@@ -33,12 +56,59 @@ export default function RouteStats({ stats, unitSystem, setUnitSystem }) {
                             </span>
                         </div>
                     )}
+                    
                     <div className="flex justify-between items-center">
                         <span className="body-2 text-n-3">Elevation Gain:</span>
                         <span className="body-1 text-color-1 font-semibold">
-                            {unitSystem === 'imperial'
-                                ? (stats.elevationM * 3.28084).toFixed(0) + ' ft'
-                                : stats.elevationM.toFixed(0) + ' m'}
+                            {formatElevation(stats.elevationM)}
+                        </span>
+                    </div>
+
+                    {/* Enhanced Elevation Information */}
+                    {elevationStats && (
+                        <>
+                            <div className="flex justify-between items-center">
+                                <span className="body-2 text-n-3">Elevation Loss:</span>
+                                <span className="body-1 text-color-1 font-semibold">
+                                    {formatElevation(elevationStats.elevation_loss)}
+                                </span>
+                            </div>
+                            
+                            <div className="flex justify-between items-center">
+                                <span className="body-2 text-n-3">Total Climbing:</span>
+                                <span className="body-1 text-color-1 font-semibold">
+                                    {formatElevation(elevationStats.total_climb)}
+                                </span>
+                            </div>
+                            
+                            <div className="flex justify-between items-center">
+                                <span className="body-2 text-n-3">Min Elevation:</span>
+                                <span className="body-1 text-color-1 font-semibold">
+                                    {formatElevation(elevationStats.min_elevation)}
+                                </span>
+                            </div>
+                            
+                            <div className="flex justify-between items-center">
+                                <span className="body-2 text-n-3">Max Elevation:</span>
+                                <span className="body-1 text-color-1 font-semibold">
+                                    {formatElevation(elevationStats.max_elevation)}
+                                </span>
+                            </div>
+                            
+                            <div className="flex justify-between items-center">
+                                <span className="body-2 text-n-3">Avg Elevation:</span>
+                                <span className="body-1 text-color-1 font-semibold">
+                                    {formatElevation(elevationStats.avg_elevation)}
+                                </span>
+                            </div>
+                        </>
+                    )}
+
+                    {/* Difficulty Rating */}
+                    <div className="flex justify-between items-center">
+                        <span className="body-2 text-n-3">Difficulty:</span>
+                        <span className="body-1 text-color-1 font-semibold">
+                            {getDifficultyRating(stats.elevationM, stats.distanceKm)}
                         </span>
                     </div>
                 </div>

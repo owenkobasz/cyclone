@@ -3,17 +3,20 @@ from fastapi.middleware.cors import CORSMiddleware
 import logging
 import os
 
-from routes.routing import router, set_graph
-from utils.graph_loader import load_graph
+from routes.coordinate_routing import router as coordinate_router
 from utils.logger import setup_app_logging, get_logger
-from utils.config import get_log_level, should_log_to_file, get_log_file, GRAPH_FILE, CORS_ORIGINS
+from utils.config import get_log_level, should_log_to_file, get_log_file, CORS_ORIGINS
 
 # Set up application logging
 log_level = getattr(logging, get_log_level())
 setup_app_logging(level=log_level, log_to_file=should_log_to_file(), log_file=get_log_file())
 logger = get_logger(__name__)
 
-app = FastAPI(title="Cyclone Route API", version="1.0.0")
+app = FastAPI(
+    title="Cyclone Route API", 
+    version="2.0.0",
+    description="Coordinate-based cycling route generation API - no map downloads required!"
+)
 
 # Enable CORS for all origins and methods
 app.add_middleware(
@@ -24,40 +27,91 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load the graph once at startup
-try:
-    logger.info("Starting graph loading...")
-    logger.info(f"Current working directory: {os.getcwd()}")
-    logger.info(f"Files in current directory: {os.listdir('.')}")
-    logger.info(f"Attempting to load graph from: {GRAPH_FILE}")
-    
-    G_PHILLY = load_graph(GRAPH_FILE)
-    logger.info(f"Graph loaded successfully with {len(G_PHILLY.nodes)} nodes and {len(G_PHILLY.edges)} edges")
-    
-    # Set the graph in the router
-    set_graph(G_PHILLY)
-    logger.info("Graph set in router successfully")
-    
-except Exception as e:
-    logger.error(f"Failed to load graph: {e}")
-    logger.error(f"Exception type: {type(e)}")
-    import traceback
-    logger.error(f"Traceback: {traceback.format_exc()}")
-    G_PHILLY = None
-
 # Include routers
-app.include_router(router, prefix="/api", tags=["routing"])
+app.include_router(coordinate_router, prefix="/api", tags=["coordinate-routing"])
 
 @app.get("/")
 async def root():
-    return {"message": "Cyclone Route API", "status": "running"}
+    return {
+        "message": "Cyclone Route API v2.0", 
+        "status": "running",
+        "description": "Coordinate-based routing system - no maps required!",
+        "endpoints": [
+            "/api/generate-coordinate-route",
+            "/api/generate-hybrid-route",
+            "/api/generate-loop-route", 
+            "/api/generate-out-and-back-route",
+            "/api/route-types",
+            "/api/route-optimization-options",
+            "/api/location"
+        ]
+    }
 
 @app.get("/health")
 async def health_check():
-    if G_PHILLY is None:
-        return {"status": "unhealthy", "error": "Graph not loaded"}
     return {
-        "status": "healthy", 
-        "graph_nodes": len(G_PHILLY.nodes), 
-        "graph_edges": len(G_PHILLY.edges)
+        "status": "healthy",
+        "version": "2.0.0",
+        "routing_system": "coordinate-based",
+        "features": [
+            "No map downloads required",
+            "Real-time route generation",
+            "Multiple route types",
+            "Elevation targeting",
+            "Surface preferences"
+        ]
+    }
+
+@app.get("/migration-info")
+async def migration_info():
+    """Information about migrating from the old graph-based system."""
+    return {
+        "migration": {
+            "from": "Graph-based routing (OSMnx + pre-downloaded maps)",
+            "to": "Coordinate-based routing (mathematical algorithms)",
+            "benefits": [
+                "No map downloads required",
+                "Faster route generation",
+                "More flexible preferences",
+                "Better scalability",
+                "Real-time customization"
+            ],
+            "breaking_changes": [
+                "Removed /api/generate-custom-route endpoint",
+                "New route generation parameters",
+                "Updated response format"
+            ]
+        }
     } 
+
+@app.get("/api/location")
+async def get_user_location():
+    """Get user location based on IP address (fallback to Philadelphia)."""
+    try:
+        # For now, return default Philadelphia location
+        # In production, you'd integrate with an IP geolocation service
+        return {
+            "success": True,
+            "location": {
+                "lat": 39.9526,
+                "lon": -75.1652,
+                "city": "Philadelphia",
+                "region": "Pennsylvania",
+                "country": "US",
+                "place": "Philadelphia, Pennsylvania, USA"
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error getting user location: {e}")
+        return {
+            "success": False,
+            "error": "Failed to get location",
+            "location": {
+                "lat": 39.9526,
+                "lon": -75.1652,
+                "city": "Philadelphia",
+                "region": "Pennsylvania",
+                "country": "US",
+                "place": "Philadelphia, Pennsylvania, USA"
+            }
+        } 
