@@ -10,10 +10,17 @@ export default function UserProfile() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem('user'));
+    /*const storedUser = JSON.parse(localStorage.getItem('user'));
     if (!storedUser?.id) {
       navigate('/login');
       return;
+    }*/
+
+    // Dummy user for testing only
+    let storedUser = JSON.parse(localStorage.getItem('user'));
+    if (!storedUser?.id) {
+      storedUser = { id: 'user123' };
+      localStorage.setItem('user', JSON.stringify(storedUser));
     }
 
     const fetchProfile = async () => {

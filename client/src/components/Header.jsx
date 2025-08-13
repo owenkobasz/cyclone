@@ -17,12 +17,31 @@ const Header = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  useEffect(() => {
+  /*useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user'));
     if (storedUser) {
       setUser(storedUser);
     }
-  }, []);
+  }, []);*/
+
+  // Dummy user for testing only
+  useEffect(() => {
+  let storedUser = JSON.parse(localStorage.getItem('user'));
+
+  // Development-only dummy user injection
+  if (!storedUser) {
+    storedUser = {
+      id: 'user123',
+      username: 'devUser',
+      profilePicture: '/default-avatar.png'
+    };
+    localStorage.setItem('user', JSON.stringify(storedUser));
+  }
+
+  if (storedUser) {
+    setUser(storedUser);
+  }
+}, []);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
