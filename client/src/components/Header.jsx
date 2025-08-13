@@ -1,17 +1,38 @@
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { disablePageScroll, enablePageScroll } from 'scroll-lock';
 import { cycloneLogo } from '../constants/index';
 import { navigation } from '../constants';
 import Button from './Button';
 import MenuSvg from '../assets/svg/MenuSvg';
 import { HamburgerMenu } from './design/Header';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuthModal } from '../contexts/AuthModalContext';
 
 const Header = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [openNavigation, setOpenNavigation] = useState(false);
   const { openAuthModal } = useAuthModal();
+  const [user, setUser] = useState(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const storedUser = JSON.parse(localStorage.getItem('user'));
+    if (storedUser) {
+      setUser(storedUser);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const toggleNavigation = () => {
     if (openNavigation) {
@@ -29,6 +50,12 @@ const Header = () => {
 
     enablePageScroll();
     setOpenNavigation(false);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    setUser(null);
+    navigate('/');
   };
 
   return (
@@ -77,6 +104,36 @@ const Header = () => {
           <HamburgerMenu />
         </nav>
 
+        {user ? (
+          <div className="relative ml-auto" ref={dropdownRef}>
+            <img
+              src={user.profilePicture || '/default-avatar.png'}
+              alt="User Avatar"
+              className="w-10 h-10 rounded-full border cursor-pointer hover:opacity-90"
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+            />
+            {dropdownOpen && (
+              <div className="absolute right-0 mt-2 w-40 bg-n-8 border border-n-6 rounded shadow-lg z-50">
+                <button
+                  onClick={() => {
+                    navigate('/profile');
+                    setDropdownOpen(false);
+                  }}
+                  className="block w-full text-left px-4 py-2 text-n-1 hover:bg-n-6/50 transition-colors"
+                >
+                  Profile
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="block w-full text-left px-4 py-2 text-n-1 hover:bg-n-6/50 transition-colors"
+                >
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
         <button
           onClick={() => openAuthModal('signup')}
           className="button hidden mr-8 text-n-1/50 transition-colors hover:text-n-1 lg:block font-code text-sm lg:text-base xl:text-lg "
@@ -86,6 +143,8 @@ const Header = () => {
         <Button className="hidden lg:flex lg:flec text-sm" onClick={() => openAuthModal('login')}>
           Sign in
         </Button>
+        </>
+        )}
 
         <Button
           className="ml-auto lg:hidden"

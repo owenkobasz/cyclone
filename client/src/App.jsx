@@ -7,6 +7,7 @@ import About from './components/About';
 import GenerateRoutes from './components/GenerateRoutes';
 import ErrorBoundary from './components/ErrorBoundary';
 import RouteDisplay from './pages/RouteDisplay';
+import UserProfile from './components/UserProfile';
 import { AuthModalProvider } from './contexts/AuthModalContext';
 
 // Main App Layout Component
@@ -30,6 +31,7 @@ const App = () => {
       <Routes>
         <Route path="/" element={<AppLayout />} />
         <Route path="/routes" element={<RouteDisplay />} />
+        <Route path="/profile" element={<UserProfile />} />
       </Routes>
     </AuthModalProvider>
   );
