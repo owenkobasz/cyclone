@@ -17,8 +17,8 @@ import AuthModal from './components/AuthModal';
 const AppLayout = () => {
   return (
     <ErrorBoundary>
-      <Header />
       <AuthModal/>
+      <Header />
       <div className="pt-[4.75rem] lg:pt-[6.25rem] overflow-hidden">
         <Outlet /> {/* nested routes render here */}
       </div>
