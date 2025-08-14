@@ -32,7 +32,7 @@ function validUsername(username) {
 }
 
 function validEmail(email) {
-    if (email === "" && !email.contains('@')) {
+    if (email === "" && !email.includes('@')) {
         return false;
     }
 
@@ -105,8 +105,6 @@ app.post('/api/login', async (req, res) => {
                             }
                             return res.json({ message: "Succesful login", ok: true });
                         });
-                        return res.json({message:"Succesful login", ok: true});
-                        
                     } else {
                         console.log(`${username} unsuccesfully logged in.`);
                         return res.status(401).json({ message: 'Incorrect password', ok: false });

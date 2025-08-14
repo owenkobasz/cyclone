@@ -21,6 +21,10 @@ export const AuthModalProvider = ({ children }) => {
     setAuthModal({ isOpen: false, type: 'signup' });
   };
 
+  const openLogoutModal = () => {
+    setAuthModal({ isOpen: true, type: 'logout' });
+  };
+
   const switchAuthType = (type) => {
     setAuthModal({ isOpen: true, type });
   };
@@ -31,6 +35,7 @@ export const AuthModalProvider = ({ children }) => {
         authModal,
         openAuthModal,
         closeAuthModal,
+        openLogoutModal,
         switchAuthType,
       }}
     >

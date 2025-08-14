@@ -10,6 +10,7 @@ import RouteDisplay from './pages/RouteDisplay';
 import UserProfile from './components/UserProfile';
 import EditProfile from './components/EditProfile';
 import { AuthModalProvider } from './contexts/AuthModalContext';
+import { AuthProvider } from './contexts/AuthContext';
 
 // Main App Layout Component
 const AppLayout = () => {
@@ -28,14 +29,16 @@ const AppLayout = () => {
 
 const App = () => {
   return (
-    <AuthModalProvider>
-      <Routes>
-        <Route path="/" element={<AppLayout />} />
-        <Route path="/routes" element={<RouteDisplay />} />
-        <Route path="/profile" element={<UserProfile />} />
-        <Route path="/edit-profile" element={<EditProfile />} />
-      </Routes>
-    </AuthModalProvider>
+    <AuthProvider>
+      <AuthModalProvider>
+          <Routes>
+            <Route path="/" element={<AppLayout />} />
+            <Route path="/routes" element={<RouteDisplay />} />
+            <Route path="/profile" element={<UserProfile />} />
+            <Route path="/edit-profile" element={<EditProfile />} />
+          </Routes>
+      </AuthModalProvider>
+    </AuthProvider>
   );
 }
 
