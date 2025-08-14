@@ -136,7 +136,7 @@ export default function UserProfile() {
   };
 
   const handleRouteClick = (route) => {
-    navigate('/#generate-routes', { state: { selectedRoute: route } });
+    navigate('/', { state: { selectedRoute: route } });
   };
 
   if (!storedUser) {
@@ -257,7 +257,7 @@ export default function UserProfile() {
             User Profile
           </h2>
 
-          <Card className="flex flex-col items-center gap-6 p-6 bg-black/90 backdrop-blur-sm border border-n-6 shadow-lg hover:shadow-xl">
+          <Card className="flex flex-col items-center gap-6 p-6 bg-transparent backdrop-blur-sm border border-n-6 shadow-lg hover:shadow-xl">
             <img
               src={user?.profilePicture || '/default-avatar.png'}
               alt="Profile"
@@ -296,7 +296,7 @@ export default function UserProfile() {
                 return (
                   <li
                     key={route.id || idx}
-                    className="border border-n-6 rounded p-4 bg-n-8/80 backdrop-blur-sm shadow-sm transition-all duration-300 hover:bg-n-6/50 hover:scale-[1.01] hover:shadow-md"
+                    className="border border-n-6 rounded p-4 bg-transparent backdrop-blur-sm shadow-sm transition-all duration-300 hover:bg-n-6/50 hover:scale-[1.01] hover:shadow-md"
                     onClick={() => handleRouteClick(route)}
                   >
                     <p className="font-code text-n-1 font-semibold text-base lg:text-lg">

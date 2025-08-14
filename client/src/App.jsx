@@ -34,7 +34,7 @@ const App = () => {
         <Route path="/routes" element={<RouteDisplay />} />
         <Route path="/profile" element={<UserProfile />} />
         <Route path="/edit-profile" element={<EditProfile />} />
-        <Route path="/#generate-routes" element={<GenerateRoutes />} />
+        <Route path="/generate-routes" element={<GenerateRoutes />} />
       </Routes>
     </AuthModalProvider>
   );

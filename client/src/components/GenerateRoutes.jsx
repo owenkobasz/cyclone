@@ -62,24 +62,32 @@ const GenerateRoutes = () => {
 
       // Update states
       setRouteData(transformedRouteData);
-      setStats({
-        distanceKm: transformedRouteData.total_length_km,
-        distanceFormatted: transformedRouteData.total_length_formatted,
-        elevationM: selectedRoute.elevation_gain_m || selectedRoute.elevation || 0,
-        totalRideTime: selectedRoute.total_ride_time || null,
-      });
+      if (state?.stats) {
+        setStats(state.stats);
+      } else {
+        setStats({
+          distanceKm: transformedRouteData.total_length_km,
+          distanceFormatted: transformedRouteData.total_length_formatted,
+          elevationM: selectedRoute.elevation_gain_m || selectedRoute.elevation || 0,
+          totalRideTime: selectedRoute.total_ride_time || null,
+        })
+      };
       setElevationProfile(selectedRoute.elevation_profile || []);
       setElevationStats(selectedRoute.elevation_stats || null);
       setInstructions(selectedRoute.instructions || []);
-      setCueSheet(
-        selectedRoute.instructions?.length > 0
-          ? selectedRoute.instructions
-          : [
+      if (state?.cueSheet?.length) {
+        setCueSheet(state.cueSheet);
+      } else {
+        setCueSheet(
+          selectedRoute.instructions?.length > 0
+            ? selectedRoute.instructions
+            : [
               `Start your route`,
               `Route distance: ${transformedRouteData.total_length_formatted}`,
               `Arrive at destination`,
             ]
-      );
+        );
+      }
       setHasGeneratedRoute(true);
       setUnitSystem(selectedRoute.unitSystem || "imperial");
 
@@ -89,6 +97,11 @@ const GenerateRoutes = () => {
       }
     }
   }, [state]);
+
+  useEffect(() => {
+    document.getElementById("generate-routes")?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
 
   const handleGenerateRoute = async () => {
     const hasLocation = location || preferences.startingPointCoords;
@@ -143,11 +156,10 @@ const GenerateRoutes = () => {
       } else {
         const generatedCueSheet = [
           `Start your route`,
-          `Route distance: ${
-            data.total_length_formatted ||
-            `${(data.total_distance_km || data.total_length_km || 0).toFixed(
-              2
-            )} km`
+          `Route distance: ${data.total_length_formatted ||
+          `${(data.total_distance_km || data.total_length_km || 0).toFixed(
+            2
+          )} km`
           }`,
           `Arrive at destination`,
         ];

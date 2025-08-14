@@ -24,7 +24,7 @@
     "cueSheet": [
       {
         "instruction": "Turn left",
-        "distance": 5
+        "distanceKm": 5
       }
     ],
     "preferences": {
