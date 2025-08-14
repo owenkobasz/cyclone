@@ -13,14 +13,15 @@ export default function UserProfile() {
   const [storedUser, setStoredUser] = useState(null);
   const [stats, setStats] = useState({ distanceKm: 0, elevationM: 0 });
   const [routes, setRoutes] = useState([]);
+  const [routeAddresses, setRouteAddresses] = useState({}); // Store addresses for routes
   const [openNavigation, setOpenNavigation] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { openAuthModal } = useAuthModal();
+  const GEOAPIFY_API_KEY = 'b7a0cb4137164bf5b2717fd3a450ef73';
 
-  // Handle user data and API calls
   useEffect(() => {
     let localUser = JSON.parse(localStorage.getItem('user'));
 
@@ -62,9 +63,58 @@ export default function UserProfile() {
       try {
         const res = await fetch(`http://localhost:8000/api/user/routes?userId=${localUser.id}`);
         const data = await res.json();
-        if (res.ok) setRoutes(data);
+        if (res.ok) {
+          setRoutes(data);
+          // Fetch addresses for each route's waypoints
+          const addresses = {};
+          for (const route of data) {
+            const start = route.waypoints[0];
+            const end = route.waypoints[route.waypoints.length - 1];
+            addresses[route.id] = {
+              start: { address: 'Loading...', error: null },
+              end: { address: 'Loading...', error: null },
+            };
+
+            // Reverse geocode start waypoint
+            try {
+              const startRes = await fetch(
+                `https://api.geoapify.com/v1/geocode/reverse?lat=${start.lat}&lon=${start.lon}&type=street&apiKey=${GEOAPIFY_API_KEY}`
+              );
+              const startData = await startRes.json();
+              if (startData.features && startData.features.length > 0) {
+                addresses[route.id].start.address = startData.features[0].properties.formatted || 'Unknown address';
+              } else {
+                addresses[route.id].start.address = 'No address found';
+                addresses[route.id].start.error = 'No results returned';
+              }
+            } catch (err) {
+              console.error(`Failed to geocode start of route ${route.id}:`, err);
+              addresses[route.id].start.address = 'Error fetching address';
+              addresses[route.id].start.error = err.message;
+            }
+
+            // Reverse geocode end waypoint
+            try {
+              const endRes = await fetch(
+                `https://api.geoapify.com/v1/geocode/reverse?lat=${end.lat}&lon=${end.lon}&type=street&apiKey=${GEOAPIFY_API_KEY}`
+              );
+              const endData = await endRes.json();
+              if (endData.features && endData.features.length > 0) {
+                addresses[route.id].end.address = endData.features[0].properties.formatted || 'Unknown address';
+              } else {
+                addresses[route.id].end.address = 'No address found';
+                addresses[route.id].end.error = 'No results returned';
+              }
+            } catch (err) {
+              console.error(`Failed to geocode end of route ${route.id}:`, err);
+              addresses[route.id].end.address = 'Error fetching address';
+              addresses[route.id].end.error = err.message;
+            }
+          }
+          setRouteAddresses(addresses);
+        }
       } catch (err) {
-        console.error('Failed to load user routes', err);
+        console.error('Failed to load user routes:', err);
       }
     };
 
@@ -221,14 +271,15 @@ export default function UserProfile() {
         </h2>
 
         <Card
-          className="flex flex-col md:flex-row items-center gap-6 p-6 bg-black border border-n-6 shadow-lg transition-all duration-300 hover:shadow-xl"
+          className="flex flex-col items-center gap-6 p-6 bg-black border border-n-6 shadow-lg transition-all duration-300 hover:shadow-xl"
         >
           <img
             src={user?.profilePicture || '/default-avatar.png'}
             alt="Profile"
-            className="w-24 h-24 lg:w-32 lg:h-32 rounded-full object-cover border border-n-6 transition-transform duration-300 hover:scale-105"
+            className="w-12 h-12 lg:w-16 lg:h-16 rounded-full object-cover border border-n-6 cursor-pointer hover:opacity-90"
+            onClick={() => navigate('/edit-profile')}
           />
-          <div className="flex-1 space-y-3 bg-black">
+          <div className="flex-1 space-y-3 bg-black text-center">
             <p className="font-code text-n-1 text-base lg:text-lg">
               <strong>Name:</strong> {user?.name || 'N/A'}
             </p>
@@ -255,8 +306,8 @@ export default function UserProfile() {
         ) : (
           <ul className="space-y-4">
             {routes.map((route, idx) => {
-              const start = route.waypoints[0];
-              const end = route.waypoints[route.waypoints.length - 1];
+              const startAddress = routeAddresses[route.id]?.start?.address || 'Loading...';
+              const endAddress = routeAddresses[route.id]?.end?.address || 'Loading...';
               return (
                 <li
                   key={route.id || idx}
@@ -266,10 +317,10 @@ export default function UserProfile() {
                     {route.routeName || 'Unnamed Route'}
                   </p>
                   <p className="font-code text-n-1/50 text-sm lg:text-base">
-                    From: {start.lat.toFixed(4)}, {start.lon.toFixed(4)}
+                    From: {startAddress}
                   </p>
                   <p className="font-code text-n-1/50 text-sm lg:text-base">
-                    To: {end.lat.toFixed(4)}, {end.lon.toFixed(4)}
+                    To: {endAddress}
                   </p>
                 </li>
               );
