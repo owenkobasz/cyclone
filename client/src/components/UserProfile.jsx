@@ -136,7 +136,12 @@ export default function UserProfile() {
   };
 
   const handleRouteClick = (route) => {
-    navigate('/', { state: { selectedRoute: route } });
+    navigate('/', { state: { selectedRoute: route, stats: {
+        distanceKm: route.total_distance_km || route.distance || 0,
+        elevationM: route.elevation_gain_m || route.elevation || 0,
+        totalRideTime: route.total_ride_time || null
+      },
+      cueSheet: route.instructions || [] } });
   };
 
   if (!storedUser) {

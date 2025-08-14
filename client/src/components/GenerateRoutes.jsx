@@ -45,31 +45,30 @@ const GenerateRoutes = () => {
   const resultsRef = useRef(null);
   const [cueSheet, setCueSheet] = useState([]);
 
-  // Handle selectedRoute from UserProfile
   useEffect(() => {
     const selectedRoute = state?.selectedRoute;
     if (selectedRoute) {
       // Transform selectedRoute to match MapComponent's routeData format
       const transformedRouteData = {
         route: selectedRoute.waypoints || [], // Assuming waypoints is [{ lat, lon }, ...]
-        total_length_km: selectedRoute.total_distance_km || selectedRoute.distance || 0,
+        total_length_km: selectedRoute.rawStats.distanceKm || 0,
         total_length_formatted:
           selectedRoute.total_length_formatted ||
-          (selectedRoute.distance
-            ? `${selectedRoute.distance.toFixed(1)} km`
-            : `${(selectedRoute.total_distance_km || 0).toFixed(1)} km`),
+          (selectedRoute.rawStats.distanceKm
+            ? `${selectedRoute.rawStats.distanceKm.toFixed(1)} km`
+            : `${(selectedRoute.rawStats.distanceKm || 0).toFixed(1)} km`),
       };
 
       // Update states
       setRouteData(transformedRouteData);
-      if (state?.stats) {
-        setStats(state.stats);
+      if (state?.rawStats) {
+        setStats(state.rawStats);
       } else {
         setStats({
           distanceKm: transformedRouteData.total_length_km,
           distanceFormatted: transformedRouteData.total_length_formatted,
-          elevationM: selectedRoute.elevation_gain_m || selectedRoute.elevation || 0,
-          totalRideTime: selectedRoute.total_ride_time || null,
+          elevationM: selectedRoute.rawStats.elevationM || 0,
+          totalRideTime: selectedRoute.rawStats.totalRideTimeMin || null,
         })
       };
       setElevationProfile(selectedRoute.elevation_profile || []);
