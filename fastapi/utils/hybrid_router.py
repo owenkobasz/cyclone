@@ -2,6 +2,7 @@ import math
 import random
 import asyncio
 import aiohttp
+import os
 from typing import List, Dict, Tuple, Optional, Set
 from dataclasses import dataclass
 from .logger import get_logger
@@ -55,7 +56,7 @@ class HybridRouter:
         
         # GraphHopper configuration
         self.graphhopper_config = GraphHopperConfig(
-            api_key="7bdf8d05-32bc-430a-9d48-0770c6b3f0ab",  # Real API key
+            api_key=os.getenv("GRAPHHOPPER_API_KEY", "demo"),  # Get from environment variable
             vehicle="bike",
             elevation=True,
             calc_points=True

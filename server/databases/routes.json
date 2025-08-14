@@ -1,0 +1,67 @@
+[
+  {
+    "id": 1624567890123,
+    "userId": "user123",
+    "routeName": "Default Route",
+    "waypoints": [
+      {
+        "lat": 28.06584562155369,
+        "lon": -82.42076513815508
+      },
+      {
+        "lat": 28.06575554172329,
+        "lon": -82.41467693599208
+      },
+      {
+        "lat": 28.059729563629478,
+        "lon": -82.41230240547259
+      }
+    ],
+    "rawStats": {
+      "distanceKm": 20,
+      "elevationM": 300
+    },
+    "cueSheet": [
+      {
+        "instruction": "Turn left",
+        "distance": 5
+      }
+    ],
+    "preferences": {
+      "startingPoint": [
+        39.95,
+        -75.16
+      ],
+      "distanceTarget": 20,
+      "elevationTarget": 1000
+    },
+    "createdAt": "2025-06-24T22:11:00.000Z"
+  },
+  {
+    "id": 1753222104832,
+    "userId": "user",
+    "routeName": "Florida Route",
+    "waypoints": [
+      {
+        "lat": 28.0575058,
+        "lon": -82.4344862
+      },
+      {
+        "lat": 28.0554327,
+        "lon": -82.4049859
+      }
+    ],
+    "rawStats": {
+      "distanceKm": 3.28260884538871,
+      "elevationM": 0
+    },
+    "cueSheet": [],
+    "preferences": {
+      "startingPoint": "2200 E Fowler Ave, Tampa, FL 33612",
+      "distanceTarget": 20,
+      "elevationTarget": 1000,
+      "endingPoint": "12499 USF Bull Run Drive, Tampa, FL 33617"
+    },
+    "createdAt": "2025-07-22T22:08:24.832Z"
+  }
+]

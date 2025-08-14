@@ -16,6 +16,10 @@ GRAPH_FILE = os.getenv("GRAPH_FILE", "philly_bike.graphml")
 # CORS configuration
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
 
+# GraphHopper API configuration
+GRAPHHOPPER_API_KEY = os.getenv("GRAPHHOPPER_API_KEY")
+GRAPHHOPPER_BASE_URL = os.getenv("GRAPHHOPPER_BASE_URL", "https://graphhopper.com/api/1")
+
 def get_log_level() -> str:
     """Get the configured log level."""
     valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
@@ -29,4 +33,12 @@ def should_log_to_file() -> bool:
 
 def get_log_file() -> str:
     """Get the log file path."""
-    return LOG_FILE 
+    return LOG_FILE
+
+def get_graphhopper_api_key() -> Optional[str]:
+    """Get the GraphHopper API key from environment variables."""
+    return GRAPHHOPPER_API_KEY
+
+def get_graphhopper_base_url() -> str:
+    """Get the GraphHopper base URL from environment variables."""
+    return GRAPHHOPPER_BASE_URL 

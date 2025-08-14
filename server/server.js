@@ -9,6 +9,7 @@ const port = 3000;
 const dbUsers = require('./dbUsers.js'); // import users database
 const bcrypt = require('bcrypt');
 const session = require(`express-session`);
+const routes = require('./routes/routes');
 const SQLiteStore = require('connect-sqlite3')(session);
 
 
@@ -66,6 +67,7 @@ app.use(session({
 }));
 
 // post and gets
+app.use('/api', routes);
 
 // this method does logging in and registering
 app.post('/api/login', async (req, res) => {
