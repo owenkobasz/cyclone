@@ -1,38 +1,55 @@
+"""
+Hybrid router that combines mathematical distance calculation with GraphHopper road routing.
+
+This router:
+1. Uses the proven distance calculation logic from coordinate_router
+2. Generates mathematical waypoints for excellent distance accuracy
+3. Uses GraphHopper to create smooth, bikeable routes between waypoints
+4. Maintains distance accuracy while creating fluid, realistic cycling routes
+"""
+
 import math
 import random
 import asyncio
 import aiohttp
 import os
-from typing import List, Dict, Tuple, Optional, Set
+from typing import List, Dict, Tuple, Optional
 from dataclasses import dataclass
+
 from .logger import get_logger
-from .models import RouteType, SurfaceType
+from .models import RouteType
 from .graphhopper_client import GraphHopperClient, GraphHopperConfig, RoutePoint
 
-logger = get_logger(__name__)
+# =============================================================================
+# DATA MODELS
+# =============================================================================
 
 @dataclass
 class HybridRoutePreferences:
+    """Preferences for hybrid route generation."""
+    
+    # Location
     start_lat: float
     start_lon: float
+    
+    # Route specifications
     target_distance: float
     route_type: RouteType = RouteType.LOOP
+    
+    # Preferences
     prefer_bike_lanes: bool = False
     prefer_unpaved: bool = False
     target_elevation_gain: Optional[float] = None
     max_elevation_gain: Optional[float] = None
     avoid_highways: bool = True
+    
+    # Route generation parameters
     max_segment_length: float = 5.0  # km
     min_segment_length: float = 0.5  # km
 
-@dataclass
-class RoadSegment:
-    start: Tuple[float, float]
-    end: Tuple[float, float]
-    distance: float
-    road_type: str
-    bike_friendly: bool
-    surface_type: str
+# =============================================================================
+# HYBRID ROUTER CLASS
+# =============================================================================
 
 class HybridRouter:
     """
@@ -56,7 +73,7 @@ class HybridRouter:
         
         # GraphHopper configuration
         self.graphhopper_config = GraphHopperConfig(
-            api_key=os.getenv("GRAPHHOPPER_API_KEY", "demo"),  # Get from environment variable
+            api_key=os.getenv("GRAPHHOPPER_API_KEY", "demo"),
             vehicle="bike",
             elevation=True,
             calc_points=True
@@ -80,6 +97,10 @@ class HybridRouter:
         if self.graphhopper_client:
             await self.graphhopper_client.__aexit__(exc_type, exc_val, exc_tb)
     
+    # =============================================================================
+    # MAIN ROUTE GENERATION
+    # =============================================================================
+    
     async def generate_loop_route(self, preferences: HybridRoutePreferences) -> Dict:
         """
         Generate a loop route that follows actual roads using GraphHopper.
@@ -102,13 +123,20 @@ class HybridRouter:
             
             self.logger.info(f"Generated {len(math_waypoints)} mathematical waypoints")
             
-            # Step 2: Convert mathematical waypoints to road-following waypoints using GraphHopper
-            self.logger.info("Step 2: Converting to road-following waypoints using GraphHopper...")
-            road_waypoints = await self._convert_to_road_waypoints(math_waypoints, preferences)
-            
-            if not road_waypoints:
-                self.logger.warning("Failed to convert to road waypoints, falling back to mathematical")
+            # Step 2: Try to convert mathematical waypoints to road-following waypoints using GraphHopper
+            self.logger.info("Step 2: Attempting to convert to road-following waypoints using GraphHopper...")
+            try:
+                road_waypoints = await self._convert_to_road_waypoints(math_waypoints, preferences)
+                routing_method = "hybrid_graphhopper_routing"
+                self.logger.info("Successfully generated GraphHopper route")
+            except Exception as e:
+                self.logger.warning(f"GraphHopper routing failed: {e}")
+                self.logger.info("Falling back to coordinate-based routing...")
+                
+                # TODO: create a better fall back than using mathematical waypoints directly
                 road_waypoints = [RoutePoint(lat, lon) for lat, lon in math_waypoints]
+                routing_method = "coordinate_based_fallback"
+                self.logger.info("Using coordinate-based routing fallback")
             
             # Step 3: Calculate final route statistics
             self.logger.info("Step 3: Calculating final route statistics...")
@@ -142,12 +170,16 @@ class HybridRouter:
                 "waypoints_count": len(road_waypoints),
                 "route_type": "loop",
                 "success": True,
-                "routing_method": "hybrid_graphhopper_routing"
+                "routing_method": routing_method
             }
             
         except Exception as e:
             self.logger.error(f"Hybrid loop route generation failed: {e}", exc_info=True)
             raise
+    
+    # =============================================================================
+    # MATHEMATICAL WAYPOINT GENERATION
+    # =============================================================================
     
     async def _generate_mathematical_waypoints(self, preferences: HybridRoutePreferences) -> List[Tuple[float, float]]:
         """
@@ -279,6 +311,10 @@ class HybridRouter:
         self.logger.warning("  No valid mathematical candidates generated")
         return None
     
+    # =============================================================================
+    # GRAPHHOPPER INTEGRATION
+    # =============================================================================
+    
     async def _convert_to_road_waypoints(self, math_waypoints: List[Tuple[float, float]], 
                                        preferences: HybridRoutePreferences) -> List[RoutePoint]:
         """
@@ -357,6 +393,10 @@ class HybridRouter:
         # This should never be reached due to the exception above
         raise Exception("Unexpected error in GraphHopper routing")
     
+    # =============================================================================
+    # UTILITY FUNCTIONS
+    # =============================================================================
+    
     def _move_coordinate(self, lat: float, lon: float, angle: float, distance_km: float) -> Tuple[float, float]:
         """Move a coordinate by a given distance and angle (inherited from coordinate_router)."""
         self.logger.debug(f"    Moving coordinate ({lat:.6f}, {lon:.6f}) by {distance_km:.2f}km at angle {math.degrees(angle):.1f}°")
@@ -383,7 +423,7 @@ class HybridRouter:
         new_lat = math.degrees(new_lat_rad)
         new_lon = math.degrees(new_lon_rad)
         
-        self.logger.debug(f"    New coordinate: ({new_lat:.6f}, {new_lon:.6f})")
+        self.logger.debug(f"    New coordinate: ({new_lat:.6f}, {new_lat:.6f})")
         
         return new_lat, new_lon
     

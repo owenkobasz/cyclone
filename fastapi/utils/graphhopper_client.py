@@ -1,14 +1,28 @@
+"""
+GraphHopper API client for generating bikeable routes.
+
+This client:
+1. Takes mathematical waypoints from our hybrid router
+2. Generates smooth, bikeable routes between them using GraphHopper
+3. Maintains the excellent distance accuracy from our mathematical logic
+4. Creates fluid, realistic cycling routes
+"""
+
 import aiohttp
 import asyncio
 from typing import List, Dict, Tuple, Optional
 from dataclasses import dataclass
+
 from .logger import get_logger
 
-logger = get_logger(__name__)
+# =============================================================================
+# DATA MODELS
+# =============================================================================
 
 @dataclass
 class GraphHopperConfig:
     """Configuration for GraphHopper routing."""
+    
     api_key: str = "demo"  # Default to demo key
     base_url: str = "https://graphhopper.com/api/1"
     vehicle: str = "bike"  # Default to bike routing
@@ -27,20 +41,16 @@ class GraphHopperConfig:
 @dataclass
 class RoutePoint:
     """A point in a route with coordinates and metadata."""
+    
     lat: float
     lon: float
     elevation: Optional[float] = None
     time: Optional[int] = None
     distance: Optional[float] = None
 
-@dataclass
-class RouteSegment:
-    """A segment of a route between two points."""
-    start: RoutePoint
-    end: RoutePoint
-    distance: float
-    time: int
-    instructions: List[str] = None
+# =============================================================================
+# GRAPHHOPPER CLIENT CLASS
+# =============================================================================
 
 class GraphHopperClient:
     """
@@ -58,8 +68,8 @@ class GraphHopperClient:
         self.session: Optional[aiohttp.ClientSession] = None
         self.logger = get_logger(__name__)
         
-        # Rate limiting
-        self.max_requests_per_minute = 100
+        # Rate limiting - be more conservative to avoid hitting limits
+        self.max_requests_per_minute = 30  # Reduced from 100 to be safer
         self.request_times = []
         
     async def __aenter__(self):
@@ -71,6 +81,10 @@ class GraphHopperClient:
         """Async context manager exit."""
         if self.session:
             await self.session.close()
+    
+    # =============================================================================
+    # MAIN ROUTING METHODS
+    # =============================================================================
     
     async def route_between_waypoints(self, waypoints: List[Tuple[float, float]], 
                                     preferences: Dict) -> List[RoutePoint]:
@@ -139,6 +153,10 @@ class GraphHopperClient:
             # Fallback to original waypoints
             return [RoutePoint(lat, lon) for lat, lon in waypoints]
     
+    # =============================================================================
+    # CORE ROUTING LOGIC
+    # =============================================================================
+    
     async def _route_segment(self, start: Tuple[float, float], 
                             end: Tuple[float, float], 
                             preferences: Dict) -> Optional[List[RoutePoint]]:
@@ -156,6 +174,22 @@ class GraphHopperClient:
                 if response.status == 200:
                     data = await response.json()
                     return self._parse_route_response(data)
+                elif response.status == 429:
+                    # Rate limit error - wait longer and retry once
+                    error_text = await response.text()
+                    self.logger.warning(f"GraphHopper rate limit hit: {error_text}")
+                    
+                    # Wait 5 seconds and try one more time
+                    await asyncio.sleep(5.0)
+                    await self._check_rate_limit()
+                    
+                    async with self.session.get(url, params=params) as retry_response:
+                        if retry_response.status == 200:
+                            data = await retry_response.json()
+                            return self._parse_route_response(data)
+                        else:
+                            self.logger.error(f"GraphHopper retry failed: {retry_response.status}")
+                            return None
                 else:
                     error_text = await response.text()
                     self.logger.warning(f"GraphHopper API error {response.status}: {error_text}")
@@ -192,10 +226,11 @@ class GraphHopperClient:
             params["bike_network"] = "true"
             params["bike_network_type"] = "mtb"
         
-        # Note: snap_prevention parameter removed due to API compatibility issues
-        # Will implement highway avoidance through other means in future versions
-        
         return params
+    
+    # =============================================================================
+    # RESPONSE PARSING
+    # =============================================================================
     
     def _parse_route_response(self, data: Dict) -> List[RoutePoint]:
         """Parse GraphHopper route response into RoutePoint objects."""
@@ -305,6 +340,10 @@ class GraphHopperClient:
             self.logger.error(f"Response data: {data}")
             return []
     
+    # =============================================================================
+    # ELEVATION CALCULATIONS
+    # =============================================================================
+    
     async def get_elevation_profile(self, route_points: List[RoutePoint]) -> List[Dict[str, float]]:
         """Extract elevation profile from route points."""
         elevation_profile = []
@@ -395,6 +434,10 @@ class GraphHopperClient:
             "total_climb": round(total_climb, 1)
         }
     
+    # =============================================================================
+    # RATE LIMITING AND UTILITIES
+    # =============================================================================
+    
     async def _check_rate_limit(self):
         """Check and enforce rate limiting."""
         now = asyncio.get_event_loop().time()
@@ -412,6 +455,12 @@ class GraphHopperClient:
         
         # Add current request time
         self.request_times.append(now)
+        
+        # Add extra delay between requests to be extra safe
+        if len(self.request_times) > 1:
+            time_since_last = now - self.request_times[-2]
+            if time_since_last < 2.0:  # At least 2 seconds between requests
+                await asyncio.sleep(2.0 - time_since_last)
     
     def _calculate_segment_distance(self, points: List[RoutePoint]) -> float:
         """Calculate total distance of a route segment."""

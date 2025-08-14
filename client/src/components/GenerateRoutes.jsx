@@ -66,14 +66,11 @@ const GenerateRoutes = () => {
     setError(null);
 
     try {
-      // Prepare preferences for route generation
+      // Update coordinates from location or user input
       const routePreferences = {
         ...preferences,
-        startLat: preferences.startingPointCoords?.lat || location?.lat,
-        startLon: preferences.startingPointCoords?.lng || location?.lng,
-        endLat: preferences.endingPointCoords?.lat,
-        endLon: preferences.endingPointCoords?.lng,
-        location: location
+        startingPointCoords: preferences.startingPointCoords || (location ? { lat: location.lat, lng: location.lng } : null),
+        endingPointCoords: preferences.endingPointCoords || null,
       };
 
       // Generate route using the API
@@ -82,10 +79,10 @@ const GenerateRoutes = () => {
       // Set route data and statistics
       setRouteData(data);
       setStats({
-        distanceKm: data.total_distance_km || data.total_length_km || null,
-        distanceFormatted: data.total_length_formatted || null,
-        elevationM: data.elevation_gain_m || data.total_elevation_gain || null,
-        totalRideTime: data.total_ride_time || null
+        distanceKm: data.total_distance_km || null,
+        distanceFormatted: `${data.total_distance_km?.toFixed(1)} km`,
+        elevationM: data.elevation_gain_m || null,
+        totalRideTime: data.estimated_duration_minutes || null
       });
       
       // Set elevation data
@@ -102,7 +99,7 @@ const GenerateRoutes = () => {
       } else {
         const generatedCueSheet = [
           `Start your route`,
-          `Route distance: ${data.total_length_formatted || `${(data.total_distance_km || data.total_length_km || 0).toFixed(2)} km`}`,
+          `Route distance: ${data.total_distance_km?.toFixed(1)} km`,
           `Arrive at destination`
         ];
         setCueSheet(generatedCueSheet);

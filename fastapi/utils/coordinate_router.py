@@ -58,7 +58,7 @@ class CoordinateRouter:
             
             # Generate route waypoints
             self.logger.info("Generating loop waypoints...")
-            waypoints = await self._generate_loop_waypoints(start_coord, preferences)
+            waypoints = await self.generate_loop_waypoints(start_coord, preferences)
             
             if not waypoints:
                 raise ValueError("Could not generate valid route waypoints")
@@ -94,7 +94,7 @@ class CoordinateRouter:
             self.logger.error(f"Loop route generation failed: {e}", exc_info=True)
             raise
     
-    async def _generate_loop_waypoints(self, start: Coordinate, preferences: RoutePreferences) -> List[Coordinate]:
+    async def generate_loop_waypoints(self, start: Coordinate, preferences: RoutePreferences) -> List[Coordinate]:
         """Generate waypoints for a loop route."""
         self.logger.info("=== GENERATING LOOP WAYPOINTS ===")
         waypoints = [start]
@@ -123,11 +123,7 @@ class CoordinateRouter:
             self.logger.info(f"Remaining to target: {preferences.target_distance - current_distance:.2f}km")
             
             # Generate next waypoint
-            next_coord = self._generate_next_waypoint(
-                current_coord, 
-                preferences.target_distance - current_distance,
-                preferences
-            )
+            next_coord = self.generate_next_waypoint(current_coord, preferences.target_distance - current_distance, preferences)
             
             if not next_coord:
                 self.logger.warning("Failed to generate next waypoint, stopping")
@@ -168,7 +164,7 @@ class CoordinateRouter:
         self.logger.info(f"=== LOOP WAYPOINTS COMPLETE: {len(waypoints)} waypoints ===")
         return waypoints
     
-    def _generate_next_waypoint(self, current: Coordinate, remaining_distance: float, 
+    def generate_next_waypoint(self, current: Coordinate, remaining_distance: float,
                                preferences: RoutePreferences) -> Optional[Coordinate]:
         """Generate the next waypoint based on preferences."""
         self.logger.info(f"  Generating next waypoint from ({current.lat:.6f}, {current.lon:.6f})")
