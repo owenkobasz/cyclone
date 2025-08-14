@@ -2,6 +2,12 @@ import { createContext, useContext, useState } from 'react';
 
 const AuthModalContext = createContext();
 
+const MODAL_TYPES = {
+  SIGNUP: 'signup',
+  LOGIN: 'login',
+  LOGOUT: 'logout',
+};
+
 export const useAuthModal = () => {
   const context = useContext(AuthModalContext);
   if (!context) {
@@ -11,18 +17,17 @@ export const useAuthModal = () => {
 };
 
 export const AuthModalProvider = ({ children }) => {
-  const [authModal, setAuthModal] = useState({ isOpen: false, type: 'signup' });
+  const [authModal, setAuthModal] = useState({
+    isOpen: false,
+    type: MODAL_TYPES.SIGNUP,
+  });
 
   const openAuthModal = (type) => {
     setAuthModal({ isOpen: true, type });
   };
 
   const closeAuthModal = () => {
-    setAuthModal({ isOpen: false, type: 'signup' });
-  };
-
-  const switchAuthType = (type) => {
-    setAuthModal({ isOpen: true, type });
+    setAuthModal(prev => ({ ...prev, isOpen: false }));
   };
 
   return (
@@ -31,7 +36,6 @@ export const AuthModalProvider = ({ children }) => {
         authModal,
         openAuthModal,
         closeAuthModal,
-        switchAuthType,
       }}
     >
       {children}

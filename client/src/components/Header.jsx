@@ -6,23 +6,17 @@ import Button from './Button';
 import MenuSvg from '../assets/svg/MenuSvg';
 import { HamburgerMenu } from './design/Header';
 import { useState, useEffect, useRef } from 'react';
-import { useAuthModal } from '../contexts/AuthModalContext';
+import { useAuthModal} from '../contexts/AuthModalContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [openNavigation, setOpenNavigation] = useState(false);
   const { openAuthModal } = useAuthModal();
-  const [user, setUser] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
-
-  useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem('user'));
-    if (storedUser) {
-      setUser(storedUser);
-    }
-  }, []);
+  const {user, logout} = useAuth();
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -50,12 +44,6 @@ const Header = () => {
 
     enablePageScroll();
     setOpenNavigation(false);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    setUser(null);
-    navigate('/');
   };
 
   return (
@@ -100,6 +88,8 @@ const Header = () => {
           <HamburgerMenu />
         </nav>
 
+        
+
         {user ? (
           <div className="relative ml-auto" ref={dropdownRef}>
             <img
@@ -129,16 +119,23 @@ const Header = () => {
                   Edit Profile
                 </button>
                 <button
-                  onClick={handleLogout}
+                  onClick={async () => {
+                    navigate('/');
+                    await openAuthModal("logout");
+                    setDropdownOpen(false);
+                  }}
                   className="block w-full text-left px-4 py-2 text-n-1 hover:bg-n-6/50 transition-colors"
-                >
+                  >
                   Logout
-                </button>
+                  </button>
+
               </div>
             )}
           </div>
         ) : (
           <>
+          {!user && 
+            <>
             <button
               onClick={() => openAuthModal('signup')}
               className="button hidden mr-8 text-n-1/50 transition-colors hover:text-n-1 lg:block font-code text-sm lg:text-base xl:text-lg "
@@ -148,8 +145,12 @@ const Header = () => {
             <Button className="hidden lg:flex lg:flec text-sm" onClick={() => openAuthModal('login')}>
               Sign in
             </Button>
+            </> 
+            }
+          
           </>
         )}
+        
 
         <Button
           className="ml-auto lg:hidden"

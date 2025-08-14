@@ -5,15 +5,15 @@ const sqlite3 = require('sqlite3').verbose();
 const { generateRoute } = require('./api_router.js');
 const { getLocationFromIP, getClientIP } = require('./utils/geolocation.js');
 const app = express();
-const port = 8000;
+const port = process.env.PORT || 3000; // work with docker?
 const dbUsers = require('./dbUsers.js'); // import users database
 const bcrypt = require('bcrypt');
 const session = require(`express-session`);
+const routes = require('./routes/routes');
+const SQLiteStore = require('connect-sqlite3')(session);
 
-//TODO: add session handling
-//TODO: add password requirements
-//TODO: move hosting over to raspberry pi
 
+// fix to work with Mandy's changesv cf cv
 
 // helper functions
 function validPassword(password) {
@@ -32,29 +32,37 @@ function validUsername(username) {
     return true;
 }
 
+// Enable CORS for all routes
+app.use(cors({
+  origin: true,  // works with docker
+  credentials: true
+}));
+
 // allow json parsing
 app.use(express.json());
 
-// Enable CORS for all routes
-app.use(cors({
-    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],  // frontend origins
-    credentials: true                // allow cookies to be sent
-}));
-
 // Set up sessions
 app.use(session({
-  secret: 'cycloneisagreatapplicationandeveryonelovesitsomuch',  // change this to something secure!
+  store: new SQLiteStore({
+    db: 'sessions.db', 
+    dir: './databases'     
+  }),
+  secret: 'cycloneisagreatapplicationandeveryonelovesitsomuch',
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+    secure: false,    
+    httpOnly: true,   
+    sameSite: 'lax'   
+  }
 }));
 
 // post and gets
+app.use('/api', routes);
 
 // this method does logging in and registering
 app.post('/api/login', async (req, res) => {
-
-    // encryption stuff
-    const saltRounds = 10;
 
     // destructure request
     const {username, password} = req.body;
@@ -83,8 +91,14 @@ app.post('/api/login', async (req, res) => {
                     if(match) {
                         console.log(`${username} succesfully logged in.`);
                         req.session.user = { username }; // save user info in session
-                        return res.json({message:"Succesful login", ok: true});
-                        
+    
+                        req.session.save(err => {
+                            if (err) {
+                                console.error('Session save error:', err);
+                                return res.status(500).json({ error: 'Could not save session' });
+                            }
+                            return res.json({ message: "Succesful login", ok: true });
+                        });
                     } else {
                         console.log(`${username} unsuccesfully logged in.`);
                         return res.status(401).json({ message: 'Incorrect password', ok: false });
@@ -108,8 +122,8 @@ app.post('/api/register', async (req, res) => {
     const saltRounds = 10;
 
     // destructure request
-    const {username, password} = req.body;
-    console.log(username);
+    const {username, password, passwordConf} = req.body;
+    console.log(`{username}`);
 
     // handle registration / login
     dbUsers.get(
@@ -134,6 +148,10 @@ app.post('/api/register', async (req, res) => {
                     return res.status(401).json({ message: 'Invalid username, must be non-empty', ok: false});
                 }
 
+                if (password != passwordConf) {
+                    return res.status(401).json({ message: 'Password and confirmation must match.', ok: false});
+                }
+
 
 
                 // store user into table
@@ -154,7 +172,12 @@ app.post('/api/register', async (req, res) => {
                             console.error(err);
                             return res.status(500).json({ message: 'Database issue preventing registration', ok: false });
                         }
-                        return res.json({ message: 'User registered and logged in!', ok: true });
+
+                        // let user know they have succesfully registered
+                        return res.json({
+                            message: 'User registered successfully! Please log in.',
+                            ok: true
+                        });
                     }
 
                     )
@@ -164,20 +187,28 @@ app.post('/api/register', async (req, res) => {
     );
 });
 
+
 // check if user is logged in with this method
 app.get('/api/status', (req, res) => {
+  console.log('Session user:', req.session.user);
   if (req.session.user) {
-    res.json({ loggedin: true, username: req.session.user.username });
+    res.json({ loggedIn: true, username: req.session.user.username });
   } else {
-    res.json({ loggedin: false });
+    res.json({ loggedIn: false });
   }
 });
 
 // logging out
 app.post('/api/logout', (req, res) => {
-  req.session.destroy();
-  console.log("Logged out!");
-  return res.json({ message: "Logged out successfully" });
+  req.session.destroy(err => {
+    if (err) {
+      console.error('Error destroying session:', err);
+      return res.status(500).json({ok: false, message: 'Logout failed' });
+    }
+    res.clearCookie('connect.sid'); // Clear the session cookie on client
+    console.log("Logged out!");
+    return res.json({ ok: true, message: "Logged out successfully" });
+  });
 });
 
 // Get user location based on IP
