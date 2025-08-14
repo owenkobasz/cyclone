@@ -14,14 +14,14 @@ const LoginComponent = () => {
     const [loggedin, setLoggedin] = useState(false);
     const [button, setButton] = useState("");
 
-        // update login button based on login state
-        useEffect(() => {
-            fetch('http://localhost:3000/api/status', { credentials: 'include' })
-                .then(res => res.json())
-                .then(data => {
-                setLoggedin(data.loggedIn);
-                });
-        }, []);
+    // update login button based on login state
+    useEffect(() => {
+        fetch('http://localhost:3000/api/status', { credentials: 'include' })
+            .then(res => res.json())
+            .then(data => {
+            setLoggedin(data.loggedIn);
+            });
+    }, []);
 
     useEffect(() => {
         setButton(loggedin ? "Logout" : "Login");

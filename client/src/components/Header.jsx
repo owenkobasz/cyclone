@@ -7,40 +7,16 @@ import MenuSvg from '../assets/svg/MenuSvg';
 import { HamburgerMenu } from './design/Header';
 import { useState, useEffect, useRef } from 'react';
 import { useAuthModal} from '../contexts/AuthModalContext';
+import { useAuth } from '../contexts/AuthContext';
 
-const Header = (type) => {
+const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [openNavigation, setOpenNavigation] = useState(false);
   const { openAuthModal } = useAuthModal();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
-
-  /*useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem('user'));
-    if (storedUser) {
-      setUser(storedUser);
-    }
-  }, []);*/
-
-  // Dummy user for testing only
-  useEffect(() => {
-  let storedUser = JSON.parse(localStorage.getItem('user'));
-
-  // Development-only dummy user injection
-  if (!storedUser) {
-    storedUser = {
-      id: 'user123',
-      username: 'devUser',
-      profilePicture: '/default-avatar.png'
-    };
-    localStorage.setItem('user', JSON.stringify(storedUser));
-  }
-
-  if (storedUser) {
-    setUser(storedUser);
-  }
-}, []);
+  const {user, logout} = useAuth();
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -114,7 +90,7 @@ const Header = (type) => {
 
         
 
-        {type == "loggedin" ? (
+        {user ? (
           <div className="relative ml-auto" ref={dropdownRef}>
             <img
               src={user.profilePicture || '/default-avatar.png'}
@@ -143,17 +119,22 @@ const Header = (type) => {
                   Edit Profile
                 </button>
                 <button
-                  onClick={handleLogout}
+                  onClick={async () => {
+                    navigate('/');
+                    await openAuthModal("logout");
+                    setDropdownOpen(false);
+                  }}
                   className="block w-full text-left px-4 py-2 text-n-1 hover:bg-n-6/50 transition-colors"
-                >
+                  >
                   Logout
-                </button>
+                  </button>
+
               </div>
             )}
           </div>
         ) : (
           <>
-          {type != "logout" && 
+          {!user && 
             <>
             <button
               onClick={() => openAuthModal('signup')}
@@ -166,10 +147,7 @@ const Header = (type) => {
             </Button>
             </> 
             }
-            
-            {type == "logout" && <Button className="hidden lg:flex lg:flec text-sm" onClick={() => openLogoutModal('logout')}>
-              Log Out
-            </Button> }
+          
           </>
         )}
         

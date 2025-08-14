@@ -49,16 +49,24 @@ export const AuthProvider = ({ children }) => {
       setUser({ username: data.username });
       return { ok: true, message: "Login succesful!", username };
     }
-    return { success: false, message: data.message || "Login failed" };
+    return { ok: false, message: data.message || "Login failed" };
   };
 
   // Logout user
   const logout = async () => {
-    await fetch("http://localhost:3000/api/logout", {
+    const res = await fetch("http://localhost:3000/api/logout", {
       method: "POST",
       credentials: "include",
     });
-    setUser(null);
+    
+    const data = await res.json();
+    if (data.ok) {
+      setUser(null);
+      return { ok: true, message: "Logout succesful!"};
+    }
+
+    return { ok: false, message: data.message || "Logout failed" };
+    
   };
 
   return (

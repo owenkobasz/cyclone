@@ -32,14 +32,6 @@ function validUsername(username) {
     return true;
 }
 
-function validEmail(email) {
-    if (email === "" && !email.includes('@')) {
-        return false;
-    }
-
-    return true;
-}
-
 // Enable CORS for all routes
 app.use(cors({
     origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],  // frontend origins
@@ -211,13 +203,13 @@ app.post('/api/logout', (req, res) => {
   req.session.destroy(err => {
     if (err) {
       console.error('Error destroying session:', err);
-      return res.status(500).json({ message: 'Logout failed' });
+      return res.status(500).json({ok: false, message: 'Logout failed' });
     }
 
     res.clearCookie('connect.sid'); // Clear the session cookie on client
 
     console.log("Logged out!");
-    return res.json({ message: "Logged out successfully" });
+    return res.json({ ok: true, message: "Logged out successfully" });
   });
 });
 
