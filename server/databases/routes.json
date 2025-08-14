@@ -5,8 +5,8 @@
     "routeName": "Default Route",
     "waypoints": [
       {
-        "lat": 39.95,
-        "lon": -75.169
+        "lat": 39.95134,
+        "lon": -75.16922
       },
       {
         "lat": 39.953,

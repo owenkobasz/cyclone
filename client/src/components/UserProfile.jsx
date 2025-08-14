@@ -13,7 +13,7 @@ export default function UserProfile() {
   const [storedUser, setStoredUser] = useState(null);
   const [stats, setStats] = useState({ distanceKm: 0, elevationM: 0 });
   const [routes, setRoutes] = useState([]);
-  const [routeAddresses, setRouteAddresses] = useState({}); // Store addresses for routes
+  const [routeAddresses, setRouteAddresses] = useState({});
   const [openNavigation, setOpenNavigation] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -24,26 +24,17 @@ export default function UserProfile() {
 
   useEffect(() => {
     let localUser = JSON.parse(localStorage.getItem('user'));
-
-    // For testing: create dummy if missing
     if (!localUser?.id) {
       localUser = { id: 'user123', username: 'devUser', profilePicture: '/default-avatar.png' };
       localStorage.setItem('user', JSON.stringify(localUser));
     }
-
     setStoredUser(localUser);
 
     const fetchProfile = async () => {
       try {
         const res = await fetch(`http://localhost:8000/api/user/profile?userId=${localUser.id}`);
-        console.log('Profile fetch status:', res.status, res.statusText);
-        if (!res.ok) {
-          const text = await res.text();
-          console.log('Profile fetch response body:', text);
-          throw new Error(`HTTP error! Status: ${res.status}`);
-        }
-        const profileData = await res.json();
-        setUser(profileData);
+        if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+        setUser(await res.json());
       } catch (err) {
         console.error('Failed to fetch user profile:', err);
       }
@@ -52,8 +43,7 @@ export default function UserProfile() {
     const fetchStats = async () => {
       try {
         const res = await fetch(`http://localhost:8000/api/user/stats?userId=${localUser.id}`);
-        const data = await res.json();
-        if (res.ok) setStats(data);
+        if (res.ok) setStats(await res.json());
       } catch (err) {
         console.error('Failed to load user stats', err);
       }
@@ -62,57 +52,44 @@ export default function UserProfile() {
     const fetchRoutes = async () => {
       try {
         const res = await fetch(`http://localhost:8000/api/user/routes?userId=${localUser.id}`);
+        if (!res.ok) return;
         const data = await res.json();
-        if (res.ok) {
-          setRoutes(data);
-          // Fetch addresses for each route's waypoints
-          const addresses = {};
-          for (const route of data) {
-            const start = route.waypoints[0];
-            const end = route.waypoints[route.waypoints.length - 1];
-            addresses[route.id] = {
-              start: { address: 'Loading...', error: null },
-              end: { address: 'Loading...', error: null },
-            };
+        setRoutes(data);
 
-            // Reverse geocode start waypoint
-            try {
-              const startRes = await fetch(
-                `https://api.geoapify.com/v1/geocode/reverse?lat=${start.lat}&lon=${start.lon}&type=street&apiKey=${GEOAPIFY_API_KEY}`
-              );
-              const startData = await startRes.json();
-              if (startData.features && startData.features.length > 0) {
-                addresses[route.id].start.address = startData.features[0].properties.formatted || 'Unknown address';
-              } else {
-                addresses[route.id].start.address = 'No address found';
-                addresses[route.id].start.error = 'No results returned';
-              }
-            } catch (err) {
-              console.error(`Failed to geocode start of route ${route.id}:`, err);
-              addresses[route.id].start.address = 'Error fetching address';
-              addresses[route.id].start.error = err.message;
-            }
+        const addresses = {};
+        for (const route of data) {
+          const start = route.waypoints[0];
+          const end = route.waypoints[route.waypoints.length - 1];
+          addresses[route.id] = {
+            start: { address: 'Loading...', error: null },
+            end: { address: 'Loading...', error: null },
+          };
 
-            // Reverse geocode end waypoint
-            try {
-              const endRes = await fetch(
-                `https://api.geoapify.com/v1/geocode/reverse?lat=${end.lat}&lon=${end.lon}&type=street&apiKey=${GEOAPIFY_API_KEY}`
-              );
-              const endData = await endRes.json();
-              if (endData.features && endData.features.length > 0) {
-                addresses[route.id].end.address = endData.features[0].properties.formatted || 'Unknown address';
-              } else {
-                addresses[route.id].end.address = 'No address found';
-                addresses[route.id].end.error = 'No results returned';
-              }
-            } catch (err) {
-              console.error(`Failed to geocode end of route ${route.id}:`, err);
-              addresses[route.id].end.address = 'Error fetching address';
-              addresses[route.id].end.error = err.message;
-            }
+          try {
+            const startRes = await fetch(
+              `https://api.geoapify.com/v1/geocode/reverse?lat=${start.lat}&lon=${start.lon}&type=street&apiKey=${GEOAPIFY_API_KEY}`
+            );
+            const startData = await startRes.json();
+            addresses[route.id].start.address =
+              startData.features?.[0]?.properties?.formatted || 'No address found';
+          } catch (err) {
+            addresses[route.id].start.address = 'Error fetching address';
+            addresses[route.id].start.error = err.message;
           }
-          setRouteAddresses(addresses);
+
+          try {
+            const endRes = await fetch(
+              `https://api.geoapify.com/v1/geocode/reverse?lat=${end.lat}&lon=${end.lon}&type=street&apiKey=${GEOAPIFY_API_KEY}`
+            );
+            const endData = await endRes.json();
+            addresses[route.id].end.address =
+              endData.features?.[0]?.properties?.formatted || 'No address found';
+          } catch (err) {
+            addresses[route.id].end.address = 'Error fetching address';
+            addresses[route.id].end.error = err.message;
+          }
         }
+        setRouteAddresses(addresses);
       } catch (err) {
         console.error('Failed to load user routes:', err);
       }
@@ -123,7 +100,6 @@ export default function UserProfile() {
     fetchRoutes();
   }, [navigate]);
 
-  // Handle dropdown click-outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -134,7 +110,6 @@ export default function UserProfile() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Toggle navigation for mobile
   const toggleNavigation = () => {
     if (openNavigation) {
       setOpenNavigation(false);
@@ -145,14 +120,13 @@ export default function UserProfile() {
     }
   };
 
-  // Handle navigation link click
   const handleClick = () => {
-    if (!openNavigation) return;
-    enablePageScroll();
-    setOpenNavigation(false);
+    if (openNavigation) {
+      enablePageScroll();
+      setOpenNavigation(false);
+    }
   };
 
-  // Handle logout
   const handleLogout = () => {
     localStorage.removeItem('user');
     setUser(null);
@@ -172,9 +146,9 @@ export default function UserProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-n-8/90 backdrop-blur-sm">
+    <div className="min-h-screen bg-n-8/90 backdrop-blur-sm border-t border-n-6">
       {/* Fixed Header */}
-      <div className="fixed top-0 left-0 w-full z-50 border-b border-n-6 lg:bg-n-8/90 lg:backdrop-blur-sm">
+      <div className="fixed top-0 left-0 w-full z-50 border-b border-n-6 bg-n-8/90 backdrop-blur-sm boarder border-n-6 shadow-lg hover:shadow-xl transition-all duration-300">
         <div className="flex items-center px-2 lg:px-4 xl:px-6 max-lg:py-4">
           {/* Logo */}
           <Link
@@ -194,9 +168,7 @@ export default function UserProfile() {
 
           {/* Navigation */}
           <nav
-            className={`${
-              openNavigation ? 'flex' : 'hidden'
-            } fixed top-[5rem] left-0 right-0 bottom-0 bg-n-8 lg:static lg:flex lg:mx-auto lg:bg-transparent`}
+            className={`${openNavigation ? 'flex' : 'hidden'} fixed top-[5rem] left-0 right-0 bottom-0 bg-n-8 lg:static lg:flex lg:mx-auto lg:bg-transparent`}
           >
             <div className="relative z-2 flex flex-col items-center justify-center m-auto lg:flex-row">
               {navigation.map((item) => (
@@ -204,13 +176,11 @@ export default function UserProfile() {
                   key={item.id}
                   href={item.url}
                   onClick={handleClick}
-                  className={`block relative font-code text-2xl uppercase text-n-1 transition-all duration-300 hover:text-color-1 hover:scale-105 ${
-                    item.onlyMobile ? 'lg:hidden' : ''
-                  } px-6 py-6 md:py-8 lg:-mr-0.25 lg:text-base lg:font-semibold ${
-                    item.url === location.pathname || item.url === location.hash
+                  className={`block relative font-code text-2xl uppercase text-n-1 transition-all duration-300 hover:text-color-1 hover:scale-105 ${item.onlyMobile ? 'lg:hidden' : ''
+                    } px-6 py-6 md:py-8 lg:-mr-0.25 lg:text-base lg:font-semibold ${item.url === location.pathname || item.url === location.hash
                       ? 'z-2 lg:text-n-1'
                       : 'lg:text-n-1/50'
-                  } lg:leading-5 lg:hover:text-n-1 xl:px-12`}
+                    } lg:leading-5 lg:hover:text-n-1 xl:px-12`}
                 >
                   {item.title}
                 </a>
@@ -228,7 +198,7 @@ export default function UserProfile() {
               onClick={() => setDropdownOpen(!dropdownOpen)}
             />
             {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-40 bg-n-8 border border-n-6 rounded shadow-lg z-50">
+              <div className="absolute right-0 mt-2 w-40 bg-n-8/90 backdrop-blur-sm border border-n-6 rounded shadow-lg z-50">
                 <button
                   onClick={() => {
                     navigate('/profile');
@@ -265,13 +235,13 @@ export default function UserProfile() {
       </div>
 
       {/* Profile Content */}
-      <div className="pt-24 px-4 lg:px-6 max-w-4xl mx-auto">
+      <div className="pt-24 px-2 lg:px-4 xl:px-6 max-w-4xl mx-auto">
         <h2 className="font-code text-2xl lg:text-3xl uppercase text-n-1 text-center mb-8">
           User Profile
         </h2>
 
         <Card
-          className="flex flex-col items-center gap-6 p-6 bg-black border border-n-6 shadow-lg transition-all duration-300 hover:shadow-xl"
+          className="flex flex-col items-center gap-6 p-6 bg-black/90 backdrop-blur-sm border border-n-6 shadow-lg transition-all duration-300 hover:shadow-xl"
         >
           <img
             src={user?.profilePicture || '/default-avatar.png'}
@@ -279,7 +249,7 @@ export default function UserProfile() {
             className="w-12 h-12 lg:w-16 lg:h-16 rounded-full object-cover border border-n-6 cursor-pointer hover:opacity-90"
             onClick={() => navigate('/edit-profile')}
           />
-          <div className="flex-1 space-y-3 bg-black text-center">
+          <div className="flex-1 space-y-3 text-center">
             <p className="font-code text-n-1 text-base lg:text-lg">
               <strong>Name:</strong> {user?.name || 'N/A'}
             </p>
@@ -311,7 +281,7 @@ export default function UserProfile() {
               return (
                 <li
                   key={route.id || idx}
-                  className="border border-n-6 rounded p-4 bg-n-8 shadow-sm transition-all duration-300 hover:bg-n-6/50 hover:shadow-md"
+                  className="border border-n-6 rounded p-4 bg-n-8/90 backdrop-blur-sm shadow-sm transition-all duration-300 hover:bg-n-6/50 hover:scale-[1.01] hover:shadow-md"
                 >
                   <p className="font-code text-n-1 font-semibold text-base lg:text-lg">
                     {route.routeName || 'Unnamed Route'}
