@@ -135,6 +135,10 @@ export default function UserProfile() {
     navigate('/');
   };
 
+  const handleRouteClick = (route) => {
+    navigate('/#generate-routes', { state: { selectedRoute: route } });
+  };
+
   if (!storedUser) {
     return (
       <div className="p-4 text-center text-n-1 font-code">
@@ -189,11 +193,13 @@ export default function UserProfile() {
                     key={item.id}
                     href={item.url}
                     onClick={handleClick}
-                    className={`block relative font-code text-2xl uppercase text-n-1 transition-all duration-300 hover:text-color-1 hover:scale-105 ${item.onlyMobile ? 'lg:hidden' : ''
-                      } px-6 py-6 md:py-8 lg:-mr-0.25 lg:text-base lg:font-semibold ${item.url === location.pathname || item.url === location.hash
+                    className={`block relative font-code text-2xl uppercase text-n-1 transition-all duration-300 hover:text-color-1 hover:scale-105 ${
+                      item.onlyMobile ? 'lg:hidden' : ''
+                    } px-6 py-6 md:py-8 lg:-mr-0.25 lg:text-base lg:font-semibold ${
+                      item.url === location.pathname || item.url === location.hash
                         ? 'z-2 lg:text-n-1'
                         : 'lg:text-n-1/50'
-                      } lg:leading-5 lg:hover:text-n-1 xl:px-12`}
+                    } lg:leading-5 lg:hover:text-n-1 xl:px-12`}
                   >
                     {item.title}
                   </a>
@@ -290,7 +296,8 @@ export default function UserProfile() {
                 return (
                   <li
                     key={route.id || idx}
-                    className="border border-n-6 rounded p-4 bg-n-8/80 backdrop-blur-sm shadow-sm transition-all duration-300 hover:bg-n-6/50 hover:scale-[1.01] hover:shadow-md"
+                    className="border border-n-6 rounded p-4 bg-n-8/80 backdrop-blur-sm shadow-sm transition-all duration-300 hover:bg-n-6/50 hover:scale-[1.01] hover:shadow-md cursor-pointer"
+                    onClick={() => handleRouteClick(route)}
                   >
                     <p className="font-code text-n-1 font-semibold text-base lg:text-lg">
                       {route.routeName || 'Unnamed Route'}
