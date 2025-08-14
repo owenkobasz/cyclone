@@ -136,7 +136,12 @@ export default function UserProfile() {
   };
 
   const handleRouteClick = (route) => {
-    navigate('/#generate-routes', { state: { selectedRoute: route } });
+    navigate('/', { state: { selectedRoute: route, stats: {
+        distanceKm: route.total_distance_km || route.distance || 0,
+        elevationM: route.elevation_gain_m || route.elevation || 0,
+        totalRideTime: route.total_ride_time || null
+      },
+      cueSheet: route.instructions || [] } });
   };
 
   if (!storedUser) {
@@ -151,7 +156,7 @@ export default function UserProfile() {
   }
 
   return (
-    <div className="relative min-h-screen">
+    <div className="min-h-screen bg-n-8/90 backdrop-blur-sm border-t border-n-6">
       {/* Background - same as Home.jsx */}
       <div className="fixed inset-0 w-screen h-screen z-0">
         <div className="relative w-full h-full">
@@ -167,7 +172,7 @@ export default function UserProfile() {
       {/* Page Content */}
       <div className="relative z-10">
         {/* Header */}
-        <div className="fixed top-0 left-0 w-full z-50 border-b border-n-6 bg-n-8/90 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300">
+        <div className="fixed top-0 left-0 w-full z-50 border-b border-n-6 bg-n-8/90 backdrop-blur-sm boarder boarder-n-6 shadow-lg hover:shadow-xl transition-all duration-300">
           <div className="flex items-center px-2 lg:px-4 xl:px-6 max-lg:py-4">
             <Link
               to="/"
@@ -296,7 +301,7 @@ export default function UserProfile() {
                 return (
                   <li
                     key={route.id || idx}
-                    className="border border-n-6 rounded p-4 bg-n-8/80 backdrop-blur-sm shadow-sm transition-all duration-300 hover:bg-n-6/50 hover:scale-[1.01] hover:shadow-md cursor-pointer"
+                    className="border border-n-6 rounded p-4 bg-transparent backdrop-blur-sm shadow-sm transition-all duration-300 hover:bg-n-6/50 hover:scale-[1.01] hover:shadow-md"
                     onClick={() => handleRouteClick(route)}
                   >
                     <p className="font-code text-n-1 font-semibold text-base lg:text-lg">

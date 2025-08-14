@@ -18,13 +18,14 @@
       }
     ],
     "rawStats": {
-      "distanceKm": 20,
-      "elevationM": 300
+      "distanceKm": 3.71,
+      "elevationM": 12.33,
+      "totalRideTimeMin": 12.93
     },
     "cueSheet": [
       {
         "instruction": "Turn left",
-        "distance": 5
+        "distanceKm": 
       }
     ],
     "preferences": {
