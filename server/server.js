@@ -5,7 +5,7 @@ const sqlite3 = require('sqlite3').verbose();
 const { generateRoute } = require('./api_router.js');
 const { getLocationFromIP, getClientIP } = require('./utils/geolocation.js');
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000; // work with docker?
 const dbUsers = require('./dbUsers.js'); // import users database
 const bcrypt = require('bcrypt');
 const session = require(`express-session`);
@@ -13,7 +13,7 @@ const routes = require('./routes/routes');
 const SQLiteStore = require('connect-sqlite3')(session);
 
 
-// fix to work with Mandy's changes
+// fix to work with Mandy's changesv cf cv
 
 // helper functions
 function validPassword(password) {
@@ -34,8 +34,8 @@ function validUsername(username) {
 
 // Enable CORS for all routes
 app.use(cors({
-    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],  // frontend origins
-    credentials: true                // allow cookies to be sent
+  origin: true,  // works with docker
+  credentials: true
 }));
 
 // allow json parsing

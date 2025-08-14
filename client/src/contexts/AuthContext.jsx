@@ -2,13 +2,14 @@ import { createContext, useContext, useState, useEffect } from "react";
 
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
+const API_URL = "http://localhost:3000";
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null); // null = unknown or logged out
 
   // Check session status on app load
   useEffect(() => {
-    fetch("http://localhost:3000/api/status", {
+    fetch(`${API_URL}/api/status`, {
       credentials: "include",
     })
       .then((res) => res.json())
@@ -24,7 +25,7 @@ export const AuthProvider = ({ children }) => {
 
   // Register new user (no auto-login)
   const register = async (username, password, passwordConf) => {
-    const res = await fetch("http://localhost:3000/api/register", {
+    const res = await fetch(`${API_URL}/api/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password, passwordConf }),
@@ -38,7 +39,7 @@ export const AuthProvider = ({ children }) => {
 
   // Login user
   const login = async (username, password) => {
-    const res = await fetch("http://localhost:3000/api/login", {
+    const res = await fetch(`${API_URL}/api/login`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -54,7 +55,7 @@ export const AuthProvider = ({ children }) => {
 
   // Logout user
   const logout = async () => {
-    const res = await fetch("http://localhost:3000/api/logout", {
+    const res = await fetch(`${API_URL}/api/logout`, {
       method: "POST",
       credentials: "include",
     });
