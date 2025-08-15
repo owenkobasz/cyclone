@@ -312,7 +312,7 @@ const LocationAutocomplete = ({
     debounceRef.current = setTimeout(() => {
       console.log('Calling searchLocations with:', query); // Debug log
       searchLocations(query);
-    }, 200);
+    }, 500);
   };
 
   const handleSuggestionSelect = (suggestion) => {

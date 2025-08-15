@@ -301,11 +301,6 @@ export default function RoutePreferences({ preferences, setPreferences, userLoca
                             label="Prioritize bike lanes"
                         />
                         <Toggle
-                            checked={preferences.pointsOfInterest || false}
-                            onChange={handleCheckboxChange('pointsOfInterest')}
-                            label="Include points of interest"
-                        />
-                        <Toggle
                             checked={preferences.avoidHighTraffic || false}
                             onChange={handleCheckboxChange('avoidHighTraffic')}
                             label="Avoid high traffic areas"
@@ -319,16 +314,6 @@ export default function RoutePreferences({ preferences, setPreferences, userLoca
                             checked={preferences.includeElevation || false}
                             onChange={handleCheckboxChange('includeElevation')}
                             label="Elevation focused"
-                        />
-                        <Toggle
-                            checked={preferences.preferGreenways || false}
-                            onChange={handleCheckboxChange('preferGreenways')}
-                            label="Prefer greenways and trails"
-                        />
-                        <Toggle
-                            checked={preferences.includeScenic || false}
-                            onChange={handleCheckboxChange('includeScenic')}
-                            label="Prioritize scenic routes"
                         />
                     </div>
                 </div>

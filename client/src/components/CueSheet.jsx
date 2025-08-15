@@ -12,7 +12,7 @@ const getDirectionIcon = (type) => {
     0: <ArrowLeftIcon className="w-6 h-6" />, // Left turn
     1: <ArrowRightIcon className="w-6 h-6" />, // Right turn
     2: <ArrowRightIcon className="w-6 h-6" />, // Sharp right
-    3: <ArrowLeftIcon className="w-6 h-6" />, // Sharp left (this was missing)
+    3: <ArrowLeftIcon className="w-6 h-6" />, // Sharp left
     4: <ArrowLeftIcon className="w-6 h-6" />, // Slight left
     5: <ArrowRightIcon className="w-6 h-6" />, // Slight right
     6: <ArrowUpIcon className="w-6 h-6" />, // Continue
@@ -55,9 +55,13 @@ export default function CueSheet({ cueSheet, instructions = [] }) {
       const isDuplicate = index !== self.findIndex((s) => s.instruction === step.instruction);
       if (isDuplicate) return false;
       
-      if (step.instruction === "Arrive at destination") {
-        const hasDetailedDestination = self.some(s => s.instruction === "Arrive at your destination");
-        if (hasDetailedDestination) return false;
+      if (step.instruction === "Arrive at destination" || step.instruction.startsWith("Arrive at ")) {
+        const hasDetailedDestination = self.some(s => 
+          s.instruction.startsWith("Arrive at ") && s.instruction !== "Arrive at destination"
+        );
+        if (hasDetailedDestination && step.instruction === "Arrive at destination") {
+          return false;
+        }
       }
       
       return true;
