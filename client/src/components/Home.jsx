@@ -7,12 +7,16 @@ import { motion } from "framer-motion";
 import { useRef } from "react";
 import AuthModal from "./AuthModal";
 import { useAuthModal } from "../contexts/AuthModalContext";
+import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 // TODO: make webmaster betyter visable + an email link
 // TODO: add custom greeting if signed in
 
 const Home = () => {
   const parallaxRef = useRef(null);
+  const navigate = useNavigate();
+  const {user} = useAuth();
   const { authModal, openAuthModal, closeAuthModal, switchAuthType } = useAuthModal();
   return (
     <Section
@@ -75,9 +79,12 @@ const Home = () => {
             transition={{ duration: 1.2 }}
             className="flex flex-col sm:flex-row gap-4 justify-center items-center"
           >
-            <Button onClick={() => openAuthModal('signup')} white>
+            {!user && <Button onClick={() => openAuthModal('signup')} white>
               Get started
-            </Button>
+            </Button> }
+            {user &&  <Button white onClick={() => {navigate("/profile");}}>
+              Welcome {user.username} !
+            </Button>}
           </motion.div>
         </div>
       </div>
