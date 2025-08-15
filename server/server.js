@@ -61,7 +61,7 @@ app.use(session({
 // post and gets
 app.use('/api', routes);
 
-// this method does logging in and registering
+// this method does logging in
 app.post('/api/login', async (req, res) => {
 
     // destructure request
@@ -97,7 +97,7 @@ app.post('/api/login', async (req, res) => {
                                 console.error('Session save error:', err);
                                 return res.status(500).json({ error: 'Could not save session' });
                             }
-                            return res.json({ message: "Succesful login", ok: true });
+                            return res.json({ message: "Succesful login", ok: true, username: username });
                         });
                     } else {
                         console.log(`${username} unsuccesfully logged in.`);
@@ -122,7 +122,7 @@ app.post('/api/register', async (req, res) => {
     const saltRounds = 10;
 
     // destructure request
-    const {username, password, passwordConf} = req.body;
+    const {username, password, passwordConf, firstName, lastName} = req.body;
     console.log(`{username}`);
 
     // handle registration / login
@@ -152,6 +152,14 @@ app.post('/api/register', async (req, res) => {
                     return res.status(401).json({ message: 'Password and confirmation must match.', ok: false});
                 }
 
+                if (!validUsername(firstName)) {
+                    return res.status(401).json({ message: 'Invalid first name, must be non-empty', ok: false});
+                }
+
+                if (!validUsername(lastName)) {
+                    return res.status(401).json({ message: 'Invalid last name, must be non-empty', ok: false});
+                }
+
 
 
                 // store user into table
@@ -166,8 +174,8 @@ app.post('/api/register', async (req, res) => {
                     console.log(hash);
 
                     // Store things in database now
-                    dbUsers.run(`INSERT INTO users (username,password) VALUES (?,?)`,
-                    [username,hash], (err) => {
+                    dbUsers.run(`INSERT INTO users (username,password, firstname, lastname) VALUES (?,?,?,?)`,
+                    [username,hash, firstName, lastName], (err) => {
                         if(err) {
                             console.error(err);
                             return res.status(500).json({ message: 'Database issue preventing registration', ok: false });
@@ -210,6 +218,35 @@ app.post('/api/logout', (req, res) => {
     return res.json({ ok: true, message: "Logged out successfully" });
   });
 });
+
+// useful functions for grabbing data from users database
+function getUserById(id, callback) {
+  dbUsers.get(
+    "SELECT username, firstname, lastname FROM users WHERE id = ?",
+    [id],
+    (err, row) => {
+      if (err) {
+        console.error("Database error:", err);
+        return callback(err);
+      }
+      callback(null, row); // row will be undefined if no user found
+    }
+  );
+}
+
+function getUserByUsername(username, callback) {
+  dbUsers.get(
+    "SELECT username, firstname, lastname FROM users WHERE username = ?",
+    [username],
+    (err, row) => {
+      if (err) {
+        console.error("Database error:", err);
+        return callback(err);
+      }
+      callback(null, row);
+    }
+  );
+}
 
 // Get user location based on IP
 app.get('/api/location', async (req, res) => {

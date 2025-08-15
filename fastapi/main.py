@@ -1,8 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Body
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 import os
-
+# import gpxpy
+# import gpxpy.gpx
 from routes.coordinate_routing import router as coordinate_router
 from utils.logger import setup_app_logging, get_logger
 from utils.config import get_log_level, should_log_to_file, get_log_file, CORS_ORIGINS
@@ -121,4 +122,20 @@ async def get_user_location():
                 "country": "US",
                 "place": "Philadelphia, Pennsylvania, USA"
             }
-        } 
+        }
+
+# This function uses gpxpy to create a gpx file from a route
+# @app.get("/api/export_route", tags=["routing"])
+# async def get_export_route(route: dict = Body(...)):
+#     """
+#     Accepts a JSON route and returns a GPX file.
+#     Expected JSON format:
+#     {
+#         "points": [
+#             {"lat": 39.9526, "lon": -75.1652},
+#             {"lat": 39.9530, "lon": -75.1660}
+#         ]
+#     }
+#     """
+#     return None;
+    

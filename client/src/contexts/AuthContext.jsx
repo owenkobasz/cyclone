@@ -24,17 +24,17 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // Register new user (no auto-login)
-  const register = async (username, password, passwordConf) => {
+  const register = async (username, password, passwordConf, firstName, lastName) => {
     const res = await fetch(`${API_URL}/api/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password, passwordConf }),
+      body: JSON.stringify({ username, password, passwordConf, firstName, lastName }),
     });
     const data = await res.json();
     if (data.ok) {
-      return { success: true, message: data.message };
+      return { ok: true, message: data.message };
     }
-    return { success: false, message: data.message || "Registration failed" };
+    return { ok: false, message: data.message || "Registration failed" };
   };
 
   // Login user
@@ -48,9 +48,9 @@ export const AuthProvider = ({ children }) => {
     const data = await res.json();
     if (data.ok) {
       setUser({ username: data.username });
-      return { ok: true, message: "Login succesful!", username };
+      return { ok: true, message: "Login succesful!"};
     }
-    return { ok: false, message: data.message || "Login failed" };
+    return { ok: false, message: data.message || "Login failed", username: data.username };
   };
 
   // Logout user

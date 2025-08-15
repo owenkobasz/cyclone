@@ -10,8 +10,11 @@ const AuthModal = () => {
   const [formData, setFormData] = useState({
     username: '',
     password: '',
-    passwordConf: ''
+    passwordConf: '',
+    firstName: '',
+    lastName:''
   });
+
   const [message, setMessage] = useState('');
   const [ok, setOk] = useState(false);
 
@@ -26,7 +29,7 @@ const AuthModal = () => {
     e.preventDefault();
     setMessage('');
 
-    const { username, password, passwordConf } = formData;
+    const { username, password, passwordConf, firstName, lastName } = formData;
 
     if (authModal.type === 'login') {
       const result = await login(username, password);
@@ -35,7 +38,7 @@ const AuthModal = () => {
         setOk(true);
         setTimeout(() => {
           closeAuthModal();
-          setFormData({ username: '', password: '', passwordConf: '' });
+          setFormData({ username: '', password: '', passwordConf: '', firstName: '', lastName: '' });
         }, 1500);
       } else {
         setOk(false);
@@ -46,13 +49,13 @@ const AuthModal = () => {
         setMessage('Passwords do not match');
         return;
       }
-      const result = await register(username, password, passwordConf);
+      const result = await register(username, password, passwordConf, firstName, lastName);
       if (result.ok) {
         setMessage('Registered successfully! Please log in.');
         setOk(true);
         setTimeout(() => {
-          openAuthModal('login');
-          setFormData({ username: '', password: '', passwordConf: '' });
+          setFormData({ username: '', password: '', passwordConf: '', firstName: '', lastName: '' });
+          openAuthModal("login");
         }, 1500);
       } else {
         setOk(false);
@@ -137,21 +140,41 @@ const AuthModal = () => {
                   required
                 />
                 {authModal.type === 'signup' && (
-                  <input
-                    className="w-full px-4 py-3 bg-n-7/50 border border-n-6 rounded-xl text-n-1 placeholder-n-3"
-                    type="password"
-                    name="passwordConf"
-                    placeholder="Confirm Password"
-                    value={formData.passwordConf}
-                    onChange={handleInputChange}
-                    required
-                  />
-                )}
+                  <>
+                    <input
+                      className="w-full px-4 py-3 bg-n-7/50 border border-n-6 rounded-xl text-n-1 placeholder-n-3"
+                      type="password"
+                      name="passwordConf"
+                      placeholder="Confirm Password"
+                      value={formData.passwordConf}
+                      onChange={handleInputChange}
+                      required
+                    />
+                    <input
+                      className="w-full px-4 py-3 bg-n-7/50 border border-n-6 rounded-xl text-n-1 placeholder-n-3"
+                      type="text"
+                      name="firstName"
+                      placeholder="First Name"
+                      value={formData.firstName}
+                      onChange={handleInputChange}
+                      required
+                    />
+                    <input
+                      className="w-full px-4 py-3 bg-n-7/50 border border-n-6 rounded-xl text-n-1 placeholder-n-3"
+                      type="text"
+                      name="lastName"
+                      placeholder="First Name"
+                      value={formData.lastName}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </>)}
+                
                 {message && (
                   <p
                     className={`text-center ${ok ? 'text-green-500' : 'text-red-500'}`}
                   >
-                    {message}
+                    {message} 
                   </p>
                   )}
 
@@ -164,7 +187,7 @@ const AuthModal = () => {
                 <p className="text-n-3">
                   {authModal.type === 'login' ? "Don't have an account? " : 'Already have an account? '}
                   <button
-                    onClick={() => onSwitchType(authModal.type === 'login' ? 'signup' : 'login')}
+                    onClick={() => openAuthModal(authModal.type === 'login' ? 'signup' : 'login')}
                     className="text-color-1 hover:text-color-2 transition-colors underline"
                   >
                     {authModal.type === 'login' ? 'Sign up' : 'Sign in'}
