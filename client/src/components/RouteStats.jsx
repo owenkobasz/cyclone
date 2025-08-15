@@ -1,12 +1,11 @@
 import { motion } from "framer-motion";
 
 export default function RouteStats({ stats, unitSystem, setUnitSystem, elevationProfile, elevationStats }) {
-    const formatElevation = (meters) => {
-        if (unitSystem === 'imperial') {
-            return (meters * 3.28084).toFixed(0) + ' ft';
-        }
-        return meters.toFixed(0) + ' m';
-    };
+    const formatElevation = (elevation) => {
+    if (!elevation || elevation === 0) return '0 ft';
+    const value = parseFloat(elevation);
+    return `${value.toFixed(0)} ft`;
+    };    
 
     const formatDistance = (km) => {
         if (unitSystem === 'imperial') {
@@ -44,7 +43,7 @@ export default function RouteStats({ stats, unitSystem, setUnitSystem, elevation
                     <div className="flex justify-between items-center">
                         <span className="body-2 text-n-3">Distance:</span>
                         <span className="body-1 text-color-1 font-semibold">
-                            {formatDistance(stats.distanceKm)}
+                            {stats.distanceFormatted || formatDistance(stats.distanceKm)}
                         </span>
                     </div>
                     
@@ -64,7 +63,6 @@ export default function RouteStats({ stats, unitSystem, setUnitSystem, elevation
                         </span>
                     </div>
 
-                    {/* Enhanced Elevation Information */}
                     {elevationStats && (
                         <>
                             <div className="flex justify-between items-center">
@@ -108,7 +106,7 @@ export default function RouteStats({ stats, unitSystem, setUnitSystem, elevation
                     <div className="flex justify-between items-center">
                         <span className="body-2 text-n-3">Difficulty:</span>
                         <span className="body-1 text-color-1 font-semibold">
-                            {getDifficultyRating(stats.elevationM, stats.distanceKm)}
+                            {stats.difficulty || getDifficultyRating(stats.elevationM, stats.distanceKm)}
                         </span>
                     </div>
                 </div>

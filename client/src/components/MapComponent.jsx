@@ -12,6 +12,29 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
+// Route bounds fitting component
+function RouteController({ routeData }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (routeData && routeData.route && routeData.route.length > 0) {
+      console.log('Fitting map to route bounds');
+      // Create bounds from route coordinates
+      const bounds = L.latLngBounds(
+        routeData.route.map(point => [point.lat, point.lon])
+      );
+      
+      // Fit the map to show the entire route with some padding
+      setTimeout(() => {
+        map.fitBounds(bounds, { padding: [20, 20] });
+        map.invalidateSize();
+      }, 100);
+    }
+  }, [routeData, map]);
+
+  return null;
+}
+
 // Map recentering component with proper invalidation
 function RecenterMap({ center }) {
   const map = useMap();
@@ -322,6 +345,20 @@ const MapComponent = ({ location, setLocation, error, setError, routeData, isGen
   const [searchQuery, setSearchQuery] = useState('');
   const [glow, setGlow] = useState(true);
 
+  // Debug route data
+  useEffect(() => {
+    console.log('MapComponent received routeData:', routeData);
+    if (routeData) {
+      console.log('Route data keys:', Object.keys(routeData));
+      console.log('Route array:', routeData.route);
+      console.log('Route array length:', routeData.route ? routeData.route.length : 'No route');
+      if (routeData.route && routeData.route.length > 0) {
+        console.log('First route point:', routeData.route[0]);
+        console.log('Last route point:', routeData.route[routeData.route.length - 1]);
+      }
+    }
+  }, [routeData]);
+
   const handleAnimationComplete = () => {
     setGlow(false);
   };
@@ -626,7 +663,7 @@ const MapComponent = ({ location, setLocation, error, setError, routeData, isGen
             )}
             
             {/* Display route polyline if route data is available */}
-            {routeData && routeData.route && (
+            {routeData && routeData.route && routeData.route.length > 0 && (
               <Polyline
                 positions={routeData.route.map(point => [point.lat, point.lon])}
                 color="#3B82F6"
@@ -646,6 +683,7 @@ const MapComponent = ({ location, setLocation, error, setError, routeData, isGen
             />
             <ZoomControl />
             <RecenterMap center={location} />
+            <RouteController routeData={routeData} />
             <MapResizeHandler />
           </MapContainer>
         </div>

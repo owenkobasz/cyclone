@@ -139,28 +139,33 @@ const GenerateRoutes = () => {
 
       const data = await generateRoute(routePreferences);
       setRouteData(data);
+      console.log('Route data received from backend:', data);
+      console.log('Route coordinates:', data.route);
+      console.log('Route length:', data.route ? data.route.length : 'No route array');
+      
       setStats({
         distanceKm: data.total_distance_km || data.total_length_km || null,
         distanceFormatted: data.total_length_formatted || null,
         elevationM: data.elevation_gain_m || data.total_elevation_gain || null,
         totalRideTime: data.total_ride_time || null,
+        difficulty: data.difficulty || null
       });
       setElevationProfile(data.elevation_profile || []);
       setElevationStats(data.elevation_stats || null);
-      setUnitSystem(preferences.unitSystem || "imperial");
-
+      
+      // Update unit system from preferences
+      setUnitSystem(preferences.unitSystem || 'imperial');
+      
+      // Set instructions from API response
       if (data.instructions && data.instructions.length > 0) {
         setInstructions(data.instructions);
-        setCueSheet([]);
+        setCueSheet([]); 
       } else {
+        const destinationText = preferences.endingPoint || 'your destination';
         const generatedCueSheet = [
           `Start your route`,
-          `Route distance: ${data.total_length_formatted ||
-          `${(data.total_distance_km || data.total_length_km || 0).toFixed(
-            2
-          )} km`
-          }`,
-          `Arrive at destination`,
+          `Route distance: ${data.total_length_formatted || `${(data.total_distance_km || data.total_length_km || 0).toFixed(2)} km`}`,
+          `Arrive at ${destinationText}`
         ];
         setCueSheet(generatedCueSheet);
         setInstructions([]);
@@ -174,11 +179,9 @@ const GenerateRoutes = () => {
     } catch (err) {
       let errorMessage = "An unexpected error occurred. Please try again.";
       if (err.message === "LOCATION_REQUIRED") {
-        errorMessage =
-          "Please provide a starting location. You can:\n• Enter an address in the Starting Point field\n• Click the 'Current' button to use your current location\n• Click on the map to set a custom starting point";
+        errorMessage = "Please provide a starting location. You can:\n• Enter an address in the Starting Point field\n• Click the 'Current Location'option in the dropdown menu to use your current location\n• Click on the crosshair icon on the map to set your precise location";
       } else if (err.message === "INVALID_COORDINATES") {
-        errorMessage =
-          "The provided coordinates are invalid or outside the supported area. Please ensure you're selecting a location within Philadelphia.";
+        errorMessage = "The provided coordinates are invalid or outside the supported area. Please check your starting and ending locations.";
       } else if (err.message === "SERVER_ERROR") {
         errorMessage =
           "The route generation service is currently experiencing issues. Please try again in a few moments.";
@@ -209,7 +212,7 @@ const GenerateRoutes = () => {
 
         {/* Main Planning Section */}
         <div className="grid lg:grid-cols-3 gap-8 mb-12">
-          {/* Left - Route Preferences (1/3) */}
+          {/* Left - Route Preferences */}
           <motion.div
             className="lg:col-span-1 space-y-6"
             initial={{ opacity: 0, x: -40 }}
@@ -267,7 +270,7 @@ const GenerateRoutes = () => {
             )}
           </motion.div>
 
-          {/* Right - Map Component (2/3) */}
+          {/* Right - Map Component */}
           <motion.div
             className="lg:col-span-2"
             initial={{ opacity: 0, x: 40 }}

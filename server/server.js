@@ -2,10 +2,10 @@ require('dotenv').config({ path: '../.env' });
 const express = require('express')
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
-const { generateRoute } = require('./api_router.js');
+const { generateRoute } = require('./apiRouterMain.js');
 const { getLocationFromIP, getClientIP } = require('./utils/geolocation.js');
 const app = express();
-const port = process.env.PORT || 3000; // work with docker?
+const port = 8080;
 const dbUsers = require('./dbUsers.js'); // import users database
 const bcrypt = require('bcrypt');
 const session = require(`express-session`);
@@ -248,14 +248,33 @@ app.post('/api/generate-custom-route', async (req, res) => {
     start_lon,
     end_lat,
     end_lon,
+    destination_name,
+    starting_point_name,
     avoid_hills = false,
     use_bike_lanes = true,
     target_distance = 5.0,
     max_elevation_gain = 100.0,
     unit_system = "imperial",
     route_type = "scenic",
-    avoid_traffic = false
+    avoid_traffic = false,
+    elevation_focus = false
   } = req.body;
+
+  console.log('Route generation request received:', {
+    destination_name,
+    starting_point_name,
+    start_lat,
+    start_lon,
+    end_lat,
+    end_lon,
+    route_type,
+    target_distance,
+    use_bike_lanes,
+    avoid_hills,
+    avoid_traffic,
+    elevation_focus,
+    unit_system
+  });
 
   // Validate required parameters
   if (!start_lat || !start_lon) {
@@ -289,10 +308,22 @@ app.post('/api/generate-custom-route', async (req, res) => {
         use_bike_lanes,
         avoid_hills,
         avoid_traffic,
+        elevation_focus,
         unit_system,
-        max_elevation_gain
+        max_elevation_gain,
+        destination_name,
+        starting_point_name
       },
       userLocation: locationData  // Pass location data to route generation
+    });
+
+    console.log('Route data being sent to frontend:', {
+      difficulty: routeData.difficulty,
+      total_elevation_gain: routeData.total_elevation_gain,
+      total_ride_time: routeData.total_ride_time,
+      total_length_formatted: routeData.total_length_formatted,
+      data_source: routeData.data_source,
+      route_coordinates_count: routeData.route ? routeData.route.length : 0
     });
 
     res.json(routeData);

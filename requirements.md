@@ -2,12 +2,27 @@
 
 ## Quick Start
 
-For a quick development setup, run:
+For a completely automated setup, run:
+```sh
+npm run setup
+```
+
+Or alternatively:
+```sh
+node server/setup.js
+```
+
+This script will:
+- Check for Node.js and Python3 installation
+- Install all dependencies (root, client, and server)
+- Create .env template if missing
+- Validate API connectivity
+- Set up required directories and database
+
+For development only (if already set up):
 ```sh
 ./start-dev.sh
 ```
-
-This script will automatically install dependencies and start the development server.
 
 ## Manual Setup
 
@@ -56,6 +71,7 @@ npm install -D @vitejs/plugin-react@^4.7.0 tailwindcss@^3.4.1 postcss@^8.4.31 au
 - express-session@^1.18.2
 - dotenv@^17.2.1
 - axios@^1.6.0
+- openai@^5.12.2
 
 **Python dependencies (for OSM routing):**
 - requests>=2.28.0
@@ -83,20 +99,59 @@ pip3 install -r requirements.txt
 
 If you need to manually install any missing Node.js packages:
 ```sh
-npm install express@^5.1.0 cors@^2.8.5 sqlite3@^5.1.7 bcrypt@^6.0.0 express-session@^1.18.2 dotenv@^17.2.1 axios@^1.6.0
+npm install express@^5.1.0 cors@^2.8.5 sqlite3@^5.1.7 bcrypt@^6.0.0 express-session@^1.18.2 dotenv@^17.2.1 axios@^1.6.0 openai@^5.12.2
 ```
 
 ## Environment Configuration
 
-After running the setup scripts, make sure to:
+The setup process is now automated! When you run `node server/setup.js`:
 
-1. Update the `.env` file with your actual API keys:
-   - `GRAPHHOPPER_API_KEY` - Get from https://www.graphhopper.com/
+1. **Automatic .env creation**: If no .env file exists, a template will be created
+2. **API key validation**: Both GraphHopper and OpenAI keys are tested for validity
+3. **Database setup**: User database is automatically created
+4. **Directory creation**: All required temp and cache directories are set up
+5. **Dependency installation**: All Node.js and Python dependencies are installed
 
-2. Ensure Python 3 and pip3 are installed on your system
+**Required API Keys:**
+- `GRAPHHOPPER_API_KEY` - Get from https://www.graphhopper.com/
+- `OPENAI_API_KEY` - Get from https://platform.openai.com/api-keys
+- `REACT_APP_API_BASE_URL` - Set to your backend URL (default: http://localhost:8080)
+
+**Prerequisites:**
+- Node.js (v14 or higher)
+- Python 3 (for OSM routing features)
+- pip3 (Python package manager)
 
 ## Development
 
 - **Frontend development server**: `cd client && npm run dev`
 - **Backend server**: `cd server && node server.js`
 - **Full development setup**: `./start-dev.sh` (from project root)
+
+## New Automated Features
+
+The latest version includes significant automation improvements:
+
+### 🤖 Automated Setup Process
+- **One-command setup**: `npm run setup` handles the entire setup process
+- **Dependency management**: Automatically installs all Node.js and Python packages
+- **Environment configuration**: Creates .env template with all required variables
+- **Database initialization**: Automatically creates and configures SQLite user database
+
+### 🔍 Smart Validation
+- **API key testing**: Validates both GraphHopper and OpenAI API keys before use
+- **Service connectivity**: Tests all external APIs (Valhalla, Open Elevation)
+- **Dependency checking**: Verifies Node.js and Python installation
+- **Directory setup**: Creates all required temp, cache, and log directories
+
+### 📊 Enhanced Monitoring
+- **Setup status reporting**: Clear success/warning messages with next steps
+- **Dependency status**: Shows which packages are installed and working
+- **API availability**: Real-time testing of external service connectivity
+- **User location detection**: Automatic OSM graph preparation for user's region
+
+### 🛠️ Developer Experience
+- **Modular architecture**: Clean separation of services, utilities, and configuration
+- **Error handling**: Graceful fallbacks when services are unavailable
+- **Debug information**: Detailed logging for troubleshooting
+- **Hot reload support**: Development server with automatic restart capabilities

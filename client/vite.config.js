@@ -19,4 +19,7 @@ export default defineConfig({
       '@heroicons/react': path.resolve(__dirname, 'node_modules/@heroicons/react'),
     },
   },
+  server: {
+    historyApiFallback: true,
+  },
 })
