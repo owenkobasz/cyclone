@@ -115,12 +115,12 @@ router.get('/plan', requireAuth, async (req, res) => {
 });
 
 router.get('/user/profile', async (req, res) => {
-  const { userId } = req.query;
-  if (!userId) return res.status(400).json({ error: 'Missing userId' });
+  const { username } = req.query;
+  if (!username) return res.status(400).json({ error: 'Missing username' });
 
   try {
     const profiles = await readProfiles();
-    const user = profiles.find((u) => u.id === userId);
+    const user = profiles.find((u) => u.username === username);
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json(user);
   } catch (err) {
@@ -150,8 +150,8 @@ router.put('/user/profile', async (req, res) => {
 });
 
 router.get('/user/stats', async (req, res) => {
-  const { userId } = req.query;
-  if (!userId) return res.status(400).json({ error: 'Missing userId' });
+  const { username } = req.query;
+  if (!username) return res.status(400).json({ error: 'Missing userId' });
 
   res.json({
     distanceKm: 180.5,
@@ -160,13 +160,13 @@ router.get('/user/stats', async (req, res) => {
 });
 
 router.get('/routes', (req, res) => {
-  const userId = req.query.userId;
+  const username = req.query.username;
   const routesPath = path.join(__dirname, './databases/routes.json');
 
   try {
     const data = fs.readFileSync(routesPath, 'utf-8');
     const allRoutes = JSON.parse(data);
-    const userRoutes = allRoutes.filter(route => route.userId === userId);
+    const userRoutes = allRoutes.filter(route => route.username === username);
     res.json(userRoutes);
   } catch (error) {
     console.error('Error reading routes.json:', error);
@@ -175,13 +175,13 @@ router.get('/routes', (req, res) => {
 });
 
 router.get('/user/routes', async (req, res) => {
-  const { userId } = req.query;
-  if (!userId) return res.status(400).json({ error: 'Missing userId' });
+  const { username } = req.query;
+  if (!username) return res.status(400).json({ error: 'Missing username' });
 
   try {
     const raw = await fs.readFile(dataPath, 'utf8');
     const routes = JSON.parse(raw);
-    const userRoutes = routes.filter(route => route.userId === userId);
+    const userRoutes = routes.filter(route => route.username === username);
     res.json(userRoutes);
   } catch (error) {
     console.error('Error reading routes.json:', error);
@@ -196,7 +196,7 @@ router.post('/plan-route', requireAuth, async (req, res) => {
   }
 
   const coordinates = `${start.join(',')};${end.join(',')}`;
-  const url = `http://localhost:8000/route/v1/bicycle/${coordinates}?overview=full&geometries=geojson`;
+  const url = `http://localhost:3000/route/v1/bicycle/${coordinates}?overview=full&geometries=geojson`;
 
   try {
     const response = await axios.get(url);

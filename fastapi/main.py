@@ -12,13 +12,16 @@ log_level = getattr(logging, get_log_level())
 setup_app_logging(level=log_level, log_to_file=should_log_to_file(), log_file=get_log_file())
 logger = get_logger(__name__)
 
+# Create FastAPI application
 app = FastAPI(
     title="Cyclone Route API", 
     version="2.0.0",
-    description="Coordinate-based cycling route generation API - no map downloads required!"
+    description="Coordinate-based cycling route generation API - no map downloads required!",
+    docs_url="/docs",
+    redoc_url="/redoc"
 )
 
-# Enable CORS for all origins and methods
+# Enable CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
@@ -27,28 +30,30 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
-app.include_router(coordinate_router, prefix="/api", tags=["coordinate-routing"])
+# Include API routers
+app.include_router(coordinate_router, prefix="/api", tags=["routing"])
 
-@app.get("/")
+@app.get("/", tags=["root"])
 async def root():
+    """Root endpoint with API information."""
     return {
         "message": "Cyclone Route API v2.0", 
         "status": "running",
         "description": "Coordinate-based routing system - no maps required!",
         "endpoints": [
-            "/api/generate-coordinate-route",
+            "/api/generate-frontend-route",
             "/api/generate-hybrid-route",
-            "/api/generate-loop-route", 
-            "/api/generate-out-and-back-route",
+            "/api/generate-gpt-enhanced-route",
             "/api/route-types",
             "/api/route-optimization-options",
             "/api/location"
-        ]
+        ],
+        "documentation": "/docs"
     }
 
-@app.get("/health")
+@app.get("/health", tags=["health"])
 async def health_check():
+    """Health check endpoint."""
     return {
         "status": "healthy",
         "version": "2.0.0",
@@ -58,11 +63,13 @@ async def health_check():
             "Real-time route generation",
             "Multiple route types",
             "Elevation targeting",
-            "Surface preferences"
+            "Surface preferences",
+            "Frontend preferences support",
+            "GPT-5 nano powered route planning"
         ]
     }
 
-@app.get("/migration-info")
+@app.get("/migration-info", tags=["info"])
 async def migration_info():
     """Information about migrating from the old graph-based system."""
     return {
@@ -82,9 +89,9 @@ async def migration_info():
                 "Updated response format"
             ]
         }
-    } 
+    }
 
-@app.get("/api/location")
+@app.get("/api/location", tags=["routing"])
 async def get_user_location():
     """Get user location based on IP address (fallback to Philadelphia)."""
     try:

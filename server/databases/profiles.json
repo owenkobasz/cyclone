@@ -1,10 +1,18 @@
 [
   {
-    "id": "user123",
+    "id": "20",
     "username": "test",
-    "password": "password",
+    "password": "password123",
     "name": "Jane Doe",
     "address": "123 Main St, Philadelphia, PA",
     "profilePicture": "/default-avatar.png"
+  },
+  {
+    "id": "21",
+    "username": "test1",
+    "password": "password",
+    "name": "John Doe",
+    "address": "456 Broadway Ave, Camden, NJ",
+    "profilePicture": "/avatar-1.jpg"
   }
 ]

@@ -1,120 +1,124 @@
+"""
+Coordinate-based routing endpoints for Cyclone Route API.
+
+This module provides endpoints for generating routes using mathematical algorithms
+instead of pre-downloaded maps, with optional GraphHopper integration for road-following.
+"""
+
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Dict
 import asyncio
 
 from utils.models import (
     RoutePreferences, RouteResponse, ErrorResponse, 
-    RouteGenerationRequest, RouteType
+    FrontendRoutePreferences, FrontendRouteGenerationRequest, RouteType
 )
-from utils.coordinate_router import CoordinateRouter, RoutePreferences as BasicRoutePreferences
 from utils.hybrid_router import HybridRouter, HybridRoutePreferences
+from utils.gpt_enhanced_router import GPTEnhancedRouter
 from utils.logger import get_logger
+
+# =============================================================================
+# ROUTER SETUP
+# =============================================================================
 
 router = APIRouter()
 logger = get_logger(__name__)
 
-@router.post("/generate-coordinate-route", response_model=RouteResponse)
-async def generate_coordinate_route(request: RouteGenerationRequest):
+# =============================================================================
+# FRONTEND ROUTE GENERATION
+# =============================================================================
+
+@router.post("/generate-frontend-route", response_model=RouteResponse)
+async def generate_frontend_route(request: FrontendRouteGenerationRequest):
     """
-    Generate a route using coordinate-based routing (no map downloads required).
+    Generate a route using frontend preferences directly.
     
-    This endpoint generates routes based on:
-    - Start location coordinates
-    - Target distance
-    - Route type (loop, out-and-back, figure-8)
-    - Surface preferences (paved/unpaved)
-    - Elevation targets
-    - Bike lane preferences
+    This endpoint accepts the exact format that the frontend sends:
+    - Frontend preference names (distanceTarget, elevationTarget, bikeLanes, etc.)
+    - Automatic coordinate extraction from startingPointCoords/endingPointCoords
+    - Unit conversion from miles to kilometers and feet to meters
     """
     try:
-        logger.info(f"Generating coordinate-based route: {request.preferences.route_type.value} "
-                   f"at ({request.preferences.start_lat}, {request.preferences.start_lon}) "
-                   f"target distance: {request.preferences.target_distance}km")
+        logger.info(f"Generating frontend route: {request.preferences.routeType} "
+                   f"at ({request.preferences.startingPointCoords}) "
+                   f"target distance: {request.preferences.distanceTarget} miles")
         
-        # Convert to basic preferences for now
-        basic_prefs = BasicRoutePreferences(
-            start_lat=request.preferences.start_lat,
-            start_lon=request.preferences.start_lon,
-            target_distance=request.preferences.target_distance,
-            prefer_bike_lanes=request.preferences.prefer_bike_lanes,
-            prefer_unpaved=request.preferences.prefer_unpaved,
-            target_elevation_gain=request.preferences.target_elevation_gain,
-            max_elevation_gain=request.preferences.max_elevation_gain
+        # Convert frontend preferences to backend format
+        backend_prefs = HybridRoutePreferences(
+            start_lat=request.preferences.startingPointCoords["lat"],
+            start_lon=request.preferences.startingPointCoords["lng"],
+            target_distance=request.preferences.distanceTarget * 1.60934,  # Convert miles to km
+            route_type=RouteType.LOOP,  # Default to loop for now
+            prefer_bike_lanes=request.preferences.bikeLanes,
+            prefer_unpaved=request.preferences.preferGreenways,
+            target_elevation_gain=request.preferences.elevationTarget * 0.3048,  # Convert feet to meters
+            avoid_highways=request.preferences.avoidHighTraffic
         )
         
-        # Generate route using basic coordinate router
-        router_instance = CoordinateRouter()
-        if request.preferences.route_type == RouteType.LOOP:
-            route_result = await router_instance.generate_loop_route(basic_prefs)
-        else:
-            # For now, default to loop route
-            route_result = await router_instance.generate_loop_route(basic_prefs)
+        # Generate route using hybrid router
+        async with HybridRouter() as router_instance:
+            route_result = await router_instance.generate_loop_route(backend_prefs)
         
         # Add metadata if requested
         if request.include_metadata:
-            route_result.update(await _generate_route_metadata(route_result, request.preferences))
+            route_result.update(await _generate_route_metadata(route_result, backend_prefs))
         
-        logger.info(f"Route generated successfully: {route_result['waypoints_count']} waypoints, "
+        logger.info(f"Frontend route generated successfully: {route_result['waypoints_count']} waypoints, "
                    f"{route_result['total_distance_km']:.2f}km")
         
         return RouteResponse(**route_result)
         
     except Exception as e:
-        logger.error(f"Coordinate route generation failed: {e}", exc_info=True)
+        logger.error(f"Frontend route generation failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Route generation failed: {str(e)}")
 
-@router.post("/generate-loop-route", response_model=RouteResponse)
-async def generate_loop_route(preferences: RoutePreferences):
-    """
-    Generate a loop route starting and ending at the same point.
-    
-    This is a simplified endpoint specifically for loop routes.
-    """
-    try:
-        # Ensure route type is loop
-        if preferences.route_type != RouteType.LOOP:
-            preferences.route_type = RouteType.LOOP
-            logger.info("Route type automatically set to loop for this endpoint")
-        
-        # Create request object
-        request = RouteGenerationRequest(
-            preferences=preferences,
-            include_metadata=True,
-            optimize_for="distance"
-        )
-        
-        return await generate_coordinate_route(request)
-        
-    except Exception as e:
-        logger.error(f"Loop route generation failed: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Loop route generation failed: {str(e)}")
+# =============================================================================
+# GPT-ENHANCED ROUTE GENERATION
+# =============================================================================
 
-@router.post("/generate-out-and-back-route", response_model=RouteResponse)
-async def generate_out_and_back_route(preferences: RoutePreferences):
+@router.post("/generate-gpt-enhanced-route", response_model=RouteResponse)
+async def generate_gpt_enhanced_route(request: FrontendRouteGenerationRequest):
     """
-    Generate an out-and-back route.
+    Generate an AI-powered route using GPT-5 nano for waypoint generation.
+    
+    This endpoint:
+    1. Uses GPT-5 nano to analyze user preferences and generate intelligent waypoints
+    2. Creates contextually aware routes with points of interest
+    3. Uses GraphHopper to generate actual bikeable routes between waypoints
+    4. Provides rich metadata including route descriptions and recommendations
+    
+    The result is a route that's not just mathematically accurate, but also
+    interesting, engaging, and tailored to the user's preferences.
     """
     try:
-        # Ensure route type is out-and-back
-        if preferences.route_type != RouteType.OUT_AND_BACK:
-            preferences.route_type = RouteType.OUT_AND_BACK
-            logger.info("Route type automatically set to out-and-back for this endpoint")
+        logger.info(f"=== GENERATING GPT-ENHANCED ROUTE ===")
+        logger.info(f"Preferences: {request.preferences.routeType} "
+                   f"at ({request.preferences.startingPointCoords}) "
+                   f"target distance: {request.preferences.distanceTarget} miles")
         
-        # Create request object
-        request = RouteGenerationRequest(
-            preferences=preferences,
-            include_metadata=True,
-            optimize_for="distance"
-        )
+        # Generate route using GPT-enhanced router
+        async with GPTEnhancedRouter() as router_instance:
+            route_result = await router_instance.generate_gpt_enhanced_route(request.preferences)
         
-        return await generate_coordinate_route(request)
+        # Add metadata if requested
+        if request.include_metadata:
+            route_result.update(await _generate_gpt_route_metadata(route_result, request.preferences))
+        
+        logger.info(f"GPT-enhanced route generated successfully: {route_result['waypoints_count']} waypoints, "
+                   f"{route_result['total_distance_km']:.2f}km")
+        
+        return RouteResponse(**route_result)
         
     except Exception as e:
-        logger.error(f"Out-and-back route generation failed: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Out-and-back route generation failed: {str(e)}")
+        logger.error(f"GPT-enhanced route generation failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"GPT-enhanced route generation failed: {str(e)}")
+
+# =============================================================================
+# HYBRID ROUTE GENERATION
+# =============================================================================
 
 @router.post("/generate-hybrid-route", response_model=RouteResponse)
-async def generate_hybrid_route(request: RouteGenerationRequest):
+async def generate_hybrid_route(request: FrontendRouteGenerationRequest):
     """
     Generate a route using hybrid routing (mathematical distance + road following).
     
@@ -132,36 +136,29 @@ async def generate_hybrid_route(request: RouteGenerationRequest):
     for attempt in range(max_retries):
         try:
             logger.info(f"=== HYBRID ROUTE GENERATION ATTEMPT {attempt + 1}/{max_retries} ===")
-            logger.info(f"Generating hybrid route: {request.preferences.route_type.value} "
-                       f"at ({request.preferences.start_lat}, {request.preferences.start_lon}) "
-                       f"target distance: {request.preferences.target_distance}km")
+            logger.info(f"Generating hybrid route: {request.preferences.routeType} "
+                       f"at ({request.preferences.startingPointCoords}) "
+                       f"target distance: {request.preferences.distanceTarget} miles")
             
             # Convert to hybrid preferences
             hybrid_prefs = HybridRoutePreferences(
-                start_lat=request.preferences.start_lat,
-                start_lon=request.preferences.start_lon,
-                target_distance=request.preferences.target_distance,
-                route_type=request.preferences.route_type,
-                prefer_bike_lanes=request.preferences.prefer_bike_lanes,
-                prefer_unpaved=request.preferences.prefer_unpaved,
-                target_elevation_gain=request.preferences.target_elevation_gain,
-                max_elevation_gain=request.preferences.max_elevation_gain,
-                avoid_highways=request.preferences.avoid_highways,
-                max_segment_length=request.preferences.max_segment_length,
-                min_segment_length=request.preferences.min_segment_length
+                start_lat=request.preferences.startingPointCoords["lat"],
+                start_lon=request.preferences.startingPointCoords["lng"],
+                target_distance=request.preferences.distanceTarget * 1.60934,  # Convert miles to km
+                route_type=RouteType.LOOP,
+                prefer_bike_lanes=request.preferences.bikeLanes,
+                prefer_unpaved=request.preferences.preferGreenways,
+                target_elevation_gain=request.preferences.elevationTarget * 0.3048,  # Convert feet to meters
+                avoid_highways=request.preferences.avoidHighTraffic
             )
             
             # Generate route using hybrid router
             async with HybridRouter() as router_instance:
-                if request.preferences.route_type == RouteType.LOOP:
-                    route_result = await router_instance.generate_loop_route(hybrid_prefs)
-                else:
-                    # For now, default to loop route
-                    route_result = await router_instance.generate_loop_route(hybrid_prefs)
+                route_result = await router_instance.generate_loop_route(hybrid_prefs)
             
             # Add metadata if requested
             if request.include_metadata:
-                route_result.update(await _generate_route_metadata(route_result, request.preferences))
+                route_result.update(await _generate_route_metadata(route_result, hybrid_prefs))
             
             logger.info(f"Hybrid route generated successfully on attempt {attempt + 1}: "
                        f"{route_result['waypoints_count']} waypoints, "
@@ -184,6 +181,10 @@ async def generate_hybrid_route(request: RouteGenerationRequest):
                     detail=f"Route generation failed after {max_retries} attempts. "
                            f"Last error: {str(e)}"
                 )
+
+# =============================================================================
+# INFORMATION ENDPOINTS
+# =============================================================================
 
 @router.get("/route-types")
 async def get_route_types():
@@ -208,6 +209,12 @@ async def get_route_types():
                 "name": "Figure 8",
                 "description": "Route that forms a figure-8 pattern",
                 "best_for": ["Varied terrain", "Mixed distance segments", "Complex routing"]
+            },
+            {
+                "type": "gpt_enhanced",
+                "name": "AI-Enhanced Route",
+                "description": "Route generated using GPT-5 nano for intelligent waypoint selection",
+                "best_for": ["Scenic exploration", "Points of interest", "Personalized experiences"]
             }
         ],
         "features": [
@@ -215,7 +222,8 @@ async def get_route_types():
             "Real-time coordinate generation",
             "Customizable preferences",
             "Elevation targeting",
-            "Surface type preferences"
+            "Surface type preferences",
+            "AI-powered route planning"
         ]
     }
 
@@ -248,11 +256,21 @@ async def get_optimization_options():
                 "name": "Fastest Route",
                 "description": "Optimize for minimal elevation and direct paths",
                 "best_for": "Speed training and commuting"
+            },
+            {
+                "type": "ai_enhanced",
+                "name": "AI-Enhanced",
+                "description": "Use GPT-5 nano for intelligent waypoint selection",
+                "best_for": "Personalized, interesting routes with points of interest"
             }
         ]
     }
 
-async def _generate_route_metadata(route_result: Dict, preferences: RoutePreferences) -> Dict:
+# =============================================================================
+# UTILITY FUNCTIONS
+# =============================================================================
+
+async def _generate_route_metadata(route_result: Dict, preferences: HybridRoutePreferences) -> Dict:
     """Generate additional metadata for the route."""
     try:
         # Calculate estimated duration (assuming 20-25 km/h average speed)
@@ -286,6 +304,41 @@ async def _generate_route_metadata(route_result: Dict, preferences: RoutePrefere
         
     except Exception as e:
         logger.warning(f"Failed to generate route metadata: {e}")
+        return {}
+
+async def _generate_gpt_route_metadata(route_result: Dict, preferences: FrontendRoutePreferences) -> Dict:
+    """Generate additional metadata for GPT-enhanced routes."""
+    try:
+        # GPT routes already include rich metadata, just add basic stats
+        avg_speed_kmh = 22.5
+        estimated_minutes = (route_result['total_distance_km'] / avg_speed_kmh) * 60
+        
+        # Calculate difficulty rating
+        difficulty = _calculate_difficulty_rating(
+            route_result['total_distance_km'], 
+            route_result['elevation_gain_m']
+        )
+        
+        # Surface breakdown based on preferences
+        surface_breakdown = {
+            "paved": 70.0,
+            "unpaved": 20.0,
+            "mixed": 10.0
+        }
+        
+        if preferences.preferGreenways:
+            surface_breakdown["unpaved"] = 60.0
+            surface_breakdown["paved"] = 30.0
+            surface_breakdown["mixed"] = 10.0
+        
+        return {
+            "estimated_duration_minutes": round(estimated_minutes, 1),
+            "difficulty_rating": difficulty,
+            "surface_breakdown": surface_breakdown
+        }
+        
+    except Exception as e:
+        logger.warning(f"Failed to generate GPT route metadata: {e}")
         return {}
 
 def _calculate_difficulty_rating(distance_km: float, elevation_m: float) -> str:

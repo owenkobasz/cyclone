@@ -1,6 +1,17 @@
+"""
+Logging configuration for Cyclone Route API.
+
+This module provides centralized logging setup and configuration
+for consistent logging across the entire application.
+"""
+
 import logging
 import sys
 from typing import Optional
+
+# =============================================================================
+# LOGGER SETUP FUNCTIONS
+# =============================================================================
 
 def setup_logger(name: str, level: int = logging.INFO, log_to_file: bool = False, log_file: Optional[str] = None) -> logging.Logger:
     """
@@ -65,7 +76,10 @@ def get_logger(name: str) -> logging.Logger:
     
     return logger
 
-# Set up root logger for the application
+# =============================================================================
+# APPLICATION LOGGING SETUP
+# =============================================================================
+
 def setup_app_logging(level: int = logging.INFO, log_to_file: bool = False, log_file: Optional[str] = None):
     """
     Set up the root application logger.

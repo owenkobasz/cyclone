@@ -6,39 +6,12 @@ export const generateRoute = async (preferences) => {
         console.log("🚀 === ROUTE GENERATION STARTED ===");
         console.log("📋 Frontend Preferences:", preferences);
         
-        const startLat = preferences.startLat || "39.9526";
-        const startLon = preferences.startLon || "-75.1652";
-        const routeType = preferences.routeType === "outandback" ? "out_and_back" : "loop";
-        
-        console.log("📍 Start Location:", { lat: startLat, lon: startLon });
-        console.log("🎯 Route Type:", routeType);
-        console.log("📏 Target Distance:", preferences.distanceTarget, "km");
-        
-        // Transform frontend preferences to backend format
-        const backendPreferences = {
-            start_lat: parseFloat(startLat),
-            start_lon: parseFloat(startLon),
-            end_lat: parseFloat(preferences.endLat) || null,
-            end_lon: parseFloat(preferences.endLon) || null,
-            target_distance: parseFloat(preferences.distanceTarget) || 20.0,
-            route_type: routeType,
-            prefer_bike_lanes: preferences.bikeLanes !== false,
-            prefer_unpaved: preferences.preferUnpaved || false,
-            target_elevation_gain: preferences.elevationTarget || null,
-            max_elevation_gain: preferences.maxElevation || null,
-            avoid_highways: preferences.avoidHighTraffic || true,
-            max_segment_length: 5.0,
-            min_segment_length: 0.5
-        };
-        
-        console.log("🔧 Backend Preferences:", backendPreferences);
-        
-        // Use the new hybrid endpoint for smooth, bikeable routes
-        const response = await fetch('http://localhost:8000/api/generate-hybrid-route', {
+        // Use the new frontend endpoint that accepts preferences directly
+        const response = await fetch('http://localhost:8000/api/generate-frontend-route', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                preferences: backendPreferences,
+                preferences: preferences,
                 include_metadata: true,
                 optimize_for: preferences.routeType || "scenic"
             })
@@ -116,13 +89,13 @@ export const generateRoute = async (preferences) => {
         }
         
         // Calculate distance accuracy
-        const targetDistance = parseFloat(preferences.distanceTarget) || 20.0;
+        const targetDistance = preferences.distanceTarget || 20.0;
         const actualDistance = routeData.total_distance_km;
-        const accuracy = (actualDistance / targetDistance) * 100;
-        const difference = actualDistance - targetDistance;
+        const accuracy = (actualDistance / (targetDistance * 1.60934)) * 100; // TODO: messy conversion from miles to km, fix this
+        const difference = actualDistance - (targetDistance * 1.60934);
         
         console.log("🎯 Distance Accuracy Analysis:");
-        console.log(`   • Target Distance: ${targetDistance} km`);
+        console.log(`   • Target Distance: ${targetDistance} mi (${(targetDistance * 1.60934).toFixed(2)} km)`);
         console.log(`   • Actual Distance: ${actualDistance} km`);
         console.log(`   • Difference: ${difference > 0 ? '+' : ''}${difference.toFixed(2)} km`);
         console.log(`   • Accuracy: ${accuracy.toFixed(1)}%`);
@@ -150,15 +123,19 @@ export const generateRoute = async (preferences) => {
         // Transform the response for frontend compatibility
         const transformedRouteData = {
             route: routeData.route,
+            total_distance_km: routeData.total_distance_km,
             total_length_km: routeData.total_distance_km,
             total_length_formatted: `${routeData.total_distance_km.toFixed(1)} km`,
             total_elevation_gain: routeData.elevation_gain_m,
+            elevation_gain_m: routeData.elevation_gain_m,
             waypoints_count: routeData.waypoints_count,
             route_type: routeData.route_type,
             success: routeData.success,
             estimated_duration_minutes: routeData.estimated_duration_minutes,
             difficulty_rating: routeData.difficulty_rating,
-            surface_breakdown: routeData.surface_breakdown
+            surface_breakdown: routeData.surface_breakdown,
+            elevation_profile: routeData.elevation_profile,
+            elevation_stats: routeData.elevation_stats
         };
         
         console.log("🔄 Transformed Route Data:", transformedRouteData);
