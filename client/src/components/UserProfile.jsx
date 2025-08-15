@@ -33,7 +33,7 @@ export default function UserProfile() {
 
     const fetchProfile = async () => {
       try {
-        const res = await fetch(`http://localhost:8000/api/user/profile?userId=${localUser.id}`);
+        const res = await fetch(`http://localhost:3000/api/user/profile?userId=${localUser.id}`);
         if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
         setUser(await res.json());
       } catch (err) {
@@ -43,7 +43,7 @@ export default function UserProfile() {
 
     const fetchStats = async () => {
       try {
-        const res = await fetch(`http://localhost:8000/api/user/stats?userId=${localUser.id}`);
+        const res = await fetch(`http://localhost:3000/api/user/stats?userId=${localUser.id}`);
         if (res.ok) setStats(await res.json());
       } catch (err) {
         console.error('Failed to load user stats', err);
@@ -52,7 +52,7 @@ export default function UserProfile() {
 
     const fetchRoutes = async () => {
       try {
-        const res = await fetch(`http://localhost:8000/api/user/routes?userId=${localUser.id}`);
+        const res = await fetch(`http://localhost:3000/api/user/routes?userId=${localUser.id}`);
         if (!res.ok) return;
         const data = await res.json();
         setRoutes(data);
