@@ -3,37 +3,25 @@ import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { disablePageScroll, enablePageScroll } from 'scroll-lock';
 import Card from '../components/Card';
 import Button from './Button';
-import MenuSvg from '../assets/svg/MenuSvg';
-import { HamburgerMenu } from './design/Header';
-import { cycloneLogo, navigation } from '../constants/index';
 import { useAuthModal } from '../contexts/AuthModalContext';
+import { useAuth } from '../contexts/AuthContext';
 import { homeBackground } from '../assets/home';
 
 export default function UserProfile() {
+  const { user: authUser } = useAuth();
   const [user, setUser] = useState(null);
-  const [storedUser, setStoredUser] = useState(null);
   const [stats, setStats] = useState({ distanceKm: 0, elevationM: 0 });
   const [routes, setRoutes] = useState([]);
   const [routeAddresses, setRouteAddresses] = useState({});
-  const [openNavigation, setOpenNavigation] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
   const navigate = useNavigate();
-  const location = useLocation();
   const { openAuthModal } = useAuthModal();
   const GEOAPIFY_API_KEY = 'b7a0cb4137164bf5b2717fd3a450ef73';
 
   useEffect(() => {
-    let localUser = JSON.parse(localStorage.getItem('user'));
-    if (!localUser?.id) {
-      localUser = { id: 'user123', username: 'devUser', profilePicture: '/default-avatar.png' };
-      localStorage.setItem('user', JSON.stringify(localUser));
-    }
-    setStoredUser(localUser);
-
+    if (!authUser) return;
     const fetchProfile = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/api/user/profile?userId=${localUser.id}`);
+        const res = await fetch(`http://localhost:3000/api/user/profile?username=${authUser.username}`);
         if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
         setUser(await res.json());
       } catch (err) {
@@ -43,7 +31,7 @@ export default function UserProfile() {
 
     const fetchStats = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/api/user/stats?userId=${localUser.id}`);
+        const res = await fetch(`http://localhost:3000/api/user/stats?username=${authUser.username}`);
         if (res.ok) setStats(await res.json());
       } catch (err) {
         console.error('Failed to load user stats', err);
@@ -52,7 +40,7 @@ export default function UserProfile() {
 
     const fetchRoutes = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/api/user/routes?userId=${localUser.id}`);
+        const res = await fetch(`http://localhost:3000/api/user/routes?username=${authUser.username}`);
         if (!res.ok) return;
         const data = await res.json();
         setRoutes(data);
@@ -99,41 +87,7 @@ export default function UserProfile() {
     fetchProfile();
     fetchStats();
     fetchRoutes();
-  }, [navigate]);
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const toggleNavigation = () => {
-    if (openNavigation) {
-      setOpenNavigation(false);
-      enablePageScroll();
-    } else {
-      setOpenNavigation(true);
-      disablePageScroll();
-    }
-  };
-
-  const handleClick = () => {
-    if (openNavigation) {
-      enablePageScroll();
-      setOpenNavigation(false);
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    setUser(null);
-    setStoredUser(null);
-    navigate('/');
-  };
+  }, [authUser]);
 
   const handleRouteClick = (route) => {
     navigate('/', { state: { selectedRoute: route, stats: {
@@ -144,7 +98,7 @@ export default function UserProfile() {
       cueSheet: route.instructions || [] } });
   };
 
-  if (!storedUser) {
+  if (!authUser) {
     return (
       <div className="p-4 text-center text-n-1 font-code">
         Please log in to view your profile.
@@ -157,7 +111,6 @@ export default function UserProfile() {
 
   return (
     <div className="min-h-screen bg-n-8/90 backdrop-blur-sm border-t border-n-6">
-      {/* Background - same as Home.jsx */}
       <div className="fixed inset-0 w-screen h-screen z-0">
         <div className="relative w-full h-full">
           <img
@@ -171,91 +124,6 @@ export default function UserProfile() {
 
       {/* Page Content */}
       <div className="relative z-10">
-        {/* Header */}
-        <div className="fixed top-0 left-0 w-full z-50 border-b border-n-6 bg-n-8/90 backdrop-blur-sm boarder boarder-n-6 shadow-lg hover:shadow-xl transition-all duration-300">
-          <div className="flex items-center px-2 lg:px-4 xl:px-6 max-lg:py-4">
-            <Link
-              to="/"
-              className="flex items-center"
-              onClick={() => {
-                setTimeout(() => {
-                  const homeElement = document.getElementById('home');
-                  if (homeElement) {
-                    homeElement.scrollIntoView({ behavior: 'smooth' });
-                  }
-                }, 100);
-              }}
-            >
-              <img src={cycloneLogo} className="h-16 w-auto lg:h-20" alt="Cyclone" />
-            </Link>
-
-            <nav
-              className={`${openNavigation ? 'flex' : 'hidden'} fixed top-[5rem] left-0 right-0 bottom-0 bg-n-8 lg:static lg:flex lg:mx-auto lg:bg-transparent`}
-            >
-              <div className="relative z-2 flex flex-col items-center justify-center m-auto lg:flex-row">
-                {navigation.map((item) => (
-                  <a
-                    key={item.id}
-                    href={item.url}
-                    onClick={handleClick}
-                    className={`block relative font-code text-2xl uppercase text-n-1 transition-all duration-300 hover:text-color-1 hover:scale-105 ${
-                      item.onlyMobile ? 'lg:hidden' : ''
-                    } px-6 py-6 md:py-8 lg:-mr-0.25 lg:text-base lg:font-semibold ${
-                      item.url === location.pathname || item.url === location.hash
-                        ? 'z-2 lg:text-n-1'
-                        : 'lg:text-n-1/50'
-                    } lg:leading-5 lg:hover:text-n-1 xl:px-12`}
-                  >
-                    {item.title}
-                  </a>
-                ))}
-              </div>
-              <HamburgerMenu />
-            </nav>
-
-            <div className="relative ml-auto" ref={dropdownRef}>
-              <img
-                src={user?.profilePicture || '/default-avatar.png'}
-                alt="User Avatar"
-                className="w-10 h-10 rounded-full border cursor-pointer hover:opacity-90"
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-              />
-              {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-40 bg-n-8/90 backdrop-blur-sm border border-n-6 rounded shadow-lg z-50">
-                  <button
-                    onClick={() => {
-                      navigate('/profile');
-                      setDropdownOpen(false);
-                    }}
-                    className="block w-full text-left px-4 py-2 text-n-1 hover:bg-n-6/50 transition-colors font-code"
-                  >
-                    Profile
-                  </button>
-                  <button
-                    onClick={() => {
-                      navigate('/edit-profile');
-                      setDropdownOpen(false);
-                    }}
-                    className="block w-full text-left px-4 py-2 text-n-1 hover:bg-n-6/50 transition-colors font-code"
-                  >
-                    Edit Profile
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="block w-full text-left px-4 py-2 text-n-1 hover:bg-n-6/50 transition-colors font-code"
-                  >
-                    Logout
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <Button className="ml-auto lg:hidden" px="px-3" onClick={toggleNavigation}>
-              <MenuSvg openNavigation={openNavigation} />
-            </Button>
-          </div>
-        </div>
-
         {/* Profile Section */}
         <div className="pt-24 px-2 lg:px-4 xl:px-6 max-w-4xl mx-auto">
           <h2 className="font-code text-2xl lg:text-3xl uppercase text-n-1 text-center mb-8">

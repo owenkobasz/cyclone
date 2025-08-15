@@ -1,7 +1,7 @@
 [
   {
     "id": 1624567890123,
-    "userId": "user123",
+    "username": "test",
     "routeName": "Default Route",
     "waypoints": [
       {
@@ -40,7 +40,7 @@
   },
   {
     "id": 1753222104832,
-    "userId": "user",
+    "username": "matt",
     "routeName": "Florida Route",
     "waypoints": [
       {
