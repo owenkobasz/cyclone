@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
-import { disablePageScroll, enablePageScroll } from 'scroll-lock';
 import Card from '../components/Card';
 import Button from './Button';
 import { useAuthModal } from '../contexts/AuthModalContext';
@@ -143,12 +142,6 @@ export default function UserProfile() {
               </p>
               <p className="font-code text-n-1 text-base lg:text-lg">
                 <strong>Address:</strong> {user?.address || 'Not set'}
-              </p>
-              <p className="font-code text-n-1 text-base lg:text-lg">
-                <strong>Total Distance:</strong> {stats.distanceKm.toFixed(1)} km
-              </p>
-              <p className="font-code text-n-1 text-base lg:text-lg">
-                <strong>Total Elevation:</strong> {stats.elevationM.toFixed(0)} m
               </p>
             </div>
           </Card>

@@ -1,10 +1,38 @@
 const express = require('express');
 const fs = require('fs').promises;
+const fssync = require('fs');
 const path = require('path');
 const router = express.Router();
+const multer = require('multer');
 const dataPath = path.join(__dirname, '../databases/routes.json');
 const profilesPath = path.join(__dirname, '../databases/profiles.json');
+const avatarsDir = path.join(__dirname, '../../client/public/avatars');
 const axios = require('axios');
+
+if (!fssync.existsSync(avatarsDir)) {
+  fssync.mkdirSync(avatarsDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, avatarsDir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `${req.body.id || Date.now()}${ext}`);
+  }
+});
+
+const upload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (!['.jpg', '.jpeg', '.png'].includes(ext)) {
+      return cb(new Error('Only JPG and PNG files are allowed'));
+    }
+    cb(null, true);
+  }
+});
 
 const ensureDataFile = async () => {
   const dir = path.dirname(dataPath);
@@ -129,7 +157,7 @@ router.get('/user/profile', async (req, res) => {
   }
 });
 
-router.put('/user/profile', async (req, res) => {
+router.put('/user/profile', upload.single('avatar'), async (req, res) => {
   const { id, name, address } = req.body;
   if (!id) return res.status(400).json({ error: 'Missing user id' });
 
@@ -138,7 +166,12 @@ router.put('/user/profile', async (req, res) => {
     const index = profiles.findIndex((u) => u.id === id);
     if (index === -1) return res.status(404).json({ error: 'User not found' });
 
-    profiles[index] = { ...profiles[index], name, address };
+    let avatarPath = profiles[index].avatar || '';
+    if (req.file) {
+      avatarPath = `/avatars/${req.file.filename}`;
+    }
+
+    profiles[index] = { ...profiles[index], name, address, avatar: avatarPath };
     await writeProfiles(profiles);
 
     console.log('Updated profile for', id);
@@ -154,8 +187,6 @@ router.get('/user/stats', async (req, res) => {
   if (!username) return res.status(400).json({ error: 'Missing userId' });
 
   res.json({
-    distanceKm: 180.5,
-    elevationM: 2350
   });
 });
 
