@@ -16,6 +16,7 @@ const profilesPath = path.join(__dirname, 'databases', 'profiles.json');
 
 
 // fix to work with Mandy's changesv cf cv
+console.log('OPENAI key present:', !!process.env.OPENAI_API_KEY, 'model:', process.env.OPENAI_MODEL);
 
 // helper functions
 function validPassword(password) {

@@ -25,8 +25,15 @@ services:
       context: ./server
     ports:
       - "3000:3000"
+    env_file:
+      - .env              # ← add this so Node sees OPENAI_API_KEY, OPENAI_MODEL, etc.
+    environment:
+      - NODE_ENV=production
+      # Optional explicit passthrough (redundant if env_file is present, but harmless):
+      # - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # - OPENAI_MODEL=${OPENAI_MODEL}
     volumes:
-    - ./server/databases:/app/databases
+      - ./server/databases:/app/databases
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/status"]
       interval: 30s
