@@ -13,6 +13,7 @@ const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [openNavigation, setOpenNavigation] = useState(false);
+  const [currentHash, setCurrentHash] = useState(location.hash);
   const { openAuthModal } = useAuthModal();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -27,6 +28,17 @@ const Header = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Update currentHash when location changes
+  useEffect(() => {
+    setCurrentHash(location.hash);
+  }, [location.hash]);
+
+  // Handle cases where we might need to clear the hash (when clicking logo)
+  const handleLogoClick = () => {
+    setCurrentHash('');
+    navigate('/');
+  };
 
   const toggleNavigation = () => {
     if (openNavigation) {
@@ -46,15 +58,38 @@ const Header = () => {
     setOpenNavigation(false);
   };
 
+  const handleNavClick = (e, item) => {
+    e.preventDefault();
+    handleClick();
+    
+    // Updates currentHash for instant visual feedback
+    setCurrentHash(item.url);
+    
+    // If the user is not on the home page, navigate to home first with the hash
+    if (location.pathname !== '/') {
+      navigate(`/${item.url}`, { 
+        state: { scrollToHash: item.url },
+        replace: false 
+      });
+    } else {
+      // If the user is already on the home page, then update URL hash and scroll to the section
+      window.history.replaceState(null, '', item.url);
+      const element = document.querySelector(item.url);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
+
   return (
     <div
       className={`fixed top-0 left-0 w-full z-50  border-b border-n-6 lg:bg-n-8/90 lg:backdrop-blur-sm ${openNavigation ? "bg-n-8" : "bg-n-8/90 backdrop-blur-sm"
         }`}
     >
       <div className="flex items-center px-2 lg:px-4 xl:px-6 max-lg:py-4">
-        <a href="#home" className="flex items-center">
+        <button onClick={handleLogoClick} className="flex items-center">
           <img src={cycloneLogo} className="h-16 w-auto lg:h-20" alt="Cyclone" />
-        </a>
+        </button>
 
         <nav
           className={`${openNavigation ? "flex" : "hidden"
@@ -65,12 +100,13 @@ const Header = () => {
               <a
                 key={item.id}
                 href={item.url}
-                onClick={handleClick}
-                className={`block relative font-code text-2xl uppercase text-n-1 transition-all duration-300 hover:text-color-1 hover:scale-105 ${item.onlyMobile ? "lg:hidden" : ""
-                  } px-6 py-6 md:py-8 lg:-mr-0.25 lg:text-base lg:font-semibold ${item.url === location.pathname || item.url === location.hash
-                    ? "z-2 lg:text-n-1"
-                    : "lg:text-n-1/50"
-                  } lg:leading-5 lg:hover:text-n-1 xl:px-12`}
+                onClick={(e) => handleNavClick(e, item)}
+                className={`block relative font-code text-2xl uppercase text-n-1 transition-all duration-300 ${item.onlyMobile ? "lg:hidden" : ""
+                  } px-6 py-6 md:py-8 lg:-mr-0.25 lg:text-base lg:font-semibold lg:leading-5 xl:px-12 ${
+                    item.url === currentHash
+                      ? "z-2 lg:text-n-1 hover:text-color-1"
+                      : "lg:text-n-1/50 hover:text-color-1 lg:hover:text-n-1"
+                  } hover:scale-105`}
               >
                 {item.title}
               </a>

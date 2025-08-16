@@ -47,7 +47,7 @@ const GenerateRoutes = () => {
 
   useEffect(() => {
     const selectedRoute = state?.selectedRoute;
-    if (selectedRoute) {
+    if (selectedRoute && state?.fromRouteGeneration) {
       // Transform selectedRoute to match MapComponent's routeData format
       const transformedRouteData = {
         route: selectedRoute.waypoints || [], // Assuming waypoints is [{ lat, lon }, ...]
@@ -90,7 +90,7 @@ const GenerateRoutes = () => {
       setHasGeneratedRoute(true);
       setUnitSystem(selectedRoute.unitSystem || "imperial");
 
-      // Scroll to results section
+      // Scroll to results section only when coming from route generation
       if (resultsRef.current) {
         resultsRef.current.scrollIntoView({ behavior: "smooth" });
       }

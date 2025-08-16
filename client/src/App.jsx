@@ -1,5 +1,6 @@
 import './index.css';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import ButtonGradient from './assets/svg/ButtonGradient';
 import Header from './components/Header';
 import Home from './components/Home';
@@ -15,6 +16,39 @@ import { Navigate } from 'react-router-dom';
 
 // Main App Layout Component
 const AppLayout = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    // Handle scrolling after navigation from other pages
+    if (location.state?.scrollToHash) {
+      const targetHash = location.state.scrollToHash;
+      const targetId = targetHash.replace('#', '');
+      
+      // Updates the URL to include the hash
+      window.history.replaceState(null, '', targetHash);
+      
+      const element = document.getElementById(targetId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else if (location.hash) {
+      // Handles direct hash navigation
+      const targetId = location.hash.replace('#', '');
+      const element = document.getElementById(targetId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else if (location.pathname === '/' && !location.hash) {
+      // When loading the home page without any hash, scroll to home section
+      const homeElement = document.getElementById('home');
+      if (homeElement) {
+        homeElement.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+  }, [location]);
+
   return (
     <ErrorBoundary>
       <div className="pt-[4.75rem] lg:pt-[6.25rem] overflow-hidden">
