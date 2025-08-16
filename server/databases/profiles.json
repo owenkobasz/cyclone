@@ -19,8 +19,9 @@
     "id": "22",
     "username": "test2",
     "password": "password",
-    "name": "John Doe",
+    "name": "John Wayne",
     "address": "456 Broadway Ave, Camden, NJ",
-    "profilePicture": "/avatar/avatar-1.jpg"
+    "profilePicture": "/avatar/avatar-1.jpg",
+    "avatar": "/avatars/22.png"
   }
 ]

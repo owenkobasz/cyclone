@@ -6,7 +6,7 @@ export default function EditProfile() {
   const storedUser = JSON.parse(localStorage.getItem('user'));
 
   useEffect(() => {
-    if (!storedUser?.id) {
+    if (!storedUser?.username) {
       navigate('/login');
     }
   }, [storedUser, navigate]);
@@ -19,7 +19,7 @@ export default function EditProfile() {
   useEffect(() => {
     if (storedUser?.username) {
       const fetchProfile = async () => {
-        const res = await fetch(`http://localhost:3000/api/user/profile?username=${storedUser.username}`);
+        const res = await fetch(`http://localhost:3000/api/profile-data?username=${storedUser.username}`);
         if (res.ok) {
           const data = await res.json();
           setName(data.name || '');

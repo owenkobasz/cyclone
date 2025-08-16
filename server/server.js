@@ -90,14 +90,14 @@ app.post('/api/login', async (req, res) => {
                     // if match
                     if(match) {
                         console.log(`${username} succesfully logged in.`);
-                        req.session.user = { username }; // save user info in session
+                        req.session.user = { id: row.id, username: row.username }; // save user info in session
     
                         req.session.save(err => {
                             if (err) {
                                 console.error('Session save error:', err);
                                 return res.status(500).json({ error: 'Could not save session' });
                             }
-                            return res.json({ message: "Succesful login", ok: true, username: username });
+                            return res.json({ message: "Succesful login", ok: true, id: row.id, username: row.username });
                         });
                     } else {
                         console.log(`${username} unsuccesfully logged in.`);
@@ -200,7 +200,7 @@ app.post('/api/register', async (req, res) => {
 app.get('/api/status', (req, res) => {
   console.log('Session user:', req.session.user);
   if (req.session.user) {
-    res.json({ loggedIn: true, username: req.session.user.username });
+    res.json({ loggedIn: true, id: req.session.user.id, username: req.session.user.username });
   } else {
     res.json({ loggedIn: false });
   }

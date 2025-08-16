@@ -249,12 +249,19 @@ router.get('/profile-data', (req, res) => {
   const username = req.query.username;
   if (!username) return res.status(400).json({ error: 'Username required' });
 
-  const profilesPath = path.join(__dirname, '../databases/profiles.json');
-  const profiles = JSON.parse(fssync.readFileSync(profilesPath, 'utf8'));
+  try {
+    const profilesPath = path.join(__dirname, '../databases/profiles.json');
+    const profiles = JSON.parse(fssync.readFileSync(profilesPath, 'utf8'));
 
-  const profile = profiles.find(p => p.username === username);
-  if (!profile) return res.status(404).json({ error: 'Profile not found' });
-  console.log("profile: ", profile);
+    const profile = profiles.find(p => p.username === username);
+    if (!profile) return res.status(404).json({ error: 'Profile not found' });
+
+    console.log("profile: ", profile);
+    res.json(profile);
+  } catch (err) {
+    console.error("Error reading profiles:", err);
+    res.status(500).json({ error: "Failed to load profiles" });
+  }
 });
 
 module.exports = router;

@@ -15,9 +15,11 @@ export const AuthProvider = ({ children }) => {
       .then((res) => res.json())
       .then((data) => {
         if (data.loggedIn) {
-          setUser({ username: data.username });
+          setUser({ id: data.id, username: data.username });
+          localStorage.setItem("user", JSON.stringify({ id: data.id, username: data.username }));
         } else {
           setUser(null);
+          localStorage.removeItem("user");
         }
       })
       .catch(() => setUser(null));
@@ -47,7 +49,8 @@ export const AuthProvider = ({ children }) => {
     });
     const data = await res.json();
     if (data.ok) {
-      setUser({ username: data.username });
+      setUser({ id: data.id, username: data.username });
+      localStorage.setItem("user", JSON.stringify({ id: data.id, username: data.username }));
       return { ok: true, message: "Login succesful!"};
     }
     return { ok: false, message: data.message || "Login failed", username: data.username };
