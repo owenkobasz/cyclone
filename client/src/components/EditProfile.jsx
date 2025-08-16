@@ -5,27 +5,32 @@ export default function EditProfile() {
   const navigate = useNavigate();
   const storedUser = JSON.parse(localStorage.getItem('user'));
 
-  if (!storedUser?.id) {
-    navigate('/login');
-    return;
-  }
+  useEffect(() => {
+    if (!storedUser?.id) {
+      navigate('/login');
+    }
+  }, [storedUser, navigate]);
+
   const [name, setName] = useState(storedUser.name || '');
   const [address, setAddress] = useState(storedUser.address || '');
   const [avatarPreview, setAvatarPreview] = useState(storedUser.avatar || '');
   const [avatarFile, setAvatarFile] = useState(null);
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      const res = await fetch(`http://localhost:3000/api/user/profile?username=${storedUser.username}`);
-      if (res.ok) {
-        const data = await res.json();
-        setName(data.name || '');
-        setAddress(data.address || '');
-        setAvatarPreview(data.avatar || '');
-      }
-    };
-    fetchProfile();
-  }, [storedUser.username]);
+    if (storedUser?.username) {
+      const fetchProfile = async () => {
+        const res = await fetch(`http://localhost:3000/api/user/profile?username=${storedUser.username}`);
+        if (res.ok) {
+          const data = await res.json();
+          setName(data.name || '');
+          setAddress(data.address || '');
+          setAvatarPreview(data.avatar || '');
+        }
+      };
+      fetchProfile();
+    }
+  }, [storedUser?.username]);
+
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
@@ -40,6 +45,8 @@ export default function EditProfile() {
 
     const formData = new FormData();
     formData.append('id', storedUser.id);
+    formData.append('username', storedUser.username);
+    formData.append('password', storedUser.password);
     formData.append('name', name);
     formData.append('address', address);
     if (avatarFile) {

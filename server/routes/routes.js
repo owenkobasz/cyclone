@@ -158,12 +158,12 @@ router.get('/user/profile', async (req, res) => {
 });
 
 router.put('/user/profile', upload.single('avatar'), async (req, res) => {
-  const { id, name, address } = req.body;
-  if (!id) return res.status(400).json({ error: 'Missing user id' });
+  const { username, name, address } = req.body;
+  if (!username) return res.status(400).json({ error: 'Missing user name' });
 
   try {
     const profiles = await readProfiles();
-    const index = profiles.findIndex((u) => u.id === id);
+    const index = profiles.findIndex((u) => String(u.username) === String(username));
     if (index === -1) return res.status(404).json({ error: 'User not found' });
 
     let avatarPath = profiles[index].avatar || '';
@@ -174,7 +174,7 @@ router.put('/user/profile', upload.single('avatar'), async (req, res) => {
     profiles[index] = { ...profiles[index], name, address, avatar: avatarPath };
     await writeProfiles(profiles);
 
-    console.log('Updated profile for', id);
+    console.log('Updated profile for', username);
     res.json(profiles[index]);
   } catch (err) {
     console.error('Failed to update profile:', err);
@@ -243,6 +243,18 @@ router.post('/plan-route', requireAuth, async (req, res) => {
     console.error('OSRM route error:', err.message);
     res.status(500).json({ error: 'Failed to fetch route from OSRM' });
   }
+});
+
+router.get('/profile-data', (req, res) => {
+  const username = req.query.username;
+  if (!username) return res.status(400).json({ error: 'Username required' });
+
+  const profilesPath = path.join(__dirname, '../databases/profiles.json');
+  const profiles = JSON.parse(fssync.readFileSync(profilesPath, 'utf8'));
+
+  const profile = profiles.find(p => p.username === username);
+  if (!profile) return res.status(404).json({ error: 'Profile not found' });
+  console.log("profile: ", profile);
 });
 
 module.exports = router;

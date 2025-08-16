@@ -11,7 +11,7 @@ const bcrypt = require('bcrypt');
 const session = require(`express-session`);
 const routes = require('./routes/routes');
 const SQLiteStore = require('connect-sqlite3')(session);
-
+const profileRoutes = require('./routes/routes');
 
 // fix to work with Mandy's changesv cf cv
 
@@ -371,6 +371,8 @@ app.post('/api/generate-custom-route', async (req, res) => {
     });
   }
 });
+
+app.use('/api', profileRoutes);
 
 // verifies backend has started
 app.listen(port, () => {
