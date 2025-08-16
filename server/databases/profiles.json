@@ -3,9 +3,9 @@
     "id": "20",
     "username": "test",
     "password": "password123",
-    "name": "Jane Doe",
-    "address": "123 Main St, Philadelphia, PA",
-    "profilePicture": "/avatar/default-avatar.png"
+    "name": "AJ Maine",
+    "address": "789 Water St, Pittsburgh, PA",
+    "avatar": "/avatars/3.png"
   },
   {
     "id": "21",
@@ -13,7 +13,7 @@
     "password": "password",
     "name": "John Doe",
     "address": "456 Broadway Ave, Camden, NJ",
-    "profilePicture": "/avatar/avatar-1.jpg"
+    "avatar": "/avatar/avatar-1.jpg"
   },
   {
     "id": "22",
@@ -21,7 +21,6 @@
     "password": "password",
     "name": "John Wayne",
     "address": "456 Broadway Ave, Camden, NJ",
-    "profilePicture": "/avatar/avatar-1.jpg",
     "avatar": "/avatars/22.png"
   }
 ]

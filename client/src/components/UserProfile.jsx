@@ -26,7 +26,7 @@ export default function UserProfile() {
         setUser(prev => ({
           ...prev,
           ...profileData,
-          profilePicture: profileData.avatar,
+          avatar: profileData.avatar,
           address: profileData.address
         }));
       } catch (err) {
@@ -151,7 +151,7 @@ export default function UserProfile() {
 
           <Card className="flex flex-col items-center gap-6 p-6 bg-transparent backdrop-blur-sm border border-n-6 shadow-lg hover:shadow-xl">
             <img
-              src={user?.profilePicture || '/default-avatar.png'}
+              src={user?.avatar || '/default-avatar.png'}
               alt="Profile"
               className="w-12 h-12 lg:w-16 lg:h-16 rounded-full object-cover border border-n-6 cursor-pointer hover:opacity-90"
               onClick={() => navigate('/edit-profile')}
