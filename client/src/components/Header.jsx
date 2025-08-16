@@ -52,17 +52,9 @@ const Header = () => {
         }`}
     >
       <div className="flex items-center px-2 lg:px-4 xl:px-6 max-lg:py-4">
-        <Link to="/" className="flex items-center" onClick={() => {
-          // Scroll to home section after navigation
-          setTimeout(() => {
-            const homeElement = document.getElementById('home');
-            if (homeElement) {
-              homeElement.scrollIntoView({ behavior: 'smooth' });
-            }
-          }, 100);
-        }}>
+        <a href="#home" className="flex items-center">
           <img src={cycloneLogo} className="h-16 w-auto lg:h-20" alt="Cyclone" />
-        </Link>
+        </a>
 
         <nav
           className={`${openNavigation ? "flex" : "hidden"
@@ -91,15 +83,28 @@ const Header = () => {
         
 
         {user ? (
-          <div className="relative ml-auto" ref={dropdownRef}>
-            <img
-              src={user.profilePicture || '/default-avatar.png'}
-              alt="User Avatar"
-              className="w-10 h-10 rounded-full border cursor-pointer hover:opacity-90"
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-            />
+          <div className="relative ml-auto flex items-center" ref={dropdownRef}>
+            <span className="hidden mr-4 lg:block font-code text-sm lg:text-base xl:text-lg text-n-1/50">
+              Hi {user?.name || user?.username}!
+            </span>
+
+            <div className="relative">
+              <img
+                src={user?.avatar || user?.profilePicture || '/avatars/default-avatar.png'}
+                alt="User Avatar"
+                className="w-10 h-10 rounded-full border cursor-pointer hover:opacity-90 object-cover"
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                aria-haspopup="true"
+                aria-expanded={dropdownOpen}
+              />
+              <span className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-n-9 flex items-center justify-center translate-x-2 translate-y-2 opacity-100 drop-shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="white" className="w-3 h-3">
+                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                </svg>
+              </span>
+            </div>
             {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-40 bg-n-8 border border-n-6 rounded shadow-lg z-50">
+              <div className="absolute right-0 top-full mt-3 w-40 bg-n-8 border border-n-6 rounded shadow-lg z-50 transform origin-top-right translate-y-0">
                 <button
                   onClick={() => {
                     navigate('/profile');

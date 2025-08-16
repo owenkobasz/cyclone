@@ -97,11 +97,6 @@ const GenerateRoutes = () => {
     }
   }, [state]);
 
-  useEffect(() => {
-    document.getElementById("generate-routes")?.scrollIntoView({ behavior: "smooth" });
-  }, []);
-
-
   const handleGenerateRoute = async () => {
     const hasLocation = location || preferences.startingPointCoords;
     const hasCoordinates = location?.lat || preferences.startingPointCoords?.lat;

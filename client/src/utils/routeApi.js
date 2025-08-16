@@ -1,7 +1,7 @@
 // calls the route generation backend
 import locationService from './locationService.js';
 
-const API_BASE_URL = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
+const API_BASE_URL = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
 
 export async function generateRoute(preferences) {
   // Check multiple sources for starting location coordinates

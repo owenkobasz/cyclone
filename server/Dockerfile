@@ -5,6 +5,8 @@ RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
+ENV PORT=3000
+
 COPY package.json package-lock.json ./
 RUN npm install --omit=optional
 

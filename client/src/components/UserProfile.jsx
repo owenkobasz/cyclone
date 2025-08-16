@@ -36,7 +36,9 @@ export default function UserProfile() {
 
     const fetchProfile = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/api/user/profile?username=${authUser.username}`);
+        const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+        // use session-backed endpoint to avoid undefined username
+        const res = await fetch(`${base}/api/user/profile`, { credentials: 'include' });
         if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
         setUser(await res.json());
       } catch (err) {
@@ -46,7 +48,8 @@ export default function UserProfile() {
 
     const fetchStats = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/api/user/stats?username=${authUser.username}`);
+        const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+        const res = await fetch(`${base}/api/user/profile/stats`, { credentials: 'include' });
         if (res.ok) setStats(await res.json());
       } catch (err) {
         console.error('Failed to load user stats', err);
@@ -55,7 +58,8 @@ export default function UserProfile() {
 
     const fetchRoutes = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/api/user/routes?username=${authUser.username}`);
+        const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+        const res = await fetch(`${base}/api/routes/user`, { credentials: 'include' });
         if (!res.ok) return;
         const data = await res.json();
         setRoutes(data);
@@ -151,7 +155,7 @@ export default function UserProfile() {
 
           <Card className="flex flex-col items-center gap-6 p-6 bg-transparent backdrop-blur-sm border border-n-6 shadow-lg hover:shadow-xl">
             <img
-              src={user?.avatar || '/default-avatar.png'}
+              src={user?.avatar || user?.profilePicture || '/avatars/default-avatar.png'}
               alt="Profile"
               className="w-12 h-12 lg:w-16 lg:h-16 rounded-full object-cover border border-n-6 cursor-pointer hover:opacity-90"
               onClick={() => navigate('/edit-profile')}

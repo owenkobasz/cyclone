@@ -14,7 +14,7 @@ GRAPHHOPPER_API_KEY=your_graphhopper_api_key_here
 OPENAI_API_KEY=your_openai_api_key_here
 
 # React App API Base URL
-REACT_APP_API_BASE_URL=http://localhost:8080
+REACT_APP_API_BASE_URL=http://localhost:3000
 `;
     fs.writeFileSync(envPath, envTemplate);
     console.log('Created .env file template. Please add your API keys.');
@@ -304,15 +304,16 @@ async function installServerDependencies() {
 
 async function preloadUserLocationGraph() {
   try {
-    // Get user's IP-based location
-    const response = await axios.get('http://localhost:8080/api/location', { timeout: 5000 });
+  // Get user's IP-based location (use env override if present)
+  const backendBase = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+  const response = await axios.get(`${backendBase}/api/location`, { timeout: 5000 });
     
     if (response.data && response.data.success) {
       const userLocation = response.data.location;
       console.log(`\nDetected user location: ${userLocation.place}`);
       
       // Check if OSM graph exists for this location
-      const OSMGraphManager = require('./utils/osmGraphManager');
+      const OSMGraphManager = require('./generateRouteFeature/utils/osmGraphManager');
       const graphManager = new OSMGraphManager();
       
       // Use lat/lon from the API response

@@ -17,20 +17,21 @@ export default function EditProfile() {
   const [avatarFile, setAvatarFile] = useState(null);
 
   useEffect(() => {
-    if (storedUser?.username) {
-      const fetchProfile = async () => {
-        const res = await fetch(`http://localhost:3000/api/profile-data?username=${storedUser.username}`);
-        if (res.ok) {
-          const data = await res.json();
-          setName(data.name || '');
-          setAddress(data.address || '');
-          setAvatarPreview(data.avatar || '');
-        }
-      };
-      fetchProfile();
-    }
-  }, [storedUser?.username]);
-
+    const fetchProfile = async () => {
+      const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+      const res = await fetch(`${base}/api/user/profile`, { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        setProfile(data);
+        setName(data.name || '');
+        setAddress(data.address || '');
+        setAvatarPreview(data.avatar || data.profilePicture || '');
+      } else {
+        navigate('/login');
+      }
+    };
+    fetchProfile();
+  }, [storedUser.username]);
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
@@ -53,8 +54,9 @@ export default function EditProfile() {
       formData.append('avatar', avatarFile);
     }
 
-    const res = await fetch('http://localhost:3000/api/user/profile', {
+  const res = await fetch(`${import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000'}/api/user/profile/${profile?.id || ''}`, {
       method: 'PUT',
+      credentials: 'include',
       body: formData
     });
 

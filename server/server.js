@@ -2,16 +2,18 @@ require('dotenv').config({ path: '../.env' });
 const express = require('express')
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
-const { generateRoute } = require('./apiRouterMain.js');
-const { getLocationFromIP, getClientIP } = require('./utils/geolocation.js');
+const { generateRoute } = require('./services/generateRoute.js');
+const { getLocationFromIP, getClientIP } = require('./generateRouteFeature/utils/geolocation.js');
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 const dbUsers = require('./dbUsers.js'); // import users database
 const bcrypt = require('bcrypt');
 const session = require(`express-session`);
-const routes = require('./routes/routes');
 const SQLiteStore = require('connect-sqlite3')(session);
-const profileRoutes = require('./routes/routes');
+const fs = require('fs').promises;
+const path = require('path');
+const profilesPath = path.join(__dirname, 'databases', 'profiles.json');
+
 
 // fix to work with Mandy's changesv cf cv
 
@@ -58,61 +60,81 @@ app.use(session({
   }
 }));
 
-// post and gets
-app.use('/api', routes);
+// Import route modules
+const savedRoutesRouter = require('./saveRoutesFeature.js');
+const userProfilesRouter = require('./userProfilesFeature.js');
 
-// this method does logging in
+// Mount routes
+app.use('/api/routes', savedRoutesRouter);
+app.use('/api/user/profile', userProfilesRouter);
+
+// this method does logging in and registering
 app.post('/api/login', async (req, res) => {
+  console.log('LOGIN REQUEST RECEIVED:', req.body);
+  const { username, password } = req.body;
+  if (!username || !password) return res.status(400).json({ error: 'username and password required' });
 
-    // destructure request
-    const {username, password} = req.body;
-    console.log(username);
+  // promisified db.get
+  const getUser = (u) => new Promise((resolve, reject) => {
+    dbUsers.get('SELECT * FROM users WHERE username = ?', [u], (err, row) => {
+      if (err) return reject(err);
+      resolve(row);
+    });
+  });
 
-    // handle registration / login
-    dbUsers.get(
-        `SELECT * FROM users WHERE username = ?`,
-        [username],
-        (err, row) => {
-            if (err) {
-                console.error('DB error:', err.message);
-                return res.status(500).json({message: 'Error with logging in to account', ok: false});;
-            } else if (row) {
-                // user exists try and login with given password
-                console.log('Username exists');
-                console.log('DB hashed password:', row.password);
-                bcrypt.compare(password, row.password, (err, match) => {
-                    // handle error
-                    if (err) {
-                        console.error('Error comparing passwords: ', err);
-                        return res.status(500).json({error: 'Login error'});
-                    }
+  try {
+    const row = await getUser(username);
+    if (!row) return res.status(404).json({ message: 'User not found, please register', ok: false });
 
-                    // if match
-                    if(match) {
-                        console.log(`${username} succesfully logged in.`);
-                        req.session.user = { id: row.id, username: row.username }; // save user info in session
-    
-                        req.session.save(err => {
-                            if (err) {
-                                console.error('Session save error:', err);
-                                return res.status(500).json({ error: 'Could not save session' });
-                            }
-                            return res.json({ message: "Succesful login", ok: true, id: row.id, username: row.username });
-                        });
-                    } else {
-                        console.log(`${username} unsuccesfully logged in.`);
-                        return res.status(401).json({ message: 'Incorrect password', ok: false });
-                    }
-                });
+    const match = await new Promise((resolve, reject) => {
+      bcrypt.compare(password, row.password, (err, same) => {
+        if (err) return reject(err);
+        resolve(same);
+      });
+    });
 
+    if (!match) return res.status(401).json({ message: 'Incorrect password', ok: false });
 
-            } else if (!row){
-                // tell user to register
-                console.log("Go register punk");
-                return res.status(404).json({ message: "User not found, please register", ok: false });
-            }
-        }
-    );
+    // fetch profile if exists
+    let profile = null;
+    try {
+      const raw = await fs.readFile(profilesPath, 'utf8');
+      const profiles = JSON.parse(raw || '[]');
+      profile = profiles.find(p => p.username === username) || null;
+    } catch (e) {
+      profile = null;
+    }
+
+    // derive display name
+    let displayName = username; // fallback to username
+    if (profile && profile.name) {
+      displayName = profile.name;
+      console.log('Using profile name:', displayName);
+    } else if (row.firstname) {
+      displayName = row.firstname + (row.lastname ? ' ' + row.lastname : '');
+      console.log('Using DB firstname/lastname:', displayName);
+    } else {
+      console.log('Using username as fallback:', displayName);
+    }
+    const avatar = (profile && (profile.avatar || profile.profilePicture)) || null;
+    console.log('Final displayName:', displayName, 'avatar:', avatar);
+
+    req.session.user = { username, name: displayName, avatar };
+
+    req.session.save(err => {
+      if (err) {
+        console.error('Session save error:', err);
+        return res.status(500).json({ error: 'Could not save session' });
+      }
+      // Return first name only
+      const firstName = displayName.split(' ')[0];
+      console.log('Returning login response with firstName:', firstName);
+      return res.json({ message: 'Succesful login', ok: true, username, name: firstName, avatar });
+    });
+  } catch (err) {
+    console.error('Login error:', err);
+    return res.status(500).json({ error: 'Server error' });
+  }
 });
 
 // registration function
@@ -152,14 +174,6 @@ app.post('/api/register', async (req, res) => {
                     return res.status(401).json({ message: 'Password and confirmation must match.', ok: false});
                 }
 
-                if (!validUsername(firstName)) {
-                    return res.status(401).json({ message: 'Invalid first name, must be non-empty', ok: false});
-                }
-
-                if (!validUsername(lastName)) {
-                    return res.status(401).json({ message: 'Invalid last name, must be non-empty', ok: false});
-                }
-
 
 
                 // store user into table
@@ -174,8 +188,8 @@ app.post('/api/register', async (req, res) => {
                     console.log(hash);
 
                     // Store things in database now
-                    dbUsers.run(`INSERT INTO users (username,password, firstname, lastname) VALUES (?,?,?,?)`,
-                    [username,hash, firstName, lastName], (err) => {
+                    dbUsers.run(`INSERT INTO users (username, password, firstname, lastname) VALUES (?, ?, ?, ?)`,
+                    [username, hash, firstName, lastName], (err) => {
                         if(err) {
                             console.error(err);
                             return res.status(500).json({ message: 'Database issue preventing registration', ok: false });
@@ -197,10 +211,54 @@ app.post('/api/register', async (req, res) => {
 
 
 // check if user is logged in with this method
-app.get('/api/status', (req, res) => {
+app.get('/api/status', async (req, res) => {
   console.log('Session user:', req.session.user);
   if (req.session.user) {
-    res.json({ loggedIn: true, id: req.session.user.id, username: req.session.user.username });
+    // try to include name and avatar; prefer session-stored values
+    const resp = { loggedIn: true };
+    let userName = null;
+    
+    if (req.session.user.name) {
+      userName = req.session.user.name.split(' ')[0]; // Extract first name
+    }
+    if (req.session.user.avatar) resp.avatar = req.session.user.avatar;
+
+    // as a fallback, read profiles file and users DB to enrich info
+    try {
+      if (!userName || !resp.avatar) {
+        const raw = await fs.readFile(profilesPath, 'utf8');
+        const profiles = JSON.parse(raw || '[]');
+        const profile = profiles.find(p => p.username === req.session.user.username);
+        if (profile) {
+          if (!userName && profile.name) userName = profile.name.split(' ')[0]; // Extract first name
+          if (!resp.avatar && (profile.avatar || profile.profilePicture)) resp.avatar = profile.avatar || profile.profilePicture;
+        }
+        
+        // If still no name, try to get from users DB
+        if (!userName) {
+          const getUser = (u) => new Promise((resolve, reject) => {
+            dbUsers.get('SELECT * FROM users WHERE username = ?', [u], (err, row) => {
+              if (err) return reject(err);
+              resolve(row);
+            });
+          });
+          
+          try {
+            const userRow = await getUser(req.session.user.username);
+            if (userRow && userRow.firstname) {
+              userName = userRow.firstname;
+            }
+          } catch (e) {
+            console.error('Error fetching user from DB:', e);
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Error reading profiles:', e);
+    }
+    
+    if (userName) resp.name = userName;
+    return res.json(resp);
   } else {
     res.json({ loggedIn: false });
   }
@@ -218,35 +276,6 @@ app.post('/api/logout', (req, res) => {
     return res.json({ ok: true, message: "Logged out successfully" });
   });
 });
-
-// useful functions for grabbing data from users database
-function getUserById(id, callback) {
-  dbUsers.get(
-    "SELECT username, firstname, lastname FROM users WHERE id = ?",
-    [id],
-    (err, row) => {
-      if (err) {
-        console.error("Database error:", err);
-        return callback(err);
-      }
-      callback(null, row); // row will be undefined if no user found
-    }
-  );
-}
-
-function getUserByUsername(username, callback) {
-  dbUsers.get(
-    "SELECT username, firstname, lastname FROM users WHERE username = ?",
-    [username],
-    (err, row) => {
-      if (err) {
-        console.error("Database error:", err);
-        return callback(err);
-      }
-      callback(null, row);
-    }
-  );
-}
 
 // Get user location based on IP
 app.get('/api/location', async (req, res) => {
@@ -372,9 +401,8 @@ app.post('/api/generate-custom-route', async (req, res) => {
   }
 });
 
-app.use('/api', profileRoutes);
-
 // verifies backend has started
-app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`)
+// Bind to 0.0.0.0 so the server is reachable from Docker host
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Example app listening on port ${port}`)
 })

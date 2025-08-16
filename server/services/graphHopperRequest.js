@@ -1,9 +1,9 @@
 const axios = require('axios');
 const { ROUTING_APIS } = require('../config/config');
-const { decodeGraphHopperPolyline } = require('../utils/polylineDecoder');
-const { formatDistance, formatDuration } = require('../utils/formatters');
-const { getInstructionType } = require('../utils/instructionMappers');
-const { extractStreetName } = require('../utils/extractStreet');
+const { decodeGraphHopperPolyline } = require('../generateRouteFeature/utils/polylineDecoder');
+const { formatDistance, formatDuration } = require('../generateRouteFeature/utils/formatters');
+const { getInstructionType } = require('../generateRouteFeature/utils/instructionMappers');
+const { extractStreetName } = require('../generateRouteFeature/utils/extractStreet');
 const { getOpenElevation } = require('./openElevationRequest');
 
 async function getGraphHopperRoute(routeRequest) {

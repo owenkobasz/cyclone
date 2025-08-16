@@ -1,8 +1,8 @@
 const axios = require('axios');
 const { ROUTING_APIS } = require('../config/config');
-const { decodeValhallaPolyline } = require('../utils/polylineDecoder');
-const { formatDistance, formatDuration } = require('../utils/formatters');
-const { getValhallaInstructionType } = require('../utils/instructionMappers');
+const { decodeValhallaPolyline } = require('../generateRouteFeature/utils/polylineDecoder');
+const { formatDistance, formatDuration } = require('../generateRouteFeature/utils/formatters');
+const { getValhallaInstructionType } = require('../generateRouteFeature/utils/instructionMappers');
 const { getOpenElevation } = require('./openElevationRequest');
 
 async function getValhallaRoute(waypoints, options) {

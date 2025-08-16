@@ -21,6 +21,7 @@
     "framer-motion": "^12.23.12",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.536.0",
+    "multer": "^2.0.2",
     "openai": "^5.12.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

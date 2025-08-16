@@ -69,9 +69,11 @@ npm install -D @vitejs/plugin-react@^4.7.0 tailwindcss@^3.4.1 postcss@^8.4.31 au
 - sqlite3@^5.1.7
 - bcrypt@^6.0.0
 - express-session@^1.18.2
+- connect-sqlite3@^0.9.16
 - dotenv@^17.2.1
 - axios@^1.6.0
 - openai@^5.12.2
+- multer@^2.0.2
 
 **Python dependencies (for OSM routing):**
 - requests>=2.28.0
@@ -99,7 +101,7 @@ pip3 install -r requirements.txt
 
 If you need to manually install any missing Node.js packages:
 ```sh
-npm install express@^5.1.0 cors@^2.8.5 sqlite3@^5.1.7 bcrypt@^6.0.0 express-session@^1.18.2 dotenv@^17.2.1 axios@^1.6.0 openai@^5.12.2
+npm install express@^5.1.0 cors@^2.8.5 sqlite3@^5.1.7 bcrypt@^6.0.0 express-session@^1.18.2 dotenv@^17.2.1 axios@^1.6.0 openai@^5.12.2 multer@^2.0.2 connect-sqlite3@^0.9.16
 ```
 
 ## Environment Configuration
@@ -115,7 +117,7 @@ The setup process is now automated! When you run `node server/setup.js`:
 **Required API Keys:**
 - `GRAPHHOPPER_API_KEY` - Get from https://www.graphhopper.com/
 - `OPENAI_API_KEY` - Get from https://platform.openai.com/api-keys
-- `REACT_APP_API_BASE_URL` - Set to your backend URL (default: http://localhost:8080)
+- `REACT_APP_API_BASE_URL` - Set to your backend URL (default: http://localhost:3000)
 
 **Prerequisites:**
 - Node.js (v14 or higher)
