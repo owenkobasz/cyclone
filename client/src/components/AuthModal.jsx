@@ -163,7 +163,7 @@ const AuthModal = () => {
                       className="w-full px-4 py-3 bg-n-7/50 border border-n-6 rounded-xl text-n-1 placeholder-n-3"
                       type="text"
                       name="lastName"
-                      placeholder="First Name"
+                      placeholder="Last Name"
                       value={formData.lastName}
                       onChange={handleInputChange}
                       required
