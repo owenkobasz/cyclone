@@ -157,13 +157,15 @@ router.get('/user/profile', async (req, res) => {
   }
 });
 
-router.put('/user/profile', upload.single('avatar'), async (req, res) => {
-  const { username, name, address } = req.body;
-  if (!username) return res.status(400).json({ error: 'Missing user name' });
+router.put('/user/profile', requireAuth, upload.single('avatar'), async (req, res) => {
+  const { id } = req.query;
+  const userId = req.user?.id;
+  const { name, address } = req.body;
+  if (!id) return res.status(400).json({ error: 'Missing user id' });
 
   try {
     const profiles = await readProfiles();
-    const index = profiles.findIndex((u) => String(u.username) === String(username));
+    const index = profiles.findIndex((u) => String(u.userId) === String(userId));
     if (index === -1) return res.status(404).json({ error: 'User not found' });
 
     let avatarPath = profiles[index].avatar || '';

@@ -15,6 +15,7 @@ export default function EditProfile() {
   const [address, setAddress] = useState(storedUser.address || '');
   const [avatarPreview, setAvatarPreview] = useState(storedUser.avatar || '');
   const [avatarFile, setAvatarFile] = useState(null);
+  const [profile, setProfile] = useState(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -31,7 +32,7 @@ export default function EditProfile() {
       }
     };
     fetchProfile();
-  }, [storedUser.username]);
+  }, []);
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
@@ -54,7 +55,7 @@ export default function EditProfile() {
       formData.append('avatar', avatarFile);
     }
 
-  const res = await fetch(`${import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000'}/api/user/profile/${profile?.id || ''}`, {
+  const res = await fetch(`${import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000'}/api/user/profile?id=${profile?.id || ''}`, {
       method: 'PUT',
       credentials: 'include',
       body: formData

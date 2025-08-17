@@ -18,21 +18,6 @@ export default function UserProfile() {
 
   useEffect(() => {
     if (!authUser) return;
-    const fetchProfileJson = async () => {
-      try {
-        const res = await fetch(`http://localhost:3000/api/profile-data?username=${authUser.username}`);
-        if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
-        const profileData = await res.json();
-        setUser(prev => ({
-          ...prev,
-          ...profileData,
-          avatar: profileData.avatar,
-          address: profileData.address
-        }));
-      } catch (err) {
-        console.error('Failed to fetch profile data from JSON:', err);
-      }
-    };
 
     const fetchProfile = async () => {
       try {
@@ -102,7 +87,6 @@ export default function UserProfile() {
         console.error('Failed to load user routes:', err);
       }
     };
-    fetchProfileJson();
     fetchProfile();
     fetchStats();
     fetchRoutes();
@@ -111,14 +95,12 @@ export default function UserProfile() {
   const handleRouteClick = (route) => {
     navigate('/', {
       state: {
-        selectedRoute: route, 
-        stats: {
+        selectedRoute: route, stats: {
           distanceKm: route.total_distance_km || route.distance || 0,
           elevationM: route.elevation_gain_m || route.elevation || 0,
           totalRideTime: route.total_ride_time || null
         },
-        cueSheet: route.instructions || [],
-        fromRouteGeneration: true
+        cueSheet: route.instructions || []
       }
     });
   };
