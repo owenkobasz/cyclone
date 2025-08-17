@@ -2,27 +2,46 @@ import { createContext, useContext, useState, useEffect } from "react";
 
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
-const API_URL = "http://localhost:3000";
+const API_URL = import.meta.env.REACT_APP_API_BASE_URL || "http://localhost:3000";
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null); // null = unknown or logged out
+  const [user, setUser] = useState(undefined); // undefined = loading, null = logged out, object = logged in
+  const [loading, setLoading] = useState(true);
 
   // Check session status on app load
   useEffect(() => {
+    setLoading(true);
     fetch(`${API_URL}/api/status`, {
       credentials: "include",
     })
       .then((res) => res.json())
       .then((data) => {
         if (data.loggedIn) {
-          setUser({ id: data.id, username: data.username });
-          localStorage.setItem("user", JSON.stringify({ id: data.id, username: data.username }));
+          fetch(`${API_URL}/api/user/profile`, { credentials: 'include' })
+            .then((r) => r.ok ? r.json() : null)
+            .then((profile) => {
+              if (profile) {
+                setUser(profile);
+              } else {
+                // fallback to any fields returned by /api/status
+                const baseUser = {};
+                if (data.name) baseUser.name = data.name;
+                if (data.avatar) baseUser.avatar = data.avatar;
+                setUser(baseUser);
+              }
+            })
+            .catch(() => {
+              const baseUser = {};
+              if (data.name) baseUser.name = data.name;
+              if (data.avatar) baseUser.avatar = data.avatar;
+              setUser(baseUser);
+            });
         } else {
           setUser(null);
-          localStorage.removeItem("user");
         }
       })
-      .catch(() => setUser(null));
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false));
   }, []);
 
   // Register new user (no auto-login)
@@ -34,9 +53,9 @@ export const AuthProvider = ({ children }) => {
     });
     const data = await res.json();
     if (data.ok) {
-      return { ok: true, message: data.message };
+      return { success: true, message: data.message };
     }
-    return { ok: false, message: data.message || "Registration failed" };
+    return { success: false, message: data.message || "Registration failed" };
   };
 
   // Login user
@@ -49,11 +68,29 @@ export const AuthProvider = ({ children }) => {
     });
     const data = await res.json();
     if (data.ok) {
-      setUser({ id: data.id, username: data.username });
-      localStorage.setItem("user", JSON.stringify({ id: data.id, username: data.username }));
-      return { ok: true, message: "Login succesful!"};
+      try {
+        const profileRes = await fetch(`${API_URL}/api/user/profile`, { credentials: 'include' });
+        if (profileRes.ok) {
+          const profile = await profileRes.json();
+          setUser(profile);
+        } else {
+          // fall back to response fields
+          const baseUser = {};
+          if (data.name) baseUser.name = data.name;
+          if (data.avatar) baseUser.avatar = data.avatar;
+          if (data.username) baseUser.username = data.username;
+          setUser(baseUser);
+        }
+      } catch (e) {
+        const baseUser = {};
+        if (data.name) baseUser.name = data.name;
+        if (data.avatar) baseUser.avatar = data.avatar;
+        if (data.username) baseUser.username = data.username;
+        setUser(baseUser);
+      }
+      return { ok: true, message: "Login succesful!", username };
     }
-    return { ok: false, message: data.message || "Login failed", username: data.username };
+    return { ok: false, message: data.message || "Login failed" };
   };
 
   // Logout user
@@ -73,8 +110,23 @@ export const AuthProvider = ({ children }) => {
     
   };
 
+  // Refresh user data (useed for after profile updates)
+  const refreshUser = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/user/profile`, { credentials: 'include' });
+      if (res.ok) {
+        const profile = await res.json();
+        setUser(profile);
+        return true;
+      }
+    } catch (error) {
+      console.error('Failed to refresh user data:', error);
+    }
+    return false;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, register, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, register, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
