@@ -1,38 +1,55 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function EditProfile() {
   const navigate = useNavigate();
-  const storedUser = JSON.parse(localStorage.getItem('user'));
-
-  useEffect(() => {
-    if (!storedUser?.username) {
-      navigate('/login');
-    }
-  }, [storedUser, navigate]);
-
-  const [name, setName] = useState(storedUser.name || '');
-  const [address, setAddress] = useState(storedUser.address || '');
-  const [avatarPreview, setAvatarPreview] = useState(storedUser.avatar || '');
-  const [avatarFile, setAvatarFile] = useState(null);
+  const { user: authUser, loading, refreshUser } = useAuth();
   const [profile, setProfile] = useState(null);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [address, setAddress] = useState('');
+  const [avatarPreview, setAvatarPreview] = useState('');
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   useEffect(() => {
+    if (!loading && !authUser) {
+      navigate('/');
+      return;
+    }
+  }, [authUser, loading, navigate]);
+
+  useEffect(() => {
+    if (!authUser) return;
+    
     const fetchProfile = async () => {
-      const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
-      const res = await fetch(`${base}/api/user/profile`, { credentials: 'include' });
-      if (res.ok) {
-        const data = await res.json();
-        setProfile(data);
-        setName(data.name || '');
-        setAddress(data.address || '');
-        setAvatarPreview(data.avatar || data.profilePicture || '');
-      } else {
-        navigate('/login');
+      try {
+        const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+        const res = await fetch(`${base}/api/user/profile`, { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          setProfile(data);
+          setFirstName(data.firstName || '');
+          setLastName(data.lastName || '');
+          setAddress(data.address || '');
+          // Use profilePicture as primary, fallback to avatar
+          const avatarUrl = data.profilePicture || data.avatar || '';
+          if (avatarUrl && avatarUrl !== '/avatars/default-avatar.png' && !avatarUrl.startsWith('http')) {
+            setAvatarPreview(`${base}${avatarUrl}`);
+          } else {
+            setAvatarPreview(avatarUrl || '/avatars/default-avatar.png');
+          }
+        } else if (res.status === 401) {
+          navigate('/');
+        }
+      } catch (error) {
+        console.error('Failed to fetch profile:', error);
       }
     };
     fetchProfile();
-  }, []);
+  }, [authUser, navigate]);
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
@@ -44,44 +61,86 @@ export default function EditProfile() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    const formData = new FormData();
-    formData.append('id', storedUser.id);
-    formData.append('username', storedUser.username);
-    formData.append('password', storedUser.password);
-    formData.append('name', name);
-    formData.append('address', address);
-    if (avatarFile) {
-      formData.append('avatar', avatarFile);
+    
+    if (!profile?.id) {
+      setSubmitError('No profile ID available');
+      return;
     }
 
-  const res = await fetch(`${import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000'}/api/user/profile?id=${profile?.id || ''}`, {
-      method: 'PUT',
-      credentials: 'include',
-      body: formData
-    });
+    setIsSubmitting(true);
+    setSubmitError('');
 
-    if (res.ok) {
-      const updatedUser = await res.json();
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      navigate('/profile');
-    } else {
-      console.error('Failed to update profile');
+    try {
+      const formData = new FormData();
+      formData.append('id', profile.id);
+      formData.append('firstName', firstName);
+      formData.append('lastName', lastName);
+      formData.append('address', address);
+      if (avatarFile) {
+        formData.append('avatar', avatarFile);
+      }
+
+      const res = await fetch(`${import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000'}/api/user/profile/${profile.id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        body: formData
+      });
+
+      if (res.ok) {
+        // Refresh user data in auth context so header updates immediately
+        try {
+          if (typeof refreshUser === 'function') {
+            await refreshUser();
+            console.log('User data refreshed successfully');
+          } else {
+            console.warn('refreshUser is not available');
+          }
+        } catch (refreshError) {
+          console.error('Failed to refresh user data:', refreshError);
+        }
+        navigate('/profile');
+      } else {
+        const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
+        setSubmitError(`Failed to update profile: ${errorData.error || 'Server error'}`);
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      setSubmitError(`Error updating profile: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="max-w-md mx-auto mt-10 p-6 bg-white shadow-lg rounded-lg">
       <h2 className="text-2xl font-bold mb-4">Edit Profile</h2>
+      
+      {submitError && (
+        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+          {submitError}
+        </div>
+      )}
+      
       <form onSubmit={handleSubmit} className="space-y-4">
         
         <div>
-          <label className="block text-sm font-medium text-gray-700">Full Name</label>
+          <label className="block text-sm font-medium text-gray-700">First Name</label>
           <input
             type="text"
             className="mt-1 w-full border border-gray-300 p-2 rounded"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Last Name</label>
+          <input
+            type="text"
+            className="mt-1 w-full border border-gray-300 p-2 rounded"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
             required
           />
         </div>
@@ -122,9 +181,14 @@ export default function EditProfile() {
           </button>
           <button
             type="submit"
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            disabled={isSubmitting}
+            className={`px-4 py-2 text-white rounded ${
+              isSubmitting 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-blue-500 hover:bg-blue-600'
+            }`}
           >
-            Save
+            {isSubmitting ? 'Saving...' : 'Save'}
           </button>
         </div>
       </form>

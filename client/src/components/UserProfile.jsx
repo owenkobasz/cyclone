@@ -16,6 +16,19 @@ export default function UserProfile() {
   const { openAuthModal } = useAuthModal();
   const GEOAPIFY_API_KEY = 'b7a0cb4137164bf5b2717fd3a450ef73';
 
+  // Helper function to build correct avatar URL
+  const getAvatarUrl = (user) => {
+    // Use profilePicture as primary, else uses default avatar
+    const avatar = user?.profilePicture || user?.avatar;
+    if (!avatar || avatar === '/avatars/default-avatar.png') {
+      // For default avatar, use it directly
+      return '/avatars/default-avatar.png';
+    }
+    if (avatar.startsWith('http')) return avatar;
+    const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+    return `${base}${avatar}`;
+  };
+
   useEffect(() => {
     if (!authUser) return;
 
@@ -25,16 +38,19 @@ export default function UserProfile() {
         // use session-backed endpoint to avoid undefined username
         const res = await fetch(`${base}/api/user/profile`, { credentials: 'include' });
         if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
-        setUser(await res.json());
+        const profileData = await res.json();
+        setUser(profileData);
+        return profileData;
       } catch (err) {
         console.error('Failed to fetch user profile:', err);
+        return null;
       }
     };
 
-    const fetchStats = async () => {
+    const fetchStats = async (username) => {
       try {
         const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
-        const res = await fetch(`${base}/api/user/profile/stats`, { credentials: 'include' });
+        const res = await fetch(`${base}/api/user/profile/${username}/stats`, { credentials: 'include' });
         if (res.ok) setStats(await res.json());
       } catch (err) {
         console.error('Failed to load user stats', err);
@@ -44,8 +60,15 @@ export default function UserProfile() {
     const fetchRoutes = async () => {
       try {
         const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
-        const res = await fetch(`${base}/api/routes/user`, { credentials: 'include' });
-        if (!res.ok) return;
+        const res = await fetch(`${base}/api/routes/`, { credentials: 'include' });
+        if (!res.ok) {
+          if (res.status === 401) {
+            console.error('Not authenticated for routes - user may need to log in again');
+            return;
+          }
+          console.error('Failed to fetch routes:', res.status, res.statusText);
+          return;
+        }
         const data = await res.json();
         setRoutes(data);
 
@@ -87,9 +110,17 @@ export default function UserProfile() {
         console.error('Failed to load user routes:', err);
       }
     };
-    fetchProfile();
-    fetchStats();
-    fetchRoutes();
+
+    // Fetch profile first, then use that data for other requests
+    const loadUserData = async () => {
+      const profileData = await fetchProfile();
+      if (profileData && profileData.username) {
+        fetchStats(profileData.username);
+        fetchRoutes();
+      }
+    };
+
+    loadUserData();
   }, [authUser]);
 
   const handleRouteClick = (route) => {
@@ -139,14 +170,13 @@ export default function UserProfile() {
 
           <Card className="flex flex-col items-center gap-6 p-6 bg-transparent backdrop-blur-sm border border-n-6 shadow-lg hover:shadow-xl">
             <img
-              src={user?.avatar || user?.profilePicture || '/avatars/default-avatar.png'}
-              alt="Profile"
-              className="w-12 h-12 lg:w-16 lg:h-16 rounded-full object-cover border border-n-6 cursor-pointer hover:opacity-90"
-              onClick={() => navigate('/edit-profile')}
+              src={getAvatarUrl(user)}
+              alt="User Avatar"
+              className="w-24 h-24 rounded-full border-2 border-n-6 object-cover"
             />
             <div className="flex-1 space-y-3 text-center">
               <p className="font-code text-n-1 text-base lg:text-lg">
-                <strong>Name:</strong> {user?.name || 'N/A'}
+                <strong>Name:</strong> {user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : (user?.name || 'N/A')}
               </p>
               <p className="font-code text-n-1 text-base lg:text-lg">
                 <strong>Address:</strong> {user?.address || 'Not set'}

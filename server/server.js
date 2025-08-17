@@ -10,9 +10,32 @@ const dbUsers = require('./dbUsers.js'); // import users database
 const bcrypt = require('bcrypt');
 const session = require(`express-session`);
 const SQLiteStore = require('connect-sqlite3')(session);
+const multer = require('multer');
 const fs = require('fs').promises;
 const path = require('path');
 const profilesPath = path.join(__dirname, 'databases', 'profiles.json');
+
+// Profile helper functions
+const readProfiles = async () => {
+  const dir = path.dirname(profilesPath);
+  try {
+    await fs.mkdir(dir, { recursive: true });
+    try {
+      await fs.access(profilesPath);
+    } catch {
+      await fs.writeFile(profilesPath, JSON.stringify([]));
+    }
+    const raw = await fs.readFile(profilesPath, 'utf8');
+    return JSON.parse(raw);
+  } catch (err) {
+    console.error('Error reading profiles file:', err);
+    throw err;
+  }
+};
+
+const writeProfiles = async (profiles) => {
+  await fs.writeFile(profilesPath, JSON.stringify(profiles, null, 2));
+};
 
 
 // fix to work with Mandy's changesv cf cv
@@ -36,13 +59,63 @@ function validUsername(username) {
 }
 
 // Enable CORS for all routes
+// Configure allowed frontend origin for CORS (use REACT_APP_API_BASE_URL or FRONTEND_ORIGIN env)
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || process.env.REACT_APP_API_BASE_URL || 'http://localhost:5173';
+
+// If running behind a proxy (e.g. in Docker with a reverse proxy), enable trust proxy when requested
+if (process.env.TRUST_PROXY === '1' || process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 app.use(cors({
-  origin: true,  // works with docker
+  origin: function(origin, callback) {
+    // Allow requests with no origin like curl/postman
+    if (!origin) return callback(null, true);
+    // Allow the configured frontend origin and localhost variants
+    const allowed = [FRONTEND_ORIGIN, 'http://localhost', 'http://127.0.0.1', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:80'];
+    if (allowed.indexOf(origin) !== -1) {
+      return callback(null, true);
+    }
+    return callback(new Error('CORS policy does not allow access from the specified Origin.'), false);
+  },
   credentials: true
 }));
 
 // allow json parsing
 app.use(express.json());
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, path.join(__dirname, 'public/avatars/'));
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  fileFilter: function (req, file, cb) {
+    // Only allow image files
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'), false);
+    }
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+});
+
+// Makes sure avatars directory exists
+const avatarsDir = path.join(__dirname, 'public/avatars');
+fs.mkdir(avatarsDir, { recursive: true }).catch(console.error);
+
+// Serve static files (including avatars)
+app.use('/avatars', express.static(path.join(__dirname, 'public/avatars')));
 
 // Set up sessions
 app.use(session({
@@ -54,10 +127,11 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-    secure: false,    
-    httpOnly: true,   
-    sameSite: 'lax'   
+  maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+  // For local development (including Docker), use insecure cookies
+  secure: false, // Set to true only in actual production with HTTPS
+  httpOnly: true,
+  sameSite: 'lax' // Use lax for local development
   }
 }));
 
@@ -65,10 +139,43 @@ app.use(session({
 const savedRoutesRouter = require('./saveRoutesFeature.js');
 const userProfilesRouter = require('./userProfilesFeature.js');
 
-// Mount routes
-app.use('/api/routes', savedRoutesRouter);
-app.use('/api/user/profile', userProfilesRouter);
+console.log('Router types:', { 
+  savedRoutesRouter: typeof savedRoutesRouter, 
+  userProfilesRouter: typeof userProfilesRouter 
+});
 
+// Mount routes
+console.log('About to mount routes...');
+console.log('savedRoutesRouter:', typeof savedRoutesRouter);
+console.log('userProfilesRouter:', typeof userProfilesRouter);
+
+app.use('/api/routes', savedRoutesRouter);
+
+// Test route for debugging profile issues
+app.get('/api/debug-profile-test', async (req, res) => {
+  try {
+    const fs = require('fs').promises;
+    const path = require('path');
+    const profilesPath = path.join(__dirname, 'databases/profiles.json');
+    
+    console.log('Reading profiles from:', profilesPath);
+    const profilesData = await fs.readFile(profilesPath, 'utf8');
+    const profiles = JSON.parse(profilesData);
+    
+    res.json({
+      profilesPath,
+      profileCount: profiles.length,
+      profiles: profiles,
+      user5: profiles.find(p => p.id === "5" || p.id === 5)
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message, stack: err.stack });
+  }
+});
+
+console.log('Routers mounted successfully');
+
+// POST login endpoint
 // this method does logging in and registering
 app.post('/api/login', async (req, res) => {
   console.log('LOGIN REQUEST RECEIVED:', req.body);
@@ -108,7 +215,10 @@ app.post('/api/login', async (req, res) => {
 
     // derive display name
     let displayName = username; // fallback to username
-    if (profile && profile.name) {
+    if (profile && (profile.firstName || profile.lastName)) {
+      displayName = `${profile.firstName || ''} ${profile.lastName || ''}`.trim();
+      console.log('Using profile firstName/lastName:', displayName);
+    } else if (profile && profile.name) {
       displayName = profile.name;
       console.log('Using profile name:', displayName);
     } else if (row.firstname) {
@@ -117,17 +227,29 @@ app.post('/api/login', async (req, res) => {
     } else {
       console.log('Using username as fallback:', displayName);
     }
-    const avatar = (profile && (profile.avatar || profile.profilePicture)) || null;
+    // Use profilePicture as primary avatar field, if none set, then default
+    const avatar = (profile && profile.profilePicture) || '/avatars/default-avatar.png';
     console.log('Final displayName:', displayName, 'avatar:', avatar);
 
-    req.session.user = { username, name: displayName, avatar };
+    // Create session with full profile data for frontend components
+    req.session.user = { 
+      username, 
+      name: displayName, 
+      avatar,
+      // Includes firstName/lastName for Header component
+      firstName: profile?.firstName || row.firstname || '',
+      lastName: profile?.lastName || row.lastname || '',
+      id: profile?.id || row.id
+    };
+
+    console.log('Session user data:', req.session.user);
 
     req.session.save(err => {
       if (err) {
         console.error('Session save error:', err);
         return res.status(500).json({ error: 'Could not save session' });
       }
-      // Return first name only
+      // Return first name only for login response (frontend will fetch full profile)
       const firstName = displayName.split(' ')[0];
       console.log('Returning login response with firstName:', firstName);
       return res.json({ message: 'Succesful login', ok: true, username, name: firstName, avatar });
@@ -140,6 +262,7 @@ app.post('/api/login', async (req, res) => {
 
 // registration function
 app.post('/api/register', async (req, res) => {
+    console.log('=== REGISTRATION REQUEST RECEIVED ===');
 
     // encryption stuff
     const saltRounds = 10;
@@ -190,20 +313,49 @@ app.post('/api/register', async (req, res) => {
 
                     // Store things in database now
                     dbUsers.run(`INSERT INTO users (username, password, firstname, lastname) VALUES (?, ?, ?, ?)`,
-                    [username, hash, firstName, lastName], (err) => {
+                    [username, hash, firstName, lastName], async function(err) {
                         if(err) {
                             console.error(err);
                             return res.status(500).json({ message: 'Database issue preventing registration', ok: false });
                         }
 
-                        // let user know they have succesfully registered
-                        return res.json({
-                            message: 'User registered successfully! Please log in.',
-                            ok: true
-                        });
-                    }
+                        // Gets the ID of the newly created user
+                        const userId = this.lastID;
+                        console.log('Created user with ID:', userId);
 
-                    )
+                        try {
+                            // Create corresponding profile entry in profiles.json
+                            const profiles = await readProfiles();
+                            const newProfile = {
+                                id: userId.toString(),
+                                username: username,
+                                password: hash,
+                                firstName: firstName,
+                                lastName: lastName,
+                                address: "",
+                                profilePicture: "/avatars/default-avatar.png",
+                                avatar: ""
+                            };
+                            
+                            profiles.push(newProfile);
+                            await writeProfiles(profiles);
+                            console.log('Created profile entry for user:', userId);
+
+                            // let user know they have succesfully registered
+                            return res.json({
+                                message: 'User registered successfully! Please log in.',
+                                ok: true
+                            });
+                        } catch (profileErr) {
+                            console.error('Error creating profile entry:', profileErr);
+                            // Error message for when user is successfully created in database but profile creation failed
+                            // Will still return success since the user can log in
+                            return res.json({
+                                message: 'User registered successfully! Please log in.',
+                                ok: true
+                            });
+                        }
+                    });
                 });
             }
         }
@@ -211,16 +363,23 @@ app.post('/api/register', async (req, res) => {
 });
 
 
-// check if user is logged in with this method
+// check if user is logged in with this method (gives info about current session)
+app.get('/api/debug-session', (req, res) => {
+  res.json({
+    sessionExists: !!req.session,
+    sessionUser: req.session?.user,
+    sessionID: req.sessionID
+  });
+});
+
 app.get('/api/status', async (req, res) => {
-  console.log('Session user:', req.session.user);
   if (req.session.user) {
     // try to include name and avatar; prefer session-stored values
     const resp = { loggedIn: true };
     let userName = null;
     
     if (req.session.user.name) {
-      userName = req.session.user.name.split(' ')[0]; // Extract first name
+      userName = req.session.user.name; 
     }
     if (req.session.user.avatar) resp.avatar = req.session.user.avatar;
 
@@ -231,7 +390,7 @@ app.get('/api/status', async (req, res) => {
         const profiles = JSON.parse(raw || '[]');
         const profile = profiles.find(p => p.username === req.session.user.username);
         if (profile) {
-          if (!userName && profile.name) userName = profile.name.split(' ')[0]; // Extract first name
+          if (!userName && profile.name) userName = profile.name; 
           if (!resp.avatar && (profile.avatar || profile.profilePicture)) resp.avatar = profile.avatar || profile.profilePicture;
         }
         
@@ -263,6 +422,257 @@ app.get('/api/status', async (req, res) => {
   } else {
     res.json({ loggedIn: false });
   }
+});
+
+// Test route to verify PUT functionality
+app.put('/api/test-put/:id', (req, res) => {
+  console.log('TEST PUT ROUTE HIT for ID:', req.params.id);
+  console.log('Request body:', req.body);
+  console.log('Session:', req.session?.user);
+  
+  res.json({ 
+    message: 'Test PUT route working', 
+    id: req.params.id,
+    body: req.body,
+    session: req.session?.user
+  });
+});
+
+// Test endpoint to debug form data
+app.post('/api/test-form', upload.single('avatar'), (req, res) => {
+  console.log('=== TEST FORM ENDPOINT ===');
+  console.log('Body:', req.body);
+  console.log('firstName:', req.body.firstName);
+  console.log('lastName:', req.body.lastName);
+  console.log('address:', req.body.address);
+  res.json({
+    received: req.body,
+    fields: {
+      firstName: req.body.firstName,
+      lastName: req.body.lastName,
+      address: req.body.address
+    }
+  });
+});
+
+// Debug endpoint to test form data parsing
+app.put('/api/debug/form-test', upload.single('avatar'), (req, res) => {
+  console.log('=== FORM DEBUG TEST ===');
+  console.log('req.body:', req.body);
+  console.log('req.file:', req.file);
+  console.log('req.body.firstName:', req.body.firstName);
+  console.log('req.body.lastName:', req.body.lastName);
+  console.log('req.body.address:', req.body.address);
+  res.json({
+    received: req.body,
+    file: req.file ? 'FILE_RECEIVED' : 'NO_FILE'
+  });
+});
+
+app.put('/api/user/profile/:id', upload.single('avatar'), async (req, res) => {
+  console.log('IN SERVER.JS ENDPOINT');
+  console.log('=== DIRECT PROFILE UPDATE START ===');
+  console.log('User ID:', req.params.id);
+  console.log('Raw request body:', req.body);
+  console.log('Raw request file:', req.file);
+  console.log('Session user:', req.session?.user);
+  
+  // Check authentication
+  if (!req.session || !req.session.user || !req.session.user.username) {
+    console.log('Authentication failed');
+    return res.status(401).json({ error: 'Please log in first' });
+  }
+
+  const { id } = req.params;
+  const { firstName, lastName, address } = req.body;
+  
+  console.log('Received form data:', { firstName, lastName, address });
+
+  try {
+    // Read profiles.json
+    const profilesPath = path.join(__dirname, 'databases/profiles.json');
+    console.log('Reading profiles from:', profilesPath);
+    
+    const profilesData = await fs.readFile(profilesPath, 'utf8');
+    const profiles = JSON.parse(profilesData);
+    
+    console.log('Loaded profiles count:', profiles.length);
+    console.log('Available profile IDs:', profiles.map(p => ({ id: p.id, type: typeof p.id })));
+    
+    // Find profile with flexible ID matching
+    let profileIndex = profiles.findIndex(p => p.id === id);
+    if (profileIndex === -1) {
+      profileIndex = profiles.findIndex(p => p.id == id);
+    }
+    if (profileIndex === -1) {
+      profileIndex = profiles.findIndex(p => parseInt(p.id) === parseInt(id));
+    }
+
+    console.log('Profile search result - Index:', profileIndex);
+
+    if (profileIndex === -1) {
+      console.log('Profile not found for ID:', id);
+      return res.status(404).json({ 
+        error: 'Profile not found',
+        debug: {
+          searchId: id,
+          searchIdType: typeof id,
+          availableIds: profiles.map(p => p.id)
+        }
+      });
+    }
+
+    // Prepare updated profile data  
+    const updatedProfile = {
+      ...profiles[profileIndex]
+    };
+    
+    console.log('=== FIELD UPDATE ===');
+    console.log('Original profile:', profiles[profileIndex]);
+    console.log('Form values received:', { firstName, lastName, address });
+    console.log('Updating fields...');
+    
+    console.log('=== UPDATING ALL FIELDS ===');
+    
+    if (address !== undefined) {
+      console.log(`✓ Address update: "${profiles[profileIndex].address}" -> "${address}"`);
+      updatedProfile.address = address;
+    }
+    
+    if (firstName !== undefined) {
+      console.log(`✓ FirstName update: "${profiles[profileIndex].firstName}" -> "${firstName}"`);
+      updatedProfile.firstName = firstName;
+    }
+    
+    if (lastName !== undefined) {
+      console.log(`✓ LastName update: "${profiles[profileIndex].lastName}" -> "${lastName}"`);
+      updatedProfile.lastName = lastName;
+    }
+
+    console.log('Final profile after updates:', updatedProfile);
+
+    // If file was uploaded, update profilePicture 
+    if (req.file) {
+      updatedProfile.profilePicture = `/avatars/${req.file.filename}`;
+      // Also set avatar for backward compatibility
+      updatedProfile.avatar = `/avatars/${req.file.filename}`;
+      console.log('Avatar uploaded, updated profilePicture:', updatedProfile.profilePicture);
+    }
+
+    profiles[profileIndex] = updatedProfile;
+
+    console.log('=== BEFORE FILE WRITE ===');
+    console.log('Original profile before update:', JSON.stringify(profiles[profileIndex], null, 2));
+    console.log('Updated profile being written:', JSON.stringify(updatedProfile, null, 2));
+    console.log('firstName in updatedProfile:', updatedProfile.firstName);
+    console.log('lastName in updatedProfile:', updatedProfile.lastName);
+    console.log('address in updatedProfile:', updatedProfile.address);
+
+    // Write back to file
+    await fs.writeFile(profilesPath, JSON.stringify(profiles, null, 2));
+    
+    // Update session with new profile data including individual firstName/lastName
+    const fullName = `${updatedProfile.firstName || ''} ${updatedProfile.lastName || ''}`.trim();
+    req.session.user = {
+      ...req.session.user,
+      name: fullName,
+      firstName: updatedProfile.firstName,
+      lastName: updatedProfile.lastName,
+      avatar: updatedProfile.profilePicture,
+      profilePicture: updatedProfile.profilePicture
+    };
+    console.log('Session updated with new profile data:', req.session.user);
+    
+    console.log('Profile updated successfully');
+    console.log('=== DIRECT PROFILE UPDATE END ===');
+    
+    res.json({ 
+      message: 'Profile updated successfully',
+      profile: profiles[profileIndex]
+    });
+
+  } catch (error) {
+    console.error('Profile update error:', error);
+    res.status(500).json({ 
+      error: 'Failed to update profile',
+      details: error.message
+    });
+  }
+});
+
+// TEST ENDPOINT TO VERIFY SERVER.JS IS ACTIVE
+app.get('/api/test/endpoint', (req, res) => {
+  console.log('TEST ENDPOINT CALLED IN SERVER.JS');
+  res.json({ message: 'Server.js is definitely active!' });
+});
+
+// WORKING PROFILE GET ENDPOINT 
+app.get('/api/user/profile', async (req, res) => {
+  console.log('=== GET PROFILE REQUEST ===');
+  console.log('Session user:', req.session?.user);
+
+  // Check authentication
+  if (!req.session || !req.session.user || !req.session.user.username) {
+    console.log('Authentication failed');
+    return res.status(401).json({ error: 'Please log in first' });
+  }
+
+  try {
+    const profilesPath = path.join(__dirname, 'databases/profiles.json');
+    const profilesData = await fs.readFile(profilesPath, 'utf8');
+    const profiles = JSON.parse(profilesData);
+    
+    const username = req.session.user.username;
+    const profile = profiles.find(p => p.username === username);
+    
+    if (profile) {
+      console.log('Profile found:', profile.username);
+      
+      if (profile.name && !profile.firstName && !profile.lastName) {
+        console.log('Converting old profile format with name field');
+        const nameParts = profile.name.split(' ');
+        profile.firstName = nameParts[0] || '';
+        profile.lastName = nameParts.slice(1).join(' ') || '';
+        console.log('Converted name to:', { firstName: profile.firstName, lastName: profile.lastName });
+      }
+      
+      res.json(profile);
+    } else {
+      console.log('Profile not found for username:', username);
+      // Fallback to creating a basic profile from session data
+      const basicProfile = {
+        id: req.session.user.id?.toString() || '',
+        username: username,
+        firstName: req.session.user.firstName || '',
+        lastName: req.session.user.lastName || '',
+        address: '',
+        profilePicture: req.session.user.avatar || '/avatars/default-avatar.png',
+        avatar: req.session.user.avatar || '/avatars/default-avatar.png'
+      };
+      res.json(basicProfile);
+    }
+  } catch (error) {
+    console.error('Profile get error:', error);
+    res.status(500).json({ 
+      error: 'Failed to get profile',
+      details: error.message
+    });
+  }
+});
+
+// PROFILE STATS ENDPOINT 
+app.get('/api/user/profile/:username/stats', async (req, res) => {
+  console.log('=== PROFILE STATS REQUEST ===');
+  console.log('Username:', req.params.username);
+  console.log('Session user:', req.session?.user);
+
+  // Check authentication
+  if (!req.session || !req.session.user || !req.session.user.username) {
+    console.log('Authentication failed for stats');
+    return res.status(401).json({ error: 'Please log in first' });
+  }
+
+  const { username } = req.params;
 });
 
 // logging out

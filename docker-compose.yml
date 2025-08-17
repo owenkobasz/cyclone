@@ -13,6 +13,7 @@ services:
       # - OPENAI_MODEL=${OPENAI_MODEL}
     volumes:
       - ./server/databases:/app/databases
+      - ./server/public:/app/public
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/status"]
       interval: 30s

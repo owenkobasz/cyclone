@@ -19,6 +19,18 @@ const Header = () => {
   const dropdownRef = useRef(null);
   const {user, logout} = useAuth();
 
+  const getAvatarUrl = (user) => {
+    // Use profilePicture as primary, fallback to avatar 
+    const avatar = user?.profilePicture || user?.avatar;
+    if (!avatar || avatar === '/avatars/default-avatar.png') {
+      // For default avatar, use it directly
+      return '/avatars/default-avatar.png';
+    }
+    if (avatar.startsWith('http')) return avatar;
+    const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+    return `${base}${avatar}`;
+  };
+
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -121,12 +133,13 @@ const Header = () => {
         {user ? (
           <div className="relative ml-auto flex items-center" ref={dropdownRef}>
             <span className="hidden mr-4 lg:block font-code text-sm lg:text-base xl:text-lg text-n-1/50">
-              Hi {user?.name || user?.username}!
+              Hi {user?.firstName || (user?.name || user?.username)?.split(' ')[0] || 'User'}!
             </span>
 
             <div className="relative">
               <img
-                src={user?.avatar || user?.profilePicture || '/avatars/default-avatar.png'}
+                key={user?.profilePicture || user?.avatar || 'default'}
+                src={getAvatarUrl(user)}
                 alt="User Avatar"
                 className="w-10 h-10 rounded-full border cursor-pointer hover:opacity-90 object-cover"
                 onClick={() => setDropdownOpen(!dropdownOpen)}

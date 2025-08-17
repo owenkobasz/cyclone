@@ -6,11 +6,15 @@ const router = express.Router();
 const dataPath = path.join(__dirname, '../databases/routes.json');
 
 function requireAuth(req, res, next) {
-  if (!req.user || !req.user.id) {
-    console.log('Authentication failed: Invalid user', { headers: req.headers });
+  if (!req.session || !req.session.user || !req.session.user.username) {
+    console.log('Authentication failed: Invalid session', { 
+      hasSession: !!req.session,
+      hasUser: !!(req.session && req.session.user),
+      username: req.session?.user?.username 
+    });
     return res.status(401).json({ error: 'Please log in first' });
   }
-  console.log('Authenticated user:', req.user);
+  console.log('Authenticated user:', req.session.user);
   next();
 }
 
@@ -34,7 +38,7 @@ router.post('/save', requireAuth, async (req, res) => {
   try {
     await ensureDataFile();
 
-    const userId = req.user.id;
+    const userId = req.session.user.username; // Use username instead of user ID
     const { routeName, waypoints, rawStats, cueSheet, preferences } = req.body;
 
     if (!routeName || !Array.isArray(waypoints)) {
@@ -85,8 +89,8 @@ router.get('/', requireAuth, async (req, res) => {
     await ensureDataFile();
     const raw = await fs.readFile(dataPath, 'utf8');
     const routes = JSON.parse(raw);
-    const userRoutes = routes.filter(route => route.userId === req.user.id);
-    console.log('Fetched routes for user:', { userId: req.user.id, count: userRoutes.length });
+    const userRoutes = routes.filter(route => route.userId === req.session.user.username);
+    console.log('Fetched routes for user:', { username: req.session.user.username, count: userRoutes.length });
     res.json(userRoutes || []);
   } catch (err) {
     console.error('Error fetching routes:', err);
