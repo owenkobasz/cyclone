@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useUnits } from "../contexts/UnitsContext";
+import { kmToUi, mToUi, distLabel, elevLabel} from "../utils/units";
 
 const LocationAutocomplete = ({ 
   value, 

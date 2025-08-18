@@ -44,14 +44,8 @@ async function getOpenElevation(coordinates, options) {
       }
 
       console.log(`Calculated elevation gain from Open Elevation API: ${totalElevationGain}m`);
-      
-      const convertedElevation = options.unit_system === 'imperial' ? 
-        totalElevationGain * 3.28084 : 
-        totalElevationGain;
-      
-      console.log(`Open Elevation final result: ${convertedElevation}${options.unit_system === 'imperial' ? 'ft' : 'm'} (original: ${totalElevationGain}m)`);
-      
-      return convertedElevation;
+
+      return totalElevationGain;
     }
     
     return null;

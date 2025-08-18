@@ -50,8 +50,7 @@ async function formatGraphHopperResponse(route, options) {
 
   console.log('GraphHopper options received:', {
     starting_point_name: options.starting_point_name,
-    destination_name: options.destination_name,
-    unit_system: options.unit_system
+    destination_name: options.destination_name
   });
 
   // Generate instructions from GraphHopper
@@ -62,7 +61,6 @@ async function formatGraphHopperResponse(route, options) {
     
     route.instructions.forEach((instruction, index) => {
       const stepDistance = instruction.distance;
-      const formattedDistance = formatDistance(stepDistance, options.unit_system);
       const stepDuration = instruction.time / 1000; // Convert ms to seconds
       const instructionType = getInstructionType(instruction.sign);
       
@@ -131,9 +129,8 @@ async function formatGraphHopperResponse(route, options) {
       }
 
       instructions.push({
-        instruction: instructionText || `Continue for ${formattedDistance}`,
-        distance: formattedDistance,
-        distance_raw: stepDistance,
+        instruction: instructionText || `Continue for ${stepDistance}`,
+        distance: stepDistance,
         duration: stepDuration,
         duration_formatted: formatDuration(stepDuration),
         type: instructionType,
@@ -184,7 +181,7 @@ async function formatGraphHopperResponse(route, options) {
   const openElevationData = await getOpenElevation(coordinates, options);
   if (openElevationData !== null) {
     elevationGain = openElevationData;
-    console.log(`Got elevation data from Open Elevation API: ${elevationGain}${options.unit_system === 'imperial' ? 'ft' : 'm'}`);
+    console.log(`Got elevation data from Open Elevation API: ${elevationGain} m`);
   } else {
     console.log('No elevation data available from Open Elevation API');
   }
@@ -192,12 +189,11 @@ async function formatGraphHopperResponse(route, options) {
   return {
     route: coordinates,
     total_length_km: distance / 1000,
-    total_length_formatted: formatDistance(distance, options.unit_system),
+    total_length_formatted: distance,
     total_elevation_gain: elevationGain,
     total_ride_time: formatDuration(totalRideTimeSeconds),
     total_ride_time_minutes: totalRideTimeMinutes,
     instructions,
-    unit_system: options.unit_system,
     data_source: 'graphhopper'
   };
 }

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { useNavigate, useLocation } from "react-router-dom"; // Add useLocation
+import { useNavigate, useLocation } from "react-router-dom";
 import Section from "./Section";
 import Heading from "./Heading";
 import Button from "./Button";
@@ -30,7 +30,6 @@ const GenerateRoutes = () => {
     avoidHighTraffic: false,
     preferGreenways: false,
     includeScenic: false,
-    unitSystem: "imperial",
   });
 
   const [routeData, setRouteData] = useState(null);
@@ -38,7 +37,6 @@ const GenerateRoutes = () => {
   const [elevationProfile, setElevationProfile] = useState([]);
   const [elevationStats, setElevationStats] = useState(null);
   const [instructions, setInstructions] = useState([]);
-  const [unitSystem, setUnitSystem] = useState("imperial");
   const [hasGeneratedRoute, setHasGeneratedRoute] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);
@@ -88,7 +86,6 @@ const GenerateRoutes = () => {
         );
       }
       setHasGeneratedRoute(true);
-      setUnitSystem(selectedRoute.unitSystem || "imperial");
 
       // Scroll to results section only when coming from route generation
       if (resultsRef.current) {
@@ -147,9 +144,6 @@ const GenerateRoutes = () => {
       });
       setElevationProfile(data.elevation_profile || []);
       setElevationStats(data.elevation_stats || null);
-      
-      // Update unit system from preferences
-      setUnitSystem(preferences.unitSystem || 'imperial');
       
       // Set instructions from API response
       if (data.instructions && data.instructions.length > 0) {
@@ -300,8 +294,6 @@ const GenerateRoutes = () => {
             <div className="space-y-6">
               <RouteStats
                 stats={stats}
-                unitSystem={unitSystem}
-                setUnitSystem={setUnitSystem}
                 elevationProfile={elevationProfile}
                 elevationStats={elevationStats}
               />

@@ -14,6 +14,7 @@ import GenerateRoutes from "./GenerateRoutes";
 const Home = () => {
   const parallaxRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const {user} = useAuth();
   const { authModal, openAuthModal, closeAuthModal, switchAuthType } = useAuthModal();
   const [activeTab, setActiveTab] = useState("home");

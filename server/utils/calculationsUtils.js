@@ -20,10 +20,7 @@ function calculateDistance(point1, point2) {
 /**
  * Calculates distance requirements for waypoint generation based on target distance
  */
-function calculateDistanceRequirements(targetDistance, unitSystem) {
-  // Convert target distance to miles for consistency
-  const targetMiles = unitSystem === 'imperial' ? targetDistance : targetDistance * 0.621371;
-  
+function calculateDistanceRequirements(targetDistance) {
   let waypointSpacing, minWaypoints, maxWaypoints, distanceGuidance;
   
   if (targetMiles >= 20) {
@@ -56,8 +53,7 @@ function calculateDistanceRequirements(targetDistance, unitSystem) {
     waypointSpacing,
     minWaypoints,
     maxWaypoints,
-    distanceGuidance,
-    targetMiles
+    distanceGuidance
   };
 }
 

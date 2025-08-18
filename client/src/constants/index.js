@@ -14,14 +14,14 @@ export {
   export const navigation = [
     {
       id: "0",
+      title: "Home",
+      url: "#home",
+    },
+    {
+      id: "1",
       title: "About",
       url: "#about",
     },
-    /*{
-      id: "1",
-      title: "How to use",
-      url: "#how-to-use",
-    },*/
     {
       id: "2",
       title: "Generate Routes",

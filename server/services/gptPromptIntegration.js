@@ -5,18 +5,18 @@ const { calculateDistance } = require('../utils/calculationsUtils');
 /**
  * Calculate distance requirements based on target distance
  */
-function calculateDistanceRequirements(targetMiles, unitSystem) {
+function calculateDistanceRequirements(targetKM) {
   // Distance category thresholds for guidance
   const distanceCategories = {
-    short: { min: 0, max: 3, waypoints: { min: 2, max: 3 }, spacing: "0.5-1 mile apart" },
-    medium: { min: 3, max: 8, waypoints: { min: 3, max: 5 }, spacing: "1-2 miles apart" },
-    long: { min: 8, max: 15, waypoints: { min: 4, max: 6 }, spacing: "2-3 miles apart" },
-    extraLong: { min: 15, max: 1000, waypoints: { min: 5, max: 8 }, spacing: "3-5 miles apart" }
+    short: { min: 0, max: 3, waypoints: { min: 2, max: 3 }, spacing: "0.5-1 kilometers apart" },
+    medium: { min: 3, max: 8, waypoints: { min: 3, max: 5 }, spacing: "1-2 kilometers apart" },
+    long: { min: 8, max: 15, waypoints: { min: 4, max: 6 }, spacing: "2-3 kilometers apart" },
+    extraLong: { min: 15, max: 1000, waypoints: { min: 5, max: 8 }, spacing: "3-5 kilometers apart" }
   };
   
   let category;
   for (const [catName, catData] of Object.entries(distanceCategories)) {
-    if (targetMiles >= catData.min && targetMiles < catData.max) {
+    if (targetKM >= catData.min && targetKM < catData.max) {
       category = catData;
       break;
     }
@@ -28,12 +28,12 @@ function calculateDistanceRequirements(targetMiles, unitSystem) {
   
   // Generate distance guidance text
   let distanceGuidance;
-  if (targetMiles < 5) {
-    distanceGuidance = `For shorter routes like this ${targetMiles}-mile ride, waypoints should be closer together to ensure you hit the target distance. Consider local loops, neighborhood circuits, or nearby park connections.`;
-  } else if (targetMiles < 10) {
-    distanceGuidance = `For medium-distance routes like this ${targetMiles}-mile ride, balance interesting destinations with practical routing. Consider connecting 2-3 notable areas or landmarks.`;
+  if (targetKM < 5) {
+    distanceGuidance = `For shorter routes like this ${targetKM}-kilometer ride, waypoints should be closer together to ensure you hit the target distance. Consider local loops, neighborhood circuits, or nearby park connections.`;
+  } else if (targetKM < 10) {
+    distanceGuidance = `For medium-distance routes like this ${targetKM}-kilometer ride, balance interesting destinations with practical routing. Consider connecting 2-3 notable areas or landmarks.`;
   } else {
-    distanceGuidance = `For longer routes like this ${targetMiles}-mile ride, focus on major destinations and landmarks. Each waypoint should represent a significant milestone in the journey.`;
+    distanceGuidance = `For longer routes like this ${targetKM}-kilometer ride, focus on major destinations and landmarks. Each waypoint should represent a significant milestone in the journey.`;
   }
   
   return {
@@ -41,7 +41,7 @@ function calculateDistanceRequirements(targetMiles, unitSystem) {
     maxWaypoints: category.waypoints.max,
     waypointSpacing: category.spacing,
     distanceGuidance,
-    targetMiles
+    targetKM
   };
 }
 
@@ -56,17 +56,11 @@ function generateGPTPrompt(start, end, options) {
     avoid_traffic = false,
     avoid_hills = false,
     starting_point_name,
-    destination_name,
-    unit_system = 'imperial'
+    destination_name
   } = options;
   
   // Calculate distance requirements based on target distance
-  const distanceReqs = calculateDistanceRequirements(target_distance, unit_system);
-  
-  // Convert target distance to the chosen unit for display
-  const targetDistance = unit_system === 'imperial' ? 
-    `${target_distance} miles` : 
-    `${(target_distance * 1.60934).toFixed(1)} kilometers`;
+  const distanceReqs = calculateDistanceRequirements(target_distance);
   
   // Build starting and ending location descriptions
   const startLocation = starting_point_name || `coordinates ${start.lat}, ${start.lon}`;
@@ -125,7 +119,7 @@ The waypoints should create a route that matches both the requested distance and
 
   const userPrompt = `Generate me a bike route ${toggleOptions}. I want to get from ${startLocation} to ${endLocation}. The total distance of the route should be approximately ${targetDistance}. I want my bike ride to be ${routeTypeDescription}.
 
-DISTANCE REQUIREMENTS: This is a ${targetDistance} route request (${distanceReqs.targetMiles.toFixed(1)} miles). ${distanceReqs.distanceGuidance}
+DISTANCE REQUIREMENTS: This is a ${targetDistance} route request (${distanceReqs.targetKM.toFixed(1)} kilometers). ${distanceReqs.distanceGuidance}
 
 WAYPOINT SPECIFICATIONS:
 - Start at: ${start.lat}, ${start.lon} (EXACT coordinates required)
@@ -275,9 +269,8 @@ function parseWaypointsFromGPT(gptResponse, start, end, routingAPI = 'valhalla')
       estimatedDistance += distance;
     }
     const estimatedDistanceKm = estimatedDistance / 1000;
-    const estimatedDistanceMiles = estimatedDistanceKm * 0.621371;
     
-    console.log(`Straight-line distance between waypoints: ${estimatedDistanceKm.toFixed(2)} km (${estimatedDistanceMiles.toFixed(2)} miles) - for debugging only`);
+    console.log(`Straight-line distance between waypoints: ${estimatedKM.toFixed(2)} km (${estimatedKM.toFixed(2)} kilometers) - for debugging only`);
     console.log(`Note: Actual route distance will be longer as it follows roads and paths`);
     console.log(`GPT generated route description: ${parsedResponse.description || 'No description provided'}`);
     console.log(`GPT suggested difficulty: ${parsedResponse.difficulty || 'Not specified'}`);

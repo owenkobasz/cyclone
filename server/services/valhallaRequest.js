@@ -16,7 +16,7 @@ async function getValhallaRoute(waypoints, options) {
     locations: locations,
     costing: 'bicycle',
     directions_options: {
-      units: options.unit_system === 'imperial' ? 'miles' : 'kilometers'
+      units: options.unit_system === 'kilometers'
     },
     shape_match: 'edge_walk',
     filters: {
@@ -105,12 +105,10 @@ async function formatValhallaResponse(trip, options) {
           });
         } else if (maneuver.type !== 4) { // Skip destination maneuvers except the final one
           const distance = maneuver.length * 1000; // Convert km to meters for consistency
-          const formattedDistance = formatDistance(distance, options.unit_system);
           
           instructions.push({
-            instruction: maneuver.instruction || `Continue for ${formattedDistance}`,
-            distance: formattedDistance,
-            distance_raw: distance,
+            instruction: maneuver.instruction || `Continue for ${distance}`,
+            distance: distance,
             duration: maneuver.time,
             duration_formatted: formatDuration(maneuver.time),
             type: getValhallaInstructionType(maneuver.type),
@@ -145,7 +143,7 @@ async function formatValhallaResponse(trip, options) {
   const openElevationData = await getOpenElevation(coordinates, options);
   if (openElevationData !== null) {
     elevationGain = openElevationData;
-    console.log(`Using Open Elevation data: ${elevationGain}${options.unit_system === 'imperial' ? 'ft' : 'm'}`);
+    console.log(`Using Open Elevation data: ${elevationGain} m}`);
   } else {
     console.log('No elevation data available from Open Elevation API');
   }
@@ -164,21 +162,17 @@ async function formatValhallaResponse(trip, options) {
   console.log(`=== ROUTE DATA DEBUG ===`);
   console.log(`Number of legs processed: ${trip.legs.length}`);
   console.log(`total_length_km: ${totalDistance}`);
-  console.log(`total_length_formatted: ${formatDistance(totalDistanceMeters, options.unit_system)}`);
   console.log(`total_elevation_gain: ${elevationGain}`);
-  console.log(`unit_system: ${options.unit_system}`);
   console.log(`totalDistanceMeters calculation: ${totalDistance} km * 1000 = ${totalDistanceMeters} meters`);
   console.log(`========================`);
 
   return {
     route: coordinates,
     total_length_km: totalDistance,
-    total_length_formatted: formatDistance(totalDistanceMeters, options.unit_system),
     total_elevation_gain: elevationGain,
     total_ride_time: formatDuration(totalTime),
     total_ride_time_minutes: totalTime / 60,
     instructions,
-    unit_system: options.unit_system,
     data_source: 'valhalla'
   };
 }
