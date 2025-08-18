@@ -12,6 +12,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@tmcw/togeojson": "^7.1.2",
     "axios": "^1.6.0",
     "bcrypt": "^6.0.0",
     "connect-sqlite3": "^0.9.16",

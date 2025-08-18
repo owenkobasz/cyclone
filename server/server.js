@@ -14,6 +14,7 @@ const multer = require('multer');
 const fs = require('fs').promises;
 const path = require('path');
 const profilesPath = path.join(__dirname, 'databases', 'profiles.json');
+const routesPath = path.join(__dirname, 'databases', 'routes.json');
 
 // Profile helper functions
 const readProfiles = async () => {
@@ -57,6 +58,36 @@ function validUsername(username) {
 
     return true;
 }
+
+const ensureRoutesFile = async () => {
+  const dir = path.dirname(routesPath);
+  try {
+    await fs.mkdir(dir, { recursive: true });
+    try {
+      await fs.access(routesPath);
+    } catch {
+      await fs.writeFile(routesPath, JSON.stringify([]));
+    }
+  } catch (err) {
+    console.error('Error ensuring routes file:', err);
+    throw new Error('Failed to initialize routes file');
+  }
+};
+
+const readRoutes = async () => {
+  try {
+    await ensureRoutesFile();
+    const raw = await fs.readFile(routesPath, 'utf8');
+    return JSON.parse(raw || '[]');
+  } catch (err) {
+    console.error('Error reading routes file:', err);
+    throw err;
+  }
+};
+
+const writeRoutes = async (routes) => {
+  await fs.writeFile(routesPath, JSON.stringify(routes, null, 2));
+};
 
 // Enable CORS for all routes
 // Configure allowed frontend origin for CORS (use REACT_APP_API_BASE_URL or FRONTEND_ORIGIN env)
@@ -138,6 +169,7 @@ app.use(session({
 // Import route modules
 const savedRoutesRouter = require('./saveRoutesFeature.js');
 const userProfilesRouter = require('./userProfilesFeature.js');
+const importRoutesRouter = require('./routes/routes.js');
 
 console.log('Router types:', { 
   savedRoutesRouter: typeof savedRoutesRouter, 
@@ -150,6 +182,54 @@ console.log('savedRoutesRouter:', typeof savedRoutesRouter);
 console.log('userProfilesRouter:', typeof userProfilesRouter);
 
 app.use('/api/routes', savedRoutesRouter);
+app.use('/api/routes', importRoutesRouter);
+
+app.post('/api/import-route', async (req, res) => {
+  console.log('POST /api/import-route called');
+  console.log('Request body:', req.body);
+  console.log('Session:', req.session?.user);
+
+  // Check authentication
+  if (!req.session?.user || !req.session.user.id) {
+    console.log('Authentication failed: Invalid user');
+    return res.status(401).json({ error: 'Please log in first' });
+  }
+
+  try {
+    await ensureRoutesFile();
+    const username = req.session.user.username;
+    const { routeName, waypoints, rawStats } = req.body;
+
+    if (!routeName || !Array.isArray(waypoints) || waypoints.length === 0) {
+      console.log('Import route failed: Missing or invalid routeName/waypoints', { body: req.body });
+      return res.status(400).json({ error: 'Missing or invalid route name or waypoints' });
+    }
+
+    const newRoute = {
+      id: Date.now(),
+      username,
+      routeName,
+      waypoints,
+      rawStats: rawStats || null,
+      cueSheet: [],
+      preferences: null,
+      createdAt: new Date().toISOString(),
+    };
+    let routes = await readRoutes();
+    if (!Array.isArray(routes)) {
+      console.warn('routes.json corrupted, resetting to empty array');
+      routes = [];
+    }
+    routes.push(newRoute);
+    await writeRoutes(routes);
+
+    console.log('GPX Route imported successfully to routes.json:', newRoute);
+    res.json({ message: 'GPX Route imported successfully' });
+  } catch (err) {
+    console.error('Error importing GPX route:', err);
+    res.status(500).json({ error: `Failed to import GPX route: ${err.message}` });
+  }
+});
 
 // Test route for debugging profile issues
 app.get('/api/debug-profile-test', async (req, res) => {

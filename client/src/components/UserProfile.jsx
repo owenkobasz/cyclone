@@ -5,6 +5,8 @@ import Button from './Button';
 import { useAuthModal } from '../contexts/AuthModalContext';
 import { useAuth } from '../contexts/AuthContext';
 import { homeBackground } from '../assets/home';
+import * as toGeoJSON from '@tmcw/togeojson';
+import { DOMParser } from 'xmldom';
 
 export default function UserProfile() {
   const { user: authUser } = useAuth();
@@ -14,14 +16,13 @@ export default function UserProfile() {
   const [routeAddresses, setRouteAddresses] = useState({});
   const navigate = useNavigate();
   const { openAuthModal } = useAuthModal();
+  const fileInputRef = useRef(null); // Reference for file input
   const GEOAPIFY_API_KEY = 'b7a0cb4137164bf5b2717fd3a450ef73';
 
   // Helper function to build correct avatar URL
   const getAvatarUrl = (user) => {
-    // Use profilePicture as primary, else uses default avatar
     const avatar = user?.profilePicture || user?.avatar;
     if (!avatar || avatar === '/avatars/default-avatar.png') {
-      // For default avatar, use it directly
       return '/avatars/default-avatar.png';
     }
     if (avatar.startsWith('http')) return avatar;
@@ -29,35 +30,7 @@ export default function UserProfile() {
     return `${base}${avatar}`;
   };
 
-  useEffect(() => {
-    if (!authUser) return;
-
-    const fetchProfile = async () => {
-      try {
-        const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
-        // use session-backed endpoint to avoid undefined username
-        const res = await fetch(`${base}/api/user/profile`, { credentials: 'include' });
-        if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
-        const profileData = await res.json();
-        setUser(profileData);
-        return profileData;
-      } catch (err) {
-        console.error('Failed to fetch user profile:', err);
-        return null;
-      }
-    };
-
-    const fetchStats = async (username) => {
-      try {
-        const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
-        const res = await fetch(`${base}/api/user/profile/${username}/stats`, { credentials: 'include' });
-        if (res.ok) setStats(await res.json());
-      } catch (err) {
-        console.error('Failed to load user stats', err);
-      }
-    };
-
-    const fetchRoutes = async () => {
+  const fetchRoutes = async () => {
       try {
         const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
         const res = await fetch(`${base}/api/routes`, { credentials: 'include' });
@@ -111,7 +84,98 @@ export default function UserProfile() {
       }
     };
 
-    // Fetch profile first, then use that data for other requests
+  // Function to handle file selection and parsing
+  // client/src/components/UserProfile.jsx (partial update for handleFileUpload)
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const parser = new DOMParser();
+      const gpxDoc = parser.parseFromString(text, 'text/xml');
+      const geoJson = toGeoJSON.gpx(gpxDoc);
+
+      let waypoints = [];
+      if (geoJson.features && geoJson.features.length > 0) {
+        const coordinates = geoJson.features[0].geometry.coordinates;
+        waypoints = coordinates.map(coord => ({
+          lon: coord[0],
+          lat: coord[1],
+          ele: coord[2] || 0,
+        }));
+      }
+
+      const routeName = gpxDoc.getElementsByTagName('name')[0]?.textContent || file.name.replace('.gpx', '');
+
+      const rawStats = {
+        distance: 0,
+        elevation_gain: waypoints.reduce((sum, wp, i) => {
+          if (i === 0) return sum;
+          const prev = waypoints[i - 1];
+          const gain = wp.ele - prev.ele > 0 ? wp.ele - prev.ele : 0;
+          return sum + gain;
+        }, 0),
+      };
+
+      const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+      const response = await fetch(`${base}/api/import-route`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          routeName,
+          waypoints,
+          rawStats,
+          username: authUser.username,
+        }),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save route');
+      }
+
+      fetchRoutes();
+      alert('Route imported successfully!');
+    } catch (err) {
+      console.error('Error processing GPX file:', err);
+      alert('Failed to import route: ' + err.message);
+    }
+  };
+
+  // Trigger file input click
+  const handleImportClick = () => {
+    fileInputRef.current.click();
+  };
+
+  useEffect(() => {
+    if (!authUser) return;
+
+    const fetchProfile = async () => {
+      try {
+        const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+        const res = await fetch(`${base}/api/user/profile`, { credentials: 'include' });
+        if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+        const profileData = await res.json();
+        setUser(profileData);
+        return profileData;
+      } catch (err) {
+        console.error('Failed to fetch user profile:', err);
+        return null;
+      }
+    };
+
+    const fetchStats = async (username) => {
+      try {
+        const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+        const res = await fetch(`${base}/api/user/profile/${username}/stats`, { credentials: 'include' });
+        if (res.ok) setStats(await res.json());
+      } catch (err) {
+        console.error('Failed to load user stats', err);
+      }
+    };
+
     const loadUserData = async () => {
       const profileData = await fetchProfile();
       if (profileData && profileData.username) {
@@ -131,10 +195,10 @@ export default function UserProfile() {
         stats: {
           distanceKm: route.total_distance_km || route.distance || 0,
           elevationM: route.elevation_gain_m || route.elevation || 0,
-          totalRideTime: route.total_ride_time || null
+          totalRideTime: route.total_ride_time || null,
         },
-        cueSheet: route.instructions || []
-      }
+        cueSheet: route.instructions || [],
+      },
     });
   };
 
@@ -162,9 +226,7 @@ export default function UserProfile() {
         </div>
       </div>
 
-      {/* Page Content */}
       <div className="relative z-10">
-        {/* Profile Section */}
         <div className="pt-24 px-2 lg:px-4 xl:px-6 max-w-4xl mx-auto">
           <h2 className="font-code text-2xl lg:text-3xl uppercase text-n-1 text-center mb-8">
             User Profile
@@ -184,6 +246,14 @@ export default function UserProfile() {
                 <strong>Address:</strong> {user?.address || 'Not set'}
               </p>
             </div>
+            <Button onClick={handleImportClick}>Import Route</Button>
+            <input
+              type="file"
+              accept=".gpx"
+              ref={fileInputRef}
+              style={{ display: 'none' }}
+              onChange={handleFileUpload}
+            />
           </Card>
 
           <h3 className="font-code text-xl lg:text-2xl uppercase text-n-1 mt-10 mb-4">

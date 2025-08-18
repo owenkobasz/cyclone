@@ -128,6 +128,55 @@ router.post('/plan/save', requireAuth, async (req, res) => {
   }
 });
 
+router.post('/import-route', requireAuth, async (req, res) => {
+  console.log('POST /api/routes/import-route called');
+  console.log('Request body:', req.body);
+  try {
+    await ensureDataFile();
+    const userId = req.session.user.id;
+    const { routeName, waypoints, rawStats } = req.body;
+
+    if (!routeName || !Array.isArray(waypoints) || waypoints.length === 0) {
+      console.log('Import route failed: Missing or invalid routeName/waypoints', { body: req.body });
+      return res.status(400).json({ error: 'Missing or invalid route name or waypoints' });
+    }
+
+    const newRoute = {
+      id: Date.now(),
+      userId,
+      routeName,
+      waypoints,
+      rawStats: rawStats || null,
+      cueSheet: [],
+      preferences: null,
+      createdAt: new Date().toISOString(),
+    };
+
+    console.log('Importing route:', newRoute);
+
+    let routes = [];
+    try {
+      const raw = await fs.readFile(dataPath, 'utf8');
+      routes = JSON.parse(raw || '[]');
+      if (!Array.isArray(routes)) {
+        console.warn('routes.json corrupted, resetting to empty array');
+        routes = [];
+      }
+    } catch (err) {
+      console.warn('Error parsing routes.json, resetting to empty array:', err);
+      routes = [];
+    }
+
+    routes.push(newRoute);
+    await fs.writeFile(dataPath, JSON.stringify(routes, null, 2));
+    console.log('GPX Route imported successfully to routes.json:', newRoute);
+    res.json({ message: 'GPX Route imported successfully' });
+  } catch (err) {
+    console.error('Error importing GPX route:', err);
+    res.status(500).json({ error: `Failed to import GPX route: ${err.message}` });
+  }
+});
+
 router.get('/plan', requireAuth, async (req, res) => {
   try {
     await ensureDataFile();
@@ -188,8 +237,7 @@ router.get('/user/stats', async (req, res) => {
   const { username } = req.query;
   if (!username) return res.status(400).json({ error: 'Missing userId' });
 
-  res.json({
-  });
+  res.json({});
 });
 
 router.get('/routes', (req, res) => {
