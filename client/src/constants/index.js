@@ -17,11 +17,11 @@ export {
       title: "About",
       url: "#about",
     },
-    {
+    /*{
       id: "1",
       title: "How to use",
       url: "#how-to-use",
-    },
+    },*/
     {
       id: "2",
       title: "Generate Routes",

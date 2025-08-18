@@ -47,31 +47,3 @@ const Button = ({ className, href, children, onClick, px, white, outline, disabl
   return href ? renderLink() : renderButton();
 }
 export default Button;
-
-
-// export default function Button({ children, onClick, type = 'button', className, href, px, white }) {
-//   const classes = `button relative inline-flex items-center justify-center h-11 transition-colors hover:text-color-1 ${px || 'px-7'} ${white ? 'text-n-8': 'text-n-1'} $className || ''}`;
-// }
-
-//   const spanClasses = 'relative z-10';
-
-//   const renderButton = () => (
-//     <button className={classes}>
-//       <span className={spanClasses}>{children}</span>
-//       {ButtonSvg(white)}
-//     </button>
-//   );
-
-//   const renderLink = () => (
-//     // Clickable link (href)
-//     <a href={href} className={classes}>
-//     <span className={spanClasses}>{children}</span>
-//       {ButtonSvg(white)}
-//     </a>
-//   )
-
-//   // If href is provided, render as a link; otherwise, render as a button
-//   return href
-//   ? renderLink()
-//   :renderButton();
-// };

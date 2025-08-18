@@ -11,9 +11,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import GenerateRoutes from "./GenerateRoutes";
 
-// TODO: make webmaster betyter visable + an email link
-// TODO: add custom greeting if signed in
-
 const Home = () => {
   const parallaxRef = useRef(null);
   const navigate = useNavigate();
