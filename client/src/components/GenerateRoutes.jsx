@@ -9,10 +9,12 @@ import RoutePreferences from "./RoutePreferences";
 import CueSheet from "./CueSheet";
 import RouteStats from "./RouteStats";
 import { generateRoute, generateGpxFile } from "../utils/routeApi";
+import { useAuth } from "../contexts/AuthContext";
 
 const GenerateRoutes = () => {
   const navigate = useNavigate();
   const { state } = useLocation(); // Get location state
+  const { user } = useAuth();
 
   // State management
   const [location, setLocation] = useState(null);
@@ -191,6 +193,8 @@ const GenerateRoutes = () => {
     }
   };
 
+  const canUseRouteActions = user && routeData?.route?.length;
+
   const exportGpx = async () => {
     // call backend api
     const res = await fetch()
@@ -304,25 +308,6 @@ const GenerateRoutes = () => {
                   transition={{ duration: 0.6, delay: 0.4 }}
                   className="space-y-3"
                 >
-                  <Button
-                    className="w-full"
-                    onClick={() => {
-                      console.log("Exporting route as GPX...");
-                      generateGpxFile(routeData.route);
-                    }}
-                    white
-                  >
-                    Export GPX
-                  </Button>
-                  <Button
-                    className="w-full"
-                    onClick={() => {
-                      console.log("Sharing route...");
-                    }}
-                    outline
-                  >
-                    Share Route
-                  </Button>
                 </motion.div>
               )}
             </div>
@@ -331,6 +316,39 @@ const GenerateRoutes = () => {
             <div>
               <CueSheet cueSheet={cueSheet} instructions={instructions} />
             </div>
+            <div>
+              <div className="mt-4 space-y-3">
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    console.log("Saving route...");
+                    // TODO: implement save route API call
+                  }}
+                >
+                  Save Route
+                </Button>
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    console.log("Exporting route as GPX...");
+                    generateGpxFile(routeData.route);
+                  }}
+                  white
+                >
+                  Export GPX
+                </Button>
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    console.log("Sharing route...");
+                  }}
+                  disabled={!canUseRouteActions}
+                  outline
+                >
+                  Share Route
+                </Button>
+              </div>
+              </div>
           </motion.div>
         )}
       </div>
