@@ -14,6 +14,8 @@ export default function UserProfile() {
   const [stats, setStats] = useState({ distanceKm: 0, elevationM: 0 });
   const [routes, setRoutes] = useState([]);
   const [routeAddresses, setRouteAddresses] = useState({});
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [routeName, setRouteName] = useState('');
   const navigate = useNavigate();
   const { openAuthModal } = useAuthModal();
   const fileInputRef = useRef(null); // Reference for file input
@@ -44,7 +46,7 @@ export default function UserProfile() {
       Math.sin(dLon / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-    return R * c; // meters
+    return R * c / 1000;
   }
 
   function calculateBearing(p1, p2) {
@@ -65,7 +67,7 @@ export default function UserProfile() {
     if (waypoints.length < 2) return cues;
 
     function getCardinalDirection(bearing) {
-      bearing = (bearing + 360) % 360; // Normalize to 0-360
+      bearing = (bearing + 360) % 360;
       if (bearing >= 337.5 || bearing < 22.5) return "north";
       if (bearing >= 22.5 && bearing < 67.5) return "northeast";
       if (bearing >= 67.5 && bearing < 112.5) return "east";
@@ -80,13 +82,13 @@ export default function UserProfile() {
     const initialDistance = haversineDistance(waypoints[0], waypoints[1]);
     cues.push({
       instruction: `Head ${getCardinalDirection(initialBearing)}`,
-      distanceKm: Number(initialDistance.toFixed(2)) / 1000
+      distanceKm: Number((initialDistance).toFixed(2))
     });
 
     for (let i = 2; i < waypoints.length; i++) {
       const bearing1 = calculateBearing(waypoints[i - 2], waypoints[i - 1]);
       const bearing2 = calculateBearing(waypoints[i - 1], waypoints[i]);
-      const distance = haversineDistance(waypoints[i - 1], waypoints[i]) / 1000;
+      const distance = haversineDistance(waypoints[i - 1], waypoints[i]);
       const turn = bearing2 - bearing1;
 
       let instruction;
@@ -102,18 +104,6 @@ export default function UserProfile() {
       });
     }
     return cues;
-  }
-
-  function calculateBearing(point1, point2) {
-    const dLon = (point2.lon - point1.lon) * Math.PI / 180;
-    const lat1 = point1.lat * Math.PI / 180;
-    const lat2 = point2.lat * Math.PI / 180;
-    const y = Math.sin(dLon) * Math.cos(lat2);
-    const x =
-      Math.cos(lat1) * Math.sin(lat2) -
-      Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
-    let bearing = Math.atan2(y, x) * 180 / Math.PI;
-    return (bearing + 360) % 360;
   }
 
   const fetchRoutes = async () => {
@@ -170,10 +160,7 @@ export default function UserProfile() {
     }
   };
 
-  // Function to handle file selection and parsing
-  // client/src/components/UserProfile.jsx (partial update for handleFileUpload)
-  const handleFileUpload = async (event) => {
-    const file = event.target.files[0];
+  const handleFileUpload = async (file, customRouteName) => {
     if (!file) return;
 
     try {
@@ -192,7 +179,10 @@ export default function UserProfile() {
         }));
       }
 
-      const routeName = gpxDoc.getElementsByTagName('name')[0]?.textContent || file.name.replace('.gpx', '');
+      const routeNameFinal =
+        customRouteName ||
+        gpxDoc.getElementsByTagName('name')[0]?.textContent ||
+        file.name.replace(/\.gpx$/i, '');
 
       let totalDistance = 0;
       for (let i = 1; i < waypoints.length; i++) {
@@ -202,7 +192,7 @@ export default function UserProfile() {
       const cueSheet = generateCueSheet(waypoints);
 
       const rawStats = {
-        distanceKm: totalDistance / 1000,
+        distanceKm: totalDistance,
         elevationM: waypoints.reduce((sum, wp, i) => {
           if (i === 0) return sum;
           const prev = waypoints[i - 1];
@@ -216,7 +206,7 @@ export default function UserProfile() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          routeName,
+          routeName: routeNameFinal,
           waypoints,
           rawStats,
           cueSheet,
@@ -231,6 +221,9 @@ export default function UserProfile() {
       }
 
       fetchRoutes();
+      setIsImportModalOpen(false);
+      setRouteName('');
+      fileInputRef.current.value = '';
       alert('Route imported successfully!');
     } catch (err) {
       console.error('Error processing GPX file:', err);
@@ -238,8 +231,20 @@ export default function UserProfile() {
     }
   };
 
+  const handleImportSubmit = (e) => {
+    e.preventDefault();
+    const file = fileInputRef.current.files[0];
+    handleFileUpload(file, routeName);
+  };
+
   const handleImportClick = () => {
-    fileInputRef.current.click();
+    setIsImportModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsImportModalOpen(false);
+    setRouteName('');
+    fileInputRef.current.value = '';
   };
 
   useEffect(() => {
@@ -340,14 +345,46 @@ export default function UserProfile() {
               </p>
             </div>
             <Button onClick={handleImportClick}>Import Route</Button>
-            <input
-              type="file"
-              accept=".gpx"
-              ref={fileInputRef}
-              style={{ display: 'none' }}
-              onChange={handleFileUpload}
-            />
           </Card>
+
+          {isImportModalOpen && (
+            <div className="fixed inset-0 bg-n-8/80 backdrop-blur-sm flex items-center justify-center z-20">
+              <Card className="p-6 bg-n-8/90 border border-n-6 shadow-lg max-w-md w-full">
+                <h3 className="font-code text-xl text-n-1 mb-4">Import Route</h3>
+                <form onSubmit={handleImportSubmit} className="space-y-4">
+                  <div>
+                    <label className="font-code text-n-1 text-sm mb-1 block">
+                      Route Name (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={routeName}
+                      onChange={(e) => setRouteName(e.target.value)}
+                      placeholder="Enter route name or leave blank"
+                      className="w-full p-2 bg-n-7 border border-n-6 rounded text-n-1 font-code text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-code text-n-1 text-sm mb-1 block">
+                      GPX File
+                    </label>
+                    <input
+                      type="file"
+                      accept=".gpx"
+                      ref={fileInputRef}
+                      className="w-full p-2 bg-n-7 border border-n-6 rounded text-n-1 font-code text-sm"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" onClick={handleCloseModal}>
+                      Cancel
+                    </Button>
+                    <Button type="submit">Import</Button>
+                  </div>
+                </form>
+              </Card>
+            </div>
+          )}
 
           <h3 className="font-code text-xl lg:text-2xl uppercase text-n-1 mt-10 mb-4">
             Saved Routes
