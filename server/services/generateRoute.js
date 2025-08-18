@@ -78,7 +78,6 @@ async function generateRoute(userPreferences) {
       avoid_hills = false,
       starting_point_name,
       destination_name,
-      unit_system = 'imperial',
       routing_backend = 'gpt_powered'
     } = userOptions || {};
 
@@ -87,8 +86,7 @@ async function generateRoute(userPreferences) {
       end,
       route_type,
       target_distance,
-      routing_backend,
-      unit_system
+      routing_backend
     });
 
     const options = {
@@ -99,7 +97,6 @@ async function generateRoute(userPreferences) {
       avoid_hills,
       starting_point_name,
       destination_name,
-      unit_system,
       routing_backend
     };
 
@@ -177,17 +174,8 @@ async function generateRoute(userPreferences) {
       routeData.gpt_metadata = gptMetadata;
     }
 
-    // Convert distance to requested unit system
-    if (unit_system === 'metric') {
-      routeData.total_length = routeData.total_length_km;
-      routeData.unit = 'km';
-    } else {
-      routeData.total_length = routeData.total_length_km * 0.621371;
-      routeData.unit = 'miles';
-    }
-
     console.log('Route generation successful:', {
-      distance: `${routeData.total_length.toFixed(2)} ${routeData.unit}`,
+      distance: `${routeData.total_length.toFixed(2)} km`,
       elevation: `${routeData.total_elevation_gain}m`,
       source: routeData.data_source,
       difficulty: routeData.calculated_difficulty

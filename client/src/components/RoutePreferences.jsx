@@ -3,10 +3,15 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import LocationAutocomplete from "./LocationAutocomplete";
 import Toggle from "./Toggle";
+import { useUnits } from "../contexts/UnitsContext";
+import { kmToUi, uiToKm, distLabel } from "../utils/units";
 
 export default function RoutePreferences({ preferences, setPreferences, userLocation = null }) {
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [glow, setGlow] = useState(true);
+
+    // global units
+    const { units, setUnits } = useUnits();
 
     const handleChange = (field) => (value) => {
         setPreferences((prev) => ({ ...prev, [field]: value }));
@@ -68,7 +73,13 @@ export default function RoutePreferences({ preferences, setPreferences, userLoca
                         }}
                     />
                 </div>
-                <div>
+                {hasStartingPoint && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        transition={{ duration: 0.4, ease: "easeOut" }}
+                        className="mb-6"
+                    >
                     <label htmlFor="endingPoint" className="body-2 text-n-3 mb-2 block">End Location (Optional)</label>
                     <LocationAutocomplete
                         id="endingPoint"
@@ -99,36 +110,8 @@ export default function RoutePreferences({ preferences, setPreferences, userLoca
                             }));
                         }}
                     />
-                </div>
-            </div>
-
-            {/* Unit System Selection */}
-            <div className="mb-6">
-                <label className="body-2 text-n-3 mb-3 block">Unit System</label>
-                <div className="grid grid-cols-2 gap-3">
-                    <button
-                        onClick={() => handleChange('unitSystem')('imperial')}
-                        className={`p-3 rounded-xl border transition-all duration-300 text-left ${
-                            (preferences.unitSystem || 'imperial') === 'imperial'
-                                ? 'border-color-1 bg-color-1/10 text-color-1'
-                                : 'border-n-6 bg-n-7/50 text-n-2 hover:border-n-5 hover:bg-n-7'
-                        }`}
-                    >
-                        <div className="font-medium text-sm mb-1">Imperial</div>
-                        <div className="text-xs text-n-4">Miles & Feet</div>
-                    </button>
-                    <button
-                        onClick={() => handleChange('unitSystem')('metric')}
-                        className={`p-3 rounded-xl border transition-all duration-300 text-left ${
-                            preferences.unitSystem === 'metric'
-                                ? 'border-color-1 bg-color-1/10 text-color-1'
-                                : 'border-n-6 bg-n-7/50 text-n-2 hover:border-n-5 hover:bg-n-7'
-                        }`}
-                    >
-                        <div className="font-medium text-sm mb-1">Metric</div>
-                        <div className="text-xs text-n-4">Kilometers & Meters</div>
-                    </button>
-                </div>
+                </motion.div>
+                    )}
             </div>
 
             {/* Route Type Selection - Show after starting point is selected */}
@@ -163,36 +146,50 @@ export default function RoutePreferences({ preferences, setPreferences, userLoca
 
             {/* Distance Target */}
             <div className="mb-6">
-                <label htmlFor="distanceRange" className="body-2 text-n-3 mb-3 block">
-                    Distance: <span className="text-color-1 font-semibold">{preferences.distanceTarget || 0} mi</span>
+                <label htmlFor="distanceNumber" className="body-2 text-n-3 mb-3 block">
+                    Target Distance:
                 </label>
-                <input
-                    id="distanceRange"
-                    name="distanceRange"
-                    type="range"
-                    min="5"
-                    max="100"
-                    step="5"
-                    value={preferences.distanceTarget || 20}
-                    onChange={(e) => handleChange('distanceTarget')(e.target.value)}
-                    aria-label="Route distance in miles"
-                    className="w-full h-2 bg-n-6 rounded-lg appearance-none cursor-pointer slider"
-                />
-                {/* TODO: add option for numerical input */}
-                <label htmlFor="distanceNumber" className="sr-only">Distance in miles (number input)</label>
-                <input
-                    id="distanceNumber"
-                    name="distanceNumber"
-                    type="number"
-                    min="5"
-                    max="100"
-                    step="5"
-                    value={preferences.distanceTarget || 20}
-                    onChange={(e) => handleChange('distanceTarget')(e.target.value)}
-                    aria-label="Route distance in miles (exact number)"
-                    className="mt-2 w-20 px-2 py-1 bg-n-7 border border-n-6 rounded text-n-1 text-sm focus:border-color-1 focus:outline-none transition-all duration-300 focus:shadow-[0_0_15px_rgba(172,108,255,0.3)] focus:scale-105"
-                    placeholder="mi"
-                />
+
+                <div className="flex items-center gap-3">
+                    {/* Number Input */}
+                    <input
+                        id="distanceNumber"
+                        name="distanceNumber"
+                        type="number"
+                        inputMode="numeric"
+                        value={preferences.distanceTarget || 20}
+                        onChange={(e) => handleChange("distanceTarget")(e.target.value)}
+                        aria-label="Route distance"
+                        className="w-20 text-xl text-color-1 font-semibold text-center bg-transparent border-none focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        placeholder="0"
+                    />
+
+                    {/* Unit Toggle */}
+                    <div className="flex rounded-md border border-color-1 overflow-hidden text-sm font-medium">
+                        <button
+                            type="button"
+                            onClick={() => setUnits("imp")}
+                            className={`px-3 py-1 transition-all duration-300 ${
+                                units === "imp"
+                                    ? "bg-color-1 text-n-7"
+                                    : "bg-transparent text-color-1 hover:bg-color-1/10"
+                            }`}
+                        >
+                            mi
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setUnits("met")}
+                            className={`px-3 py-1 transition-all duration-300 ${
+                                units === "met"
+                                    ? "bg-color-1 text-n-7"
+                                    : "bg-transparent text-color-1 hover:bg-color-1/10"
+                            }`}
+                        >
+                            km
+                        </button>
+                    </div>
+                </div>
             </div>
 
 

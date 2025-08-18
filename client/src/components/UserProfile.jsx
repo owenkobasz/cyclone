@@ -14,6 +14,8 @@ export default function UserProfile() {
   const [stats, setStats] = useState({ distanceKm: 0, elevationM: 0 });
   const [routes, setRoutes] = useState([]);
   const [routeAddresses, setRouteAddresses] = useState({});
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [routeName, setRouteName] = useState('');
   const navigate = useNavigate();
   const { openAuthModal } = useAuthModal();
   const fileInputRef = useRef(null); // Reference for file input
@@ -30,64 +32,135 @@ export default function UserProfile() {
     return `${base}${avatar}`;
   };
 
+  function haversineDistance(coord1, coord2) {
+    const R = 6371000; // earth radius in meters
+    const toRad = (x) => (x * Math.PI) / 180;
+
+    const dLat = toRad(coord2.lat - coord1.lat);
+    const dLon = toRad(coord2.lon - coord1.lon);
+    const lat1 = toRad(coord1.lat);
+    const lat2 = toRad(coord2.lat);
+
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.sin(dLon / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c / 1000;
+  }
+
+  function calculateBearing(p1, p2) {
+    const toRad = (x) => (x * Math.PI) / 180;
+    const toDeg = (x) => (x * 180) / Math.PI;
+
+    const y = Math.sin(toRad(p2.lon - p1.lon)) * Math.cos(toRad(p2.lat));
+    const x =
+      Math.cos(toRad(p1.lat)) * Math.sin(toRad(p2.lat)) -
+      Math.sin(toRad(p1.lat)) *
+      Math.cos(toRad(p2.lat)) *
+      Math.cos(toRad(p2.lon - p1.lon));
+    return (toDeg(Math.atan2(y, x)) + 360) % 360;
+  }
+
+  function generateCueSheet(waypoints) {
+    const cues = [];
+    if (waypoints.length < 2) return cues;
+
+    function getCardinalDirection(bearing) {
+      bearing = (bearing + 360) % 360;
+      if (bearing >= 337.5 || bearing < 22.5) return "north";
+      if (bearing >= 22.5 && bearing < 67.5) return "northeast";
+      if (bearing >= 67.5 && bearing < 112.5) return "east";
+      if (bearing >= 112.5 && bearing < 157.5) return "southeast";
+      if (bearing >= 157.5 && bearing < 202.5) return "south";
+      if (bearing >= 202.5 && bearing < 247.5) return "southwest";
+      if (bearing >= 247.5 && bearing < 292.5) return "west";
+      if (bearing >= 292.5 && bearing < 337.5) return "northwest";
+    }
+
+    const initialBearing = calculateBearing(waypoints[0], waypoints[1]);
+    const initialDistance = haversineDistance(waypoints[0], waypoints[1]);
+    cues.push({
+      instruction: `Head ${getCardinalDirection(initialBearing)}`,
+      distanceKm: Number((initialDistance).toFixed(2))
+    });
+
+    for (let i = 2; i < waypoints.length; i++) {
+      const bearing1 = calculateBearing(waypoints[i - 2], waypoints[i - 1]);
+      const bearing2 = calculateBearing(waypoints[i - 1], waypoints[i]);
+      const distance = haversineDistance(waypoints[i - 1], waypoints[i]);
+      const turn = bearing2 - bearing1;
+
+      let instruction;
+      if (Math.abs(turn) > 30) {
+        instruction = turn > 0 ? "Turn right onto Elm St" : "Turn left onto Elm St";
+      } else {
+        instruction = "Continue straight";
+      }
+
+      cues.push({
+        instruction: instruction,
+        distanceKm: Number(distance.toFixed(2))
+      });
+    }
+    return cues;
+  }
+
   const fetchRoutes = async () => {
-      try {
-        const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
-        const res = await fetch(`${base}/api/routes`, { credentials: 'include' });
-        if (!res.ok) {
-          if (res.status === 401) {
-            console.error('Not authenticated for routes - user may need to log in again');
-            return;
-          }
-          console.error('Failed to fetch routes:', res.status, res.statusText);
+    try {
+      const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+      const res = await fetch(`${base}/api/routes`, { credentials: 'include' });
+      if (!res.ok) {
+        if (res.status === 401) {
+          console.error('Not authenticated for routes - user may need to log in again');
           return;
         }
-        const data = await res.json();
-        setRoutes(data);
-
-        const addresses = {};
-        for (const route of data) {
-          const start = route.waypoints[0];
-          const end = route.waypoints[route.waypoints.length - 1];
-          addresses[route.id] = {
-            start: { address: 'Loading...', error: null },
-            end: { address: 'Loading...', error: null },
-          };
-
-          try {
-            const startRes = await fetch(
-              `https://api.geoapify.com/v1/geocode/reverse?lat=${start.lat}&lon=${start.lon}&type=street&apiKey=${GEOAPIFY_API_KEY}`
-            );
-            const startData = await startRes.json();
-            addresses[route.id].start.address =
-              startData.features?.[0]?.properties?.formatted || 'No address found';
-          } catch (err) {
-            addresses[route.id].start.address = 'Error fetching address';
-            addresses[route.id].start.error = err.message;
-          }
-
-          try {
-            const endRes = await fetch(
-              `https://api.geoapify.com/v1/geocode/reverse?lat=${end.lat}&lon=${end.lon}&type=street&apiKey=${GEOAPIFY_API_KEY}`
-            );
-            const endData = await endRes.json();
-            addresses[route.id].end.address =
-              endData.features?.[0]?.properties?.formatted || 'No address found';
-          } catch (err) {
-            addresses[route.id].end.address = 'Error fetching address';
-            addresses[route.id].end.error = err.message;
-          }
-        }
-        setRouteAddresses(addresses);
-      } catch (err) {
-        console.error('Failed to load user routes:', err);
+        console.error('Failed to fetch routes:', res.status, res.statusText);
+        return;
       }
-    };
+      const data = await res.json();
+      setRoutes(data);
 
-  // Function to handle file selection and parsing
-  // client/src/components/UserProfile.jsx (partial update for handleFileUpload)
-  const handleFileUpload = async (event) => {
-    const file = event.target.files[0];
+      const addresses = {};
+      for (const route of data) {
+        const start = route.waypoints[0];
+        const end = route.waypoints[route.waypoints.length - 1];
+        addresses[route.id] = {
+          start: { address: 'Loading...', error: null },
+          end: { address: 'Loading...', error: null },
+        };
+
+        try {
+          const startRes = await fetch(
+            `https://api.geoapify.com/v1/geocode/reverse?lat=${start.lat}&lon=${start.lon}&type=street&apiKey=${GEOAPIFY_API_KEY}`
+          );
+          const startData = await startRes.json();
+          addresses[route.id].start.address =
+            startData.features?.[0]?.properties?.formatted || 'No address found';
+        } catch (err) {
+          addresses[route.id].start.address = 'Error fetching address';
+          addresses[route.id].start.error = err.message;
+        }
+
+        try {
+          const endRes = await fetch(
+            `https://api.geoapify.com/v1/geocode/reverse?lat=${end.lat}&lon=${end.lon}&type=street&apiKey=${GEOAPIFY_API_KEY}`
+          );
+          const endData = await endRes.json();
+          addresses[route.id].end.address =
+            endData.features?.[0]?.properties?.formatted || 'No address found';
+        } catch (err) {
+          addresses[route.id].end.address = 'Error fetching address';
+          addresses[route.id].end.error = err.message;
+        }
+      }
+      setRouteAddresses(addresses);
+    } catch (err) {
+      console.error('Failed to load user routes:', err);
+    }
+  };
+
+  const handleFileUpload = async (file, customRouteName) => {
     if (!file) return;
 
     try {
@@ -106,11 +179,21 @@ export default function UserProfile() {
         }));
       }
 
-      const routeName = gpxDoc.getElementsByTagName('name')[0]?.textContent || file.name.replace('.gpx', '');
+      const routeNameFinal =
+        customRouteName ||
+        gpxDoc.getElementsByTagName('name')[0]?.textContent ||
+        file.name.replace(/\.gpx$/i, '');
+
+      let totalDistance = 0;
+      for (let i = 1; i < waypoints.length; i++) {
+        totalDistance += haversineDistance(waypoints[i - 1], waypoints[i]);
+      }
+
+      const cueSheet = generateCueSheet(waypoints);
 
       const rawStats = {
-        distance: 0,
-        elevation_gain: waypoints.reduce((sum, wp, i) => {
+        distanceKm: totalDistance,
+        elevationM: waypoints.reduce((sum, wp, i) => {
           if (i === 0) return sum;
           const prev = waypoints[i - 1];
           const gain = wp.ele - prev.ele > 0 ? wp.ele - prev.ele : 0;
@@ -123,9 +206,10 @@ export default function UserProfile() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          routeName,
+          routeName: routeNameFinal,
           waypoints,
           rawStats,
+          cueSheet,
           username: authUser.username,
         }),
         credentials: 'include',
@@ -137,6 +221,9 @@ export default function UserProfile() {
       }
 
       fetchRoutes();
+      setIsImportModalOpen(false);
+      setRouteName('');
+      fileInputRef.current.value = '';
       alert('Route imported successfully!');
     } catch (err) {
       console.error('Error processing GPX file:', err);
@@ -144,9 +231,20 @@ export default function UserProfile() {
     }
   };
 
-  // Trigger file input click
+  const handleImportSubmit = (e) => {
+    e.preventDefault();
+    const file = fileInputRef.current.files[0];
+    handleFileUpload(file, routeName);
+  };
+
   const handleImportClick = () => {
-    fileInputRef.current.click();
+    setIsImportModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsImportModalOpen(false);
+    setRouteName('');
+    fileInputRef.current.value = '';
   };
 
   useEffect(() => {
@@ -247,14 +345,46 @@ export default function UserProfile() {
               </p>
             </div>
             <Button onClick={handleImportClick}>Import Route</Button>
-            <input
-              type="file"
-              accept=".gpx"
-              ref={fileInputRef}
-              style={{ display: 'none' }}
-              onChange={handleFileUpload}
-            />
           </Card>
+
+          {isImportModalOpen && (
+            <div className="fixed inset-0 bg-n-8/80 backdrop-blur-sm flex items-center justify-center z-20">
+              <Card className="p-6 bg-n-8/90 border border-n-6 shadow-lg max-w-md w-full">
+                <h3 className="font-code text-xl text-n-1 mb-4">Import Route</h3>
+                <form onSubmit={handleImportSubmit} className="space-y-4">
+                  <div>
+                    <label className="font-code text-n-1 text-sm mb-1 block">
+                      Route Name (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={routeName}
+                      onChange={(e) => setRouteName(e.target.value)}
+                      placeholder="Enter route name or leave blank"
+                      className="w-full p-2 bg-n-7 border border-n-6 rounded text-n-1 font-code text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-code text-n-1 text-sm mb-1 block">
+                      GPX File
+                    </label>
+                    <input
+                      type="file"
+                      accept=".gpx"
+                      ref={fileInputRef}
+                      className="w-full p-2 bg-n-7 border border-n-6 rounded text-n-1 font-code text-sm"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" onClick={handleCloseModal}>
+                      Cancel
+                    </Button>
+                    <Button type="submit">Import</Button>
+                  </div>
+                </form>
+              </Card>
+            </div>
+          )}
 
           <h3 className="font-code text-xl lg:text-2xl uppercase text-n-1 mt-10 mb-4">
             Saved Routes
