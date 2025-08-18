@@ -3,7 +3,7 @@ const { getValhallaRoute } = require('./valhallaRequest');
 const { getGraphHopperRoute, formatGraphHopperResponse } = require('./graphHopperRequest');
 const { getOpenElevation } = require('./openElevationRequest');
 const { callPythonBackend } = require('./pythonBackup');
-const { calculateRouteDifficulty } = require('../generateRouteFeature/utils/calculationsUtils');
+const { calculateRouteDifficulty } = require('../utils/calculationsUtils');
 const { ROUTING_APIS } = require('../config/config');
 const axios = require('axios');
 

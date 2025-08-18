@@ -1,6 +1,6 @@
 const axios = require('axios');
 const { OPENAI_API_KEY, OPENAI_API_URL } = require('../config/config');
-const { calculateDistance } = require('../generateRouteFeature/utils/calculationsUtils');
+const { calculateDistance } = require('../utils/calculationsUtils');
 
 /**
  * Calculate distance requirements based on target distance

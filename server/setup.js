@@ -313,7 +313,7 @@ async function preloadUserLocationGraph() {
       console.log(`\nDetected user location: ${userLocation.place}`);
       
       // Check if OSM graph exists for this location
-      const OSMGraphManager = require('./generateRouteFeature/utils/osmGraphManager');
+      const OSMGraphManager = require('./utils/osmGraphManager');
       const graphManager = new OSMGraphManager();
       
       // Use lat/lon from the API response
