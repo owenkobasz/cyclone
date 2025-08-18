@@ -4,8 +4,10 @@
     "username": "test",
     "password": "password123",
     "name": "Jane Doe",
-    "address": "123 Main St, Philadelphia, PA",
-  "profilePicture": "/avatars/default-avatar.png"
+    "address": "456 Main St, Philadelphia, PA",
+    "profilePicture": "/avatars/default-avatar.png",
+    "firstName": "Janet",
+    "lastName": "Do"
   },
   {
     "id": "21",
@@ -13,7 +15,7 @@
     "password": "password",
     "name": "John Doe",
     "address": "456 Broadway Ave, Camden, NJ",
-  "profilePicture": "/avatars/avatar-1.jpg"
+    "profilePicture": "/avatars/avatar-1.jpg"
   },
   {
     "id": "22",
@@ -21,6 +23,116 @@
     "password": "password",
     "name": "John Wayne",
     "address": "456 Broadway Ave, Camden, NJ",
-  "profilePicture": "/avatars/avatar-1.jpg"
+    "profilePicture": "/avatars/avatar-1.jpg"
+  },
+  {
+    "id": "5",
+    "username": "matt",
+    "password": "$2b$10$Fl6XNDBLP23Bhf8ERBnD6eZo.yeqsmuNYJc2aehzS5x15g0BD6V1a",
+    "firstName": "Matt",
+    "lastName": "Schwartz",
+    "address": "",
+    "profilePicture": "/avatars/default-avatar.png",
+    "avatar": ""
+  },
+  {
+    "id": "6",
+    "username": "matt1",
+    "password": "$2b$10$Tu7d5Au.NMZfwv9s7lquuuOQ4O0GyaHUKRp9PnBrj4dvoMF5dA4x2",
+    "firstName": "Matt",
+    "lastName": "Schwartz",
+    "address": "",
+    "profilePicture": "/avatars/default-avatar.png",
+    "avatar": ""
+  },
+  {
+    "id": "7",
+    "username": "matt2",
+    "password": "$2b$10$UQXyXhKVpQD.Gzc9s/TbvOEhGD7r0H0qUBuEoYsqdEcyHQOnPt6ea",
+    "firstName": "matt",
+    "lastName": "schwartz",
+    "address": "",
+    "profilePicture": "/avatars/default-avatar.png",
+    "avatar": ""
+  },
+  {
+    "id": "8",
+    "username": "matt3",
+    "password": "$2b$10$MSiLf/9iP/mVl9TGUYHnneYfh3fUjX6KtQPm4qtvTaGIMlD.UVC96",
+    "firstName": "matt",
+    "lastName": "schwartz",
+    "address": "",
+    "profilePicture": "/avatars/default-avatar.png",
+    "avatar": ""
+  },
+  {
+    "id": "9",
+    "username": "p",
+    "password": "$2b$10$rlb23kXmmnhvnDovGHeGIOymPlamiKRorUY/PHb6HNx4GM.iMX.u.",
+    "firstName": "p",
+    "lastName": "p",
+    "address": "",
+    "profilePicture": "/avatars/default-avatar.png",
+    "avatar": ""
+  },
+  {
+    "id": "10",
+    "username": "q",
+    "password": "$2b$10$xp0IOAeqGcW/CixdHPdQ.O4EKMH/IUkJ1nZWUYl2KMECSaRySBUYS",
+    "firstName": "p",
+    "lastName": "p",
+    "address": "",
+    "profilePicture": "/avatars/default-avatar.png",
+    "avatar": ""
+  },
+  {
+    "id": "11",
+    "username": "r",
+    "password": "$2b$10$dJNxwvvNQ4yT7fr7SHtTf.glBZlDwp/7Jrw53Oxyst4MWXWWabSQa",
+    "firstName": "p",
+    "lastName": "p",
+    "address": "",
+    "profilePicture": "/avatars/default-avatar.png",
+    "avatar": ""
+  },
+  {
+    "id": "12",
+    "username": "s",
+    "password": "$2b$10$tZR.mMf8WbTc46rjrIHRgu9K0UImPT2BARp1oqy1fGwZ4AgBbGh.u",
+    "firstName": "p",
+    "lastName": "p",
+    "address": "",
+    "profilePicture": "/avatars/default-avatar.png",
+    "avatar": ""
+  },
+  {
+    "id": "13",
+    "username": "a",
+    "password": "$2b$10$N9m.Zfw3r/m3zTEHlpyegehnbHy9XwSKp8nNPbUDLykuLumWKWsi2",
+    "firstName": "p",
+    "lastName": "p",
+    "address": "",
+    "profilePicture": "/avatars/default-avatar.png",
+    "avatar": ""
+  },
+  {
+    "id": "14",
+    "username": "matt1234",
+    "password": "$2b$10$EPj0Des4R.79F3u3hLA9p.aiVj4EuGmbjC8mjBiQspubyI3Mh/CWC",
+    "firstName": "1",
+    "lastName": "1",
+    "address": "",
+    "profilePicture": "/avatars/default-avatar.png",
+    "avatar": ""
+  },
+  {
+    "id": "15",
+    "username": "zoey101",
+    "password": "$2b$10$46FUB.ujRO5aFRKguBbRnuk22hbHTjsu4M8v/oK70M0L6wIZqRbyi",
+    "firstName": "Jamie",
+    "lastName": "Spears",
+    "address": "",
+    "profilePicture": "/avatars/default-avatar.png",
+    "avatar": ""
   }
 ]

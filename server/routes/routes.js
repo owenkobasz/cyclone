@@ -194,7 +194,7 @@ router.get('/user/stats', async (req, res) => {
 
 router.get('/routes', (req, res) => {
   const username = req.query.username;
-  const routesPath = path.join(__dirname, './databases/routes.json');
+  const routesPath = path.join(__dirname, '../databases/routes.json');
 
   try {
     const data = fs.readFileSync(routesPath, 'utf-8');

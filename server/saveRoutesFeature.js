@@ -3,7 +3,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const router = express.Router();
 
-const dataPath = path.join(__dirname, '../databases/routes.json');
+const dataPath = path.join(__dirname, './databases/routes.json');
 
 function requireAuth(req, res, next) {
   if (!req.session || !req.session.user || !req.session.user.username) {
@@ -38,7 +38,7 @@ router.post('/save', requireAuth, async (req, res) => {
   try {
     await ensureDataFile();
 
-    const userId = req.session.user.username; // Use username instead of user ID
+    const username = req.session.user.username; // Use username instead of user ID
     const { routeName, waypoints, rawStats, cueSheet, preferences } = req.body;
 
     if (!routeName || !Array.isArray(waypoints)) {
@@ -48,7 +48,7 @@ router.post('/save', requireAuth, async (req, res) => {
 
     const newRoute = {
       id: Date.now(),
-      userId,
+      username,
       routeName,
       waypoints: waypoints || [],
       rawStats: rawStats || null,
@@ -89,7 +89,7 @@ router.get('/', requireAuth, async (req, res) => {
     await ensureDataFile();
     const raw = await fs.readFile(dataPath, 'utf8');
     const routes = JSON.parse(raw);
-    const userRoutes = routes.filter(route => route.userId === req.session.user.username);
+    const userRoutes = routes.filter(route => route.username === req.session.user.username);
     console.log('Fetched routes for user:', { username: req.session.user.username, count: userRoutes.length });
     res.json(userRoutes || []);
   } catch (err) {

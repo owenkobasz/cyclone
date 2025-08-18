@@ -8,7 +8,7 @@ import MapComponent from "./MapComponent";
 import RoutePreferences from "./RoutePreferences";
 import CueSheet from "./CueSheet";
 import RouteStats from "./RouteStats";
-import { generateRoute } from "../utils/routeApi";
+import { generateRoute, generateGpxFile } from "../utils/routeApi";
 
 const GenerateRoutes = () => {
   const navigate = useNavigate();
@@ -47,7 +47,7 @@ const GenerateRoutes = () => {
 
   useEffect(() => {
     const selectedRoute = state?.selectedRoute;
-    if (selectedRoute && state?.fromRouteGeneration) {
+    if (selectedRoute && (state?.fromRouteGeneration || state?.fromProfile)) {
       // Transform selectedRoute to match MapComponent's routeData format
       const transformedRouteData = {
         route: selectedRoute.waypoints || [], // Assuming waypoints is [{ lat, lon }, ...]
@@ -197,6 +197,11 @@ const GenerateRoutes = () => {
     }
   };
 
+  const exportGpx = async () => {
+    // call backend api
+    const res = await fetch()
+  }
+
   const hasPreferences =
     preferences.startingPoint || preferences.endingPoint || location;
 
@@ -311,6 +316,7 @@ const GenerateRoutes = () => {
                     className="w-full"
                     onClick={() => {
                       console.log("Exporting route as GPX...");
+                      generateGpxFile(routeData.route);
                     }}
                     white
                   >
