@@ -30,59 +30,145 @@ export default function UserProfile() {
     return `${base}${avatar}`;
   };
 
+  function haversineDistance(coord1, coord2) {
+    const R = 6371000; // earth radius in meters
+    const toRad = (x) => (x * Math.PI) / 180;
+
+    const dLat = toRad(coord2.lat - coord1.lat);
+    const dLon = toRad(coord2.lon - coord1.lon);
+    const lat1 = toRad(coord1.lat);
+    const lat2 = toRad(coord2.lat);
+
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.sin(dLon / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c; // meters
+  }
+
+  function calculateBearing(p1, p2) {
+    const toRad = (x) => (x * Math.PI) / 180;
+    const toDeg = (x) => (x * 180) / Math.PI;
+
+    const y = Math.sin(toRad(p2.lon - p1.lon)) * Math.cos(toRad(p2.lat));
+    const x =
+      Math.cos(toRad(p1.lat)) * Math.sin(toRad(p2.lat)) -
+      Math.sin(toRad(p1.lat)) *
+      Math.cos(toRad(p2.lat)) *
+      Math.cos(toRad(p2.lon - p1.lon));
+    return (toDeg(Math.atan2(y, x)) + 360) % 360;
+  }
+
+  function generateCueSheet(waypoints) {
+    const cues = [];
+    if (waypoints.length < 2) return cues;
+
+    function getCardinalDirection(bearing) {
+      bearing = (bearing + 360) % 360; // Normalize to 0-360
+      if (bearing >= 337.5 || bearing < 22.5) return "north";
+      if (bearing >= 22.5 && bearing < 67.5) return "northeast";
+      if (bearing >= 67.5 && bearing < 112.5) return "east";
+      if (bearing >= 112.5 && bearing < 157.5) return "southeast";
+      if (bearing >= 157.5 && bearing < 202.5) return "south";
+      if (bearing >= 202.5 && bearing < 247.5) return "southwest";
+      if (bearing >= 247.5 && bearing < 292.5) return "west";
+      if (bearing >= 292.5 && bearing < 337.5) return "northwest";
+    }
+
+    const initialBearing = calculateBearing(waypoints[0], waypoints[1]);
+    const initialDistance = haversineDistance(waypoints[0], waypoints[1]);
+    cues.push({
+      instruction: `Head ${getCardinalDirection(initialBearing)}`,
+      distanceKm: Number(initialDistance.toFixed(2)) / 1000
+    });
+
+    for (let i = 2; i < waypoints.length; i++) {
+      const bearing1 = calculateBearing(waypoints[i - 2], waypoints[i - 1]);
+      const bearing2 = calculateBearing(waypoints[i - 1], waypoints[i]);
+      const distance = haversineDistance(waypoints[i - 1], waypoints[i]) / 1000;
+      const turn = bearing2 - bearing1;
+
+      let instruction;
+      if (Math.abs(turn) > 30) {
+        instruction = turn > 0 ? "Turn right onto Elm St" : "Turn left onto Elm St";
+      } else {
+        instruction = "Continue straight";
+      }
+
+      cues.push({
+        instruction: instruction,
+        distanceKm: Number(distance.toFixed(2))
+      });
+    }
+    return cues;
+  }
+
+  function calculateBearing(point1, point2) {
+    const dLon = (point2.lon - point1.lon) * Math.PI / 180;
+    const lat1 = point1.lat * Math.PI / 180;
+    const lat2 = point2.lat * Math.PI / 180;
+    const y = Math.sin(dLon) * Math.cos(lat2);
+    const x =
+      Math.cos(lat1) * Math.sin(lat2) -
+      Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+    let bearing = Math.atan2(y, x) * 180 / Math.PI;
+    return (bearing + 360) % 360;
+  }
+
   const fetchRoutes = async () => {
-      try {
-        const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
-        const res = await fetch(`${base}/api/routes`, { credentials: 'include' });
-        if (!res.ok) {
-          if (res.status === 401) {
-            console.error('Not authenticated for routes - user may need to log in again');
-            return;
-          }
-          console.error('Failed to fetch routes:', res.status, res.statusText);
+    try {
+      const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+      const res = await fetch(`${base}/api/routes`, { credentials: 'include' });
+      if (!res.ok) {
+        if (res.status === 401) {
+          console.error('Not authenticated for routes - user may need to log in again');
           return;
         }
-        const data = await res.json();
-        setRoutes(data);
-
-        const addresses = {};
-        for (const route of data) {
-          const start = route.waypoints[0];
-          const end = route.waypoints[route.waypoints.length - 1];
-          addresses[route.id] = {
-            start: { address: 'Loading...', error: null },
-            end: { address: 'Loading...', error: null },
-          };
-
-          try {
-            const startRes = await fetch(
-              `https://api.geoapify.com/v1/geocode/reverse?lat=${start.lat}&lon=${start.lon}&type=street&apiKey=${GEOAPIFY_API_KEY}`
-            );
-            const startData = await startRes.json();
-            addresses[route.id].start.address =
-              startData.features?.[0]?.properties?.formatted || 'No address found';
-          } catch (err) {
-            addresses[route.id].start.address = 'Error fetching address';
-            addresses[route.id].start.error = err.message;
-          }
-
-          try {
-            const endRes = await fetch(
-              `https://api.geoapify.com/v1/geocode/reverse?lat=${end.lat}&lon=${end.lon}&type=street&apiKey=${GEOAPIFY_API_KEY}`
-            );
-            const endData = await endRes.json();
-            addresses[route.id].end.address =
-              endData.features?.[0]?.properties?.formatted || 'No address found';
-          } catch (err) {
-            addresses[route.id].end.address = 'Error fetching address';
-            addresses[route.id].end.error = err.message;
-          }
-        }
-        setRouteAddresses(addresses);
-      } catch (err) {
-        console.error('Failed to load user routes:', err);
+        console.error('Failed to fetch routes:', res.status, res.statusText);
+        return;
       }
-    };
+      const data = await res.json();
+      setRoutes(data);
+
+      const addresses = {};
+      for (const route of data) {
+        const start = route.waypoints[0];
+        const end = route.waypoints[route.waypoints.length - 1];
+        addresses[route.id] = {
+          start: { address: 'Loading...', error: null },
+          end: { address: 'Loading...', error: null },
+        };
+
+        try {
+          const startRes = await fetch(
+            `https://api.geoapify.com/v1/geocode/reverse?lat=${start.lat}&lon=${start.lon}&type=street&apiKey=${GEOAPIFY_API_KEY}`
+          );
+          const startData = await startRes.json();
+          addresses[route.id].start.address =
+            startData.features?.[0]?.properties?.formatted || 'No address found';
+        } catch (err) {
+          addresses[route.id].start.address = 'Error fetching address';
+          addresses[route.id].start.error = err.message;
+        }
+
+        try {
+          const endRes = await fetch(
+            `https://api.geoapify.com/v1/geocode/reverse?lat=${end.lat}&lon=${end.lon}&type=street&apiKey=${GEOAPIFY_API_KEY}`
+          );
+          const endData = await endRes.json();
+          addresses[route.id].end.address =
+            endData.features?.[0]?.properties?.formatted || 'No address found';
+        } catch (err) {
+          addresses[route.id].end.address = 'Error fetching address';
+          addresses[route.id].end.error = err.message;
+        }
+      }
+      setRouteAddresses(addresses);
+    } catch (err) {
+      console.error('Failed to load user routes:', err);
+    }
+  };
 
   // Function to handle file selection and parsing
   // client/src/components/UserProfile.jsx (partial update for handleFileUpload)
@@ -108,9 +194,16 @@ export default function UserProfile() {
 
       const routeName = gpxDoc.getElementsByTagName('name')[0]?.textContent || file.name.replace('.gpx', '');
 
+      let totalDistance = 0;
+      for (let i = 1; i < waypoints.length; i++) {
+        totalDistance += haversineDistance(waypoints[i - 1], waypoints[i]);
+      }
+
+      const cueSheet = generateCueSheet(waypoints);
+
       const rawStats = {
-        distance: 0,
-        elevation_gain: waypoints.reduce((sum, wp, i) => {
+        distanceKm: totalDistance / 1000,
+        elevationM: waypoints.reduce((sum, wp, i) => {
           if (i === 0) return sum;
           const prev = waypoints[i - 1];
           const gain = wp.ele - prev.ele > 0 ? wp.ele - prev.ele : 0;
@@ -126,6 +219,7 @@ export default function UserProfile() {
           routeName,
           waypoints,
           rawStats,
+          cueSheet,
           username: authUser.username,
         }),
         credentials: 'include',
@@ -144,7 +238,6 @@ export default function UserProfile() {
     }
   };
 
-  // Trigger file input click
   const handleImportClick = () => {
     fileInputRef.current.click();
   };

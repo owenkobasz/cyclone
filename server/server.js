@@ -15,6 +15,8 @@ const fs = require('fs').promises;
 const path = require('path');
 const profilesPath = path.join(__dirname, 'databases', 'profiles.json');
 const routesPath = path.join(__dirname, 'databases', 'routes.json');
+const bodyParser = require('body-parser');
+app.use(bodyParser.json({ limit: '100mb' }));
 
 // Profile helper functions
 const readProfiles = async () => {

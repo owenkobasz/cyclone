@@ -133,8 +133,8 @@ router.post('/import-route', requireAuth, async (req, res) => {
   console.log('Request body:', req.body);
   try {
     await ensureDataFile();
-    const userId = req.session.user.id;
-    const { routeName, waypoints, rawStats } = req.body;
+    const username = req.session.user.id;
+    const { routeName, waypoints, rawStats, cueSheet } = req.body;
 
     if (!routeName || !Array.isArray(waypoints) || waypoints.length === 0) {
       console.log('Import route failed: Missing or invalid routeName/waypoints', { body: req.body });
@@ -143,11 +143,11 @@ router.post('/import-route', requireAuth, async (req, res) => {
 
     const newRoute = {
       id: Date.now(),
-      userId,
+      username,
       routeName,
       waypoints,
       rawStats: rawStats || null,
-      cueSheet: [],
+      cueSheet: cueSheet || [],
       preferences: null,
       createdAt: new Date().toISOString(),
     };
