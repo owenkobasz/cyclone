@@ -129,6 +129,6 @@ export async function generateGpxFile(route, filename="map.gpx") {
   a.click();
   document.body.removeChild(a);
 
-  // 4. Release the Blob URL
+  // release the Blob URL
   URL.revokeObjectURL(url);
 }
