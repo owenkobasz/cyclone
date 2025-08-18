@@ -49,10 +49,14 @@ server/cache/
 server/temp/
 
 # Duplicate cleanups
-.DS_Store
 .vscode/
 .idea/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 server/databases/sessions.db
+
+# Local databases
+/databases/
+/server/databases/
+profiles.json
+
+# Profile Pictures
+/server/public/
