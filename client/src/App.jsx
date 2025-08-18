@@ -13,6 +13,7 @@ import { AuthModalProvider } from './contexts/AuthModalContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
+import { UnitsContextProvider} from "./contexts/UnitsContext";
 
 // Main App Layout Component
 const AppLayout = () => {
@@ -103,25 +104,25 @@ const App = () => {
   return (
     <AuthProvider>
       <AuthModalProvider>
-        <Routes>
-          <Route path="/" element={<AppLayout />} />
-          <Route path="/profile" element={
-            // Checks if user is authenticated before allowing user to access UserProfile
-            <ProtectedRoute>
-              <UserProfileLayout>
-                <UserProfile />
-              </UserProfileLayout>
-            </ProtectedRoute>
-          } />
-           // Same for EditProfile
-          <Route path="/edit-profile" element={
-            <ProtectedRoute>
-              <UserProfileLayout>
-                <EditProfile />
-              </UserProfileLayout>
-            </ProtectedRoute>
-          } />
-        </Routes>
+        <UnitsContextProvider>
+          <Routes>
+            <Route path="/" element={<AppLayout />} />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <UserProfileLayout>
+                  <UserProfile />
+                </UserProfileLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/edit-profile" element={
+              <ProtectedRoute>
+                <UserProfileLayout>
+                  <EditProfile />
+                </UserProfileLayout>
+              </ProtectedRoute>
+            } />
+          </Routes>
+        </UnitsContextProvider>
       </AuthModalProvider>
     </AuthProvider>
   );
