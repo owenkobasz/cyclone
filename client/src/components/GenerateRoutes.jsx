@@ -47,7 +47,7 @@ const GenerateRoutes = () => {
 
   useEffect(() => {
     const selectedRoute = state?.selectedRoute;
-    if (selectedRoute && state?.fromRouteGeneration) {
+    if (selectedRoute && (state?.fromRouteGeneration || state?.fromProfile)) {
       // Transform selectedRoute to match MapComponent's routeData format
       const transformedRouteData = {
         route: selectedRoute.waypoints || [], // Assuming waypoints is [{ lat, lon }, ...]

@@ -60,7 +60,7 @@ export default function UserProfile() {
     const fetchRoutes = async () => {
       try {
         const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
-        const res = await fetch(`${base}/api/routes/`, { credentials: 'include' });
+        const res = await fetch(`${base}/api/routes`, { credentials: 'include' });
         if (!res.ok) {
           if (res.status === 401) {
             console.error('Not authenticated for routes - user may need to log in again');
@@ -124,9 +124,11 @@ export default function UserProfile() {
   }, [authUser]);
 
   const handleRouteClick = (route) => {
-    navigate('/', {
+    navigate('/#generate-routes', {
       state: {
-        selectedRoute: route, stats: {
+        selectedRoute: route,
+        fromProfile: true,
+        stats: {
           distanceKm: route.total_distance_km || route.distance || 0,
           elevationM: route.elevation_gain_m || route.elevation || 0,
           totalRideTime: route.total_ride_time || null
