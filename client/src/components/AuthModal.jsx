@@ -30,6 +30,7 @@ const AuthModal = () => {
     setMessage('');
 
     const { username, password, passwordConf, firstName, lastName } = formData;
+    console.log(`Signup Type: ${authModal.type}`)
 
     if (authModal.type === 'login') {
       const result = await login(username, password);
@@ -45,6 +46,7 @@ const AuthModal = () => {
         setMessage(result.message || 'Login failed');
       }
     } else if (authModal.type === 'signup') {
+      
       if (password !== passwordConf) {
         setMessage('Passwords do not match');
         return;

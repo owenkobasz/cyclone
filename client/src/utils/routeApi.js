@@ -90,4 +90,45 @@ export async function generateRoute(preferences) {
   }
   
   return routeData;
-} 
+}
+
+/**
+ * This method takes a route array, which contains rows of json files of 
+ * lat: and lon: and converts it into a gpx file, user can then download this
+ * @param {*} route 
+ * @returns 
+ */
+export async function generateGpxFile(route, filename="map.gpx") {
+
+  // check route is valid
+  if (route == null || route.lat || route.lon) {
+    return;
+  }
+  
+  // parse json file for latitude and longitude
+  const body = [];
+  for (const row in route) {
+    const lat = route[row].lat;
+    const long = route[row].lon;
+    body.push(`<trkpt lat="${lat}" lon="${long}"></trkpt>`)
+  }
+
+  // build string
+  const header = `<?xml version="1.0" encoding="UTF-8"?>
+  <gpx xmlns="http://www.topografix.com/GPX/1/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd" version="1.1" creator="gpx.py -- https://github.com/tkrajina/gpxpy">\n<trk>\n<trkseg>\n`;
+  const footer = `\n</trkseg>\n</trk>\n</gpx>`;
+  const gpx = header + body.join("\n") + footer;
+  
+  // make file
+  const blob = new Blob([gpx], {type:"application/gpx+xml"});
+  const url = URL.createObjectURL(blob);
+   const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a); // needed for Firefox
+  a.click();
+  document.body.removeChild(a);
+
+  // 4. Release the Blob URL
+  URL.revokeObjectURL(url);
+}

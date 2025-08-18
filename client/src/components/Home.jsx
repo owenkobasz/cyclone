@@ -99,7 +99,7 @@ return (
                 )}
                 {user && (
                   <Button white onClick={() => navigate("/profile")}>
-                    Welcome {user.username} !
+                    Welcome {user.firstName} !
                   </Button>
                 )}
               </motion.div>

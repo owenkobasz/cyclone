@@ -124,5 +124,15 @@
     "address": "",
     "profilePicture": "/avatars/default-avatar.png",
     "avatar": ""
+  },
+  {
+    "id": "15",
+    "username": "zoey101",
+    "password": "$2b$10$46FUB.ujRO5aFRKguBbRnuk22hbHTjsu4M8v/oK70M0L6wIZqRbyi",
+    "firstName": "Jamie",
+    "lastName": "Spears",
+    "address": "",
+    "profilePicture": "/avatars/default-avatar.png",
+    "avatar": ""
   }
 ]
