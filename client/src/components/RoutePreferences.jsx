@@ -157,7 +157,7 @@ export default function RoutePreferences({ preferences, setPreferences, userLoca
                         name="distanceNumber"
                         type="number"
                         inputMode="numeric"
-                        value={preferences.distanceTarget || 20}
+                        value={preferences.distanceTarget || 10}
                         onChange={(e) => handleChange("distanceTarget")(e.target.value)}
                         aria-label="Route distance"
                         className="w-20 text-xl text-color-1 font-semibold text-center bg-transparent border-none focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"

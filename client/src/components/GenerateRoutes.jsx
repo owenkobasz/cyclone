@@ -10,11 +10,14 @@ import CueSheet from "./CueSheet";
 import RouteStats from "./RouteStats";
 import { generateRoute, generateGpxFile } from "../utils/routeApi";
 import { useAuth } from "../contexts/AuthContext";
+import { useUnits } from "../contexts/UnitsContext";
+import { kmToUi, distLabel } from "../utils/units";
 
 const GenerateRoutes = () => {
   const navigate = useNavigate();
-  const { state } = useLocation(); // Get location state
+  const { state } = useLocation();
   const { user } = useAuth();
+  const { units } = useUnits();
 
   // State management
   const [location, setLocation] = useState(null);
@@ -23,7 +26,7 @@ const GenerateRoutes = () => {
     startingPointCoords: null,
     endingPoint: "",
     endingPointCoords: null,
-    distanceTarget: 20,
+    distanceTarget: 10,
     elevationTarget: 1000,
     routeType: "scenic",
     bikeLanes: false,
@@ -55,8 +58,8 @@ const GenerateRoutes = () => {
         total_length_formatted:
           selectedRoute.total_length_formatted ||
           (selectedRoute.rawStats.distanceKm
-            ? `${selectedRoute.rawStats.distanceKm.toFixed(1)} km`
-            : `${(selectedRoute.rawStats.distanceKm || 0).toFixed(1)} km`),
+            ? `${kmToUi(selectedRoute.rawStats.distanceKm, units).toFixed(1)} ${distLabel(units)}`
+            : `${kmToUi(selectedRoute.rawStats.distanceKm || 0, units).toFixed(1)} ${distLabel(units)}`),
       };
 
       // Update states
@@ -96,25 +99,19 @@ const GenerateRoutes = () => {
     }
   }, [state]);
 
+  // When user selects a Starting Point, recenter the map and show a pin
+  useEffect(() => {
+    if (preferences?.startingPointCoords?.lat && preferences?.startingPointCoords?.lng) {
+      setLocation([preferences.startingPointCoords.lat, preferences.startingPointCoords.lng]);
+    }
+  }, [preferences?.startingPointCoords]);
+
   const handleGenerateRoute = async () => {
     const hasLocation = location || preferences.startingPointCoords;
     const hasCoordinates = location?.lat || preferences.startingPointCoords?.lat;
 
-    if (!hasLocation || !hasCoordinates) {
-      setError(
-        <div>
-          <div>Please set a starting location. You can either:</div>
-          <div style={{ marginTop: "8px" }}>
-            • Enter a starting point in the text box
-          </div>
-          <div style={{ marginTop: "8px" }}>
-            • Click on the crosshair icon on the map to set your location
-          </div>
-          <div style={{ marginTop: "8px" }}>
-            • Enable location services to use your current location
-          </div>
-        </div>
-      );
+    if (!hasLocation) {
+      setError("Please provide at least a starting location or enable precise location.");
       return;
     }
 
@@ -153,9 +150,11 @@ const GenerateRoutes = () => {
         setCueSheet([]); 
       } else {
         const destinationText = preferences.endingPoint || 'your destination';
+        const distanceKm = data.total_distance_km || data.total_length_km || 0;
+        const distanceFormatted = data.total_length_formatted || `${kmToUi(distanceKm, units).toFixed(2)} ${distLabel(units)}`;
         const generatedCueSheet = [
           `Start your route`,
-          `Route distance: ${data.total_length_formatted || `${(data.total_distance_km || data.total_length_km || 0).toFixed(2)} km`}`,
+          `Route distance: ${distanceFormatted}`,
           `Arrive at ${destinationText}`
         ];
         setCueSheet(generatedCueSheet);
@@ -170,7 +169,7 @@ const GenerateRoutes = () => {
     } catch (err) {
       let errorMessage = "An unexpected error occurred. Please try again.";
       if (err.message === "LOCATION_REQUIRED") {
-        errorMessage = "Please provide a starting location. You can:\n• Enter an address in the Starting Point field\n• Click the 'Current Location'option in the dropdown menu to use your current location\n• Click on the crosshair icon on the map to set your precise location";
+        errorMessage = "Please provide a starting location. You can either enter an address or click the 'Current Location' option to use your current location.";
       } else if (err.message === "INVALID_COORDINATES") {
         errorMessage = "The provided coordinates are invalid or outside the supported area. Please check your starting and ending locations.";
       } else if (err.message === "SERVER_ERROR") {

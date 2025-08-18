@@ -4,6 +4,8 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import LocationAutocomplete from './LocationAutocomplete';
+import { useUnits } from '../contexts/UnitsContext';
+import { kmToUi, distLabel } from '../utils/units';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -344,6 +346,7 @@ const MapComponent = ({ location, setLocation, error, setError, routeData, isGen
   const [showPreciseLocationPrompt, setShowPreciseLocationPrompt] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [glow, setGlow] = useState(true);
+  const { units } = useUnits();
 
   // Debug route data
   useEffect(() => {
@@ -654,7 +657,7 @@ const MapComponent = ({ location, setLocation, error, setError, routeData, isGen
                     <div className="text-sm text-center">
                       <strong>Destination</strong><br />
                       <span className="text-xs text-gray-600">
-                        Total distance: {routeData.total_length_formatted || `${routeData.total_length_km?.toFixed(1)} km`}
+                        Total distance: {routeData.total_length_formatted || `${kmToUi(routeData.total_length_km || 0, units).toFixed(1)} ${distLabel(units)}`}
                       </span>
                     </div>
                   </Popup>

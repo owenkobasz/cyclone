@@ -142,8 +142,8 @@ export default function CueSheet({ cueSheet, instructions = [] }) {
                                 distanceLabel = formatStepDistance(step.distanceMeters, units);
                             } else if (typeof step.distance === "number") {
                                 distanceLabel = formatStepDistance(step.distance, units);
-                            } else if (typeof step.distance === "string" && step.distance.trim()) {
-                                distanceLabel = step.distance.trim(); // legacy preformatted
+                            } else if (!isStart && !isEnd && typeof step.distance === "string" && step.distance.trim()) {
+                                distanceLabel = step.distance.trim(); 
                             }
 
                             // Prefer seconds from backend (`time_s`), else `duration`.
