@@ -25,6 +25,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+routes.json
 
 # Environment variables
 .env
