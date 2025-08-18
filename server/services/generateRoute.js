@@ -175,7 +175,7 @@ async function generateRoute(userPreferences) {
     }
 
     console.log('Route generation successful:', {
-      distance: `${routeData.total_length.toFixed(2)} km`,
+      distance: `${Number(routeData.total_length_km).toFixed(2)} km`,
       elevation: `${routeData.total_elevation_gain}m`,
       source: routeData.data_source,
       difficulty: routeData.calculated_difficulty

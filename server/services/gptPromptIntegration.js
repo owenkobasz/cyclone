@@ -8,10 +8,10 @@ const { calculateDistance } = require('../utils/calculationsUtils');
 function calculateDistanceRequirements(targetKM) {
   // Distance category thresholds for guidance
   const distanceCategories = {
-    short: { min: 0, max: 3, waypoints: { min: 2, max: 3 }, spacing: "0.5-1 kilometers apart" },
-    medium: { min: 3, max: 8, waypoints: { min: 3, max: 5 }, spacing: "1-2 kilometers apart" },
-    long: { min: 8, max: 15, waypoints: { min: 4, max: 6 }, spacing: "2-3 kilometers apart" },
-    extraLong: { min: 15, max: 1000, waypoints: { min: 5, max: 8 }, spacing: "3-5 kilometers apart" }
+    short: { min: 0, max: 5, waypoints: { min: 4, max: 5 }, spacing: "0.5-1 kilometers apart" },
+    medium: { min: 5, max: 13, waypoints: { min: 5, max: 9 }, spacing: "1-2 kilometers apart" },
+    long: { min: 13, max: 24, waypoints: { min: 7, max: 10 }, spacing: "2-3 kilometers apart" },
+    extraLong: { min: 24, max: 1000, waypoints: { min: 9, max: 14 }, spacing: "3-5 kilometers apart" }
   };
   
   let category;
@@ -28,9 +28,9 @@ function calculateDistanceRequirements(targetKM) {
   
   // Generate distance guidance text
   let distanceGuidance;
-  if (targetKM < 5) {
+  if (targetKM < 8) {
     distanceGuidance = `For shorter routes like this ${targetKM}-kilometer ride, waypoints should be closer together to ensure you hit the target distance. Consider local loops, neighborhood circuits, or nearby park connections.`;
-  } else if (targetKM < 10) {
+  } else if (targetKM < 16) {
     distanceGuidance = `For medium-distance routes like this ${targetKM}-kilometer ride, balance interesting destinations with practical routing. Consider connecting 2-3 notable areas or landmarks.`;
   } else {
     distanceGuidance = `For longer routes like this ${targetKM}-kilometer ride, focus on major destinations and landmarks. Each waypoint should represent a significant milestone in the journey.`;
@@ -105,7 +105,7 @@ IMPORTANT: You must respond with a JSON object containing:
 2. "difficulty": A string rating ("Easy", "Moderate", "Challenging", "Expert")
 3. "description": A brief description of the route highlights
 
-CRITICAL REQUIREMENTS FOR ${targetDistance} ROUTES:
+CRITICAL REQUIREMENTS FOR ${target_distance} ROUTES:
 - The first waypoint MUST be the exact starting location provided: ${start.lat}, ${start.lon}
 - The last waypoint MUST be the exact ending location provided: ${end ? `${end.lat}, ${end.lon}` : `${start.lat}, ${start.lon}`}
 - Only provide intermediate waypoints that are most iconic and align with the user's route type specification
@@ -113,13 +113,13 @@ CRITICAL REQUIREMENTS FOR ${targetDistance} ROUTES:
 - Intermediate waypoints should be ${distanceReqs.waypointSpacing}
 - For loop routes (same start/end), create waypoints that form a circuit back to the starting point
 - Consider the route type when placing intermediate waypoints (scenic = parks/views, urban = neighborhoods, etc.)
-- CRITICAL: The waypoints must be spaced far enough apart to actually create a ${targetDistance} route when connected by roads
+- CRITICAL: The waypoints must be spaced far enough apart to actually create a ${target_distance} route when connected by roads
 
 The waypoints should create a route that matches both the requested distance and route type preferences.`;
 
-  const userPrompt = `Generate me a bike route ${toggleOptions}. I want to get from ${startLocation} to ${endLocation}. The total distance of the route should be approximately ${targetDistance}. I want my bike ride to be ${routeTypeDescription}.
+  const userPrompt = `Generate me a bike route ${toggleOptions}. I want to get from ${startLocation} to ${endLocation}. The total distance of the route should be approximately ${target_distance}. I want my bike ride to be ${routeTypeDescription}.
 
-DISTANCE REQUIREMENTS: This is a ${targetDistance} route request (${distanceReqs.targetKM.toFixed(1)} kilometers). ${distanceReqs.distanceGuidance}
+DISTANCE REQUIREMENTS: This is a ${target_distance} route request (${distanceReqs.targetKM.toFixed(1)} kilometers). ${distanceReqs.distanceGuidance}
 
 WAYPOINT SPECIFICATIONS:
 - Start at: ${start.lat}, ${start.lon} (EXACT coordinates required)
@@ -127,7 +127,7 @@ WAYPOINT SPECIFICATIONS:
 - Place ${distanceReqs.minWaypoints}-${distanceReqs.maxWaypoints} intermediate waypoints ${distanceReqs.waypointSpacing}
 - Each waypoint should align with the ${route_type} route type
 
-CRITICAL: Make sure your waypoints are spread out enough to actually create a ${targetDistance} route when connected by roads. Roads add significant distance compared to straight-line distances.`;
+CRITICAL: Make sure your waypoints are spread out enough to actually create a ${target_distance} route when connected by roads. Roads add significant distance compared to straight-line distances.`;
 
   return { systemPrompt, userPrompt };
 }
@@ -268,7 +268,7 @@ function parseWaypointsFromGPT(gptResponse, start, end, routingAPI = 'valhalla')
       const distance = calculateDistance(preservedWaypoints[i], preservedWaypoints[i + 1]);
       estimatedDistance += distance;
     }
-    const estimatedDistanceKm = estimatedDistance / 1000;
+    const estimatedKM = estimatedDistance / 1000;
     
     console.log(`Straight-line distance between waypoints: ${estimatedKM.toFixed(2)} km (${estimatedKM.toFixed(2)} kilometers) - for debugging only`);
     console.log(`Note: Actual route distance will be longer as it follows roads and paths`);

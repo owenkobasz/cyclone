@@ -15,9 +15,7 @@ async function getValhallaRoute(waypoints, options) {
   const requestBody = {
     locations: locations,
     costing: 'bicycle',
-    directions_options: {
-      units: options.unit_system === 'kilometers'
-    },
+    directions_options: { units: 'kilometers' },
     shape_match: 'edge_walk',
     filters: {
       attributes: ['edge.length', 'edge.speed', 'edge.elevation'],
