@@ -19,7 +19,7 @@ export default function UserProfile() {
   const navigate = useNavigate();
   const { openAuthModal } = useAuthModal();
   const fileInputRef = useRef(null); // Reference for file input
-  const GEOAPIFY_API_KEY = 'b7a0cb4137164bf5b2717fd3a450ef73';
+  const GEOAPIFY_API_KEY = import.meta.env.VITE_GEOAPIFY_API_KEY;
 
   // Helper function to build correct avatar URL
   const getAvatarUrl = (user) => {
@@ -66,24 +66,25 @@ export default function UserProfile() {
     const cues = [];
     if (waypoints.length < 2) return cues;
 
-    function getCardinalDirection(bearing) {
-      bearing = (bearing + 360) % 360;
-      if (bearing >= 337.5 || bearing < 22.5) return "north";
-      if (bearing >= 22.5 && bearing < 67.5) return "northeast";
-      if (bearing >= 67.5 && bearing < 112.5) return "east";
-      if (bearing >= 112.5 && bearing < 157.5) return "southeast";
-      if (bearing >= 157.5 && bearing < 202.5) return "south";
-      if (bearing >= 202.5 && bearing < 247.5) return "southwest";
-      if (bearing >= 247.5 && bearing < 292.5) return "west";
-      if (bearing >= 292.5 && bearing < 337.5) return "northwest";
+    function getDirectionType(turn) {
+      if (turn > 30 && turn <= 100) return 1;
+      if (turn < -30 && turn >= -100) return 0;
+      if (turn > 100) return 2;
+      if (turn < -100) return 3;
+      if (Math.abs(turn) <= 30) return 6;
+      return 6;
     }
 
     const initialBearing = calculateBearing(waypoints[0], waypoints[1]);
     const initialDistance = haversineDistance(waypoints[0], waypoints[1]);
     cues.push({
-      instruction: `Head ${getCardinalDirection(initialBearing)}`,
-      distanceKm: Number((initialDistance).toFixed(2))
+      instruction: "Start",
+      distance_m: Number(initialDistance * 1000).toFixed(1),
+      type: 11,
+      duration: 0,
     });
+
+    let accumulatedDistance = 0;
 
     for (let i = 2; i < waypoints.length; i++) {
       const bearing1 = calculateBearing(waypoints[i - 2], waypoints[i - 1]);
@@ -91,18 +92,51 @@ export default function UserProfile() {
       const distance = haversineDistance(waypoints[i - 1], waypoints[i]);
       const turn = bearing2 - bearing1;
 
-      let instruction;
-      if (Math.abs(turn) > 30) {
-        instruction = turn > 0 ? "Turn right onto Elm St" : "Turn left onto Elm St";
-      } else {
-        instruction = "Continue straight";
-      }
+      let type = getDirectionType(turn);
+      let instruction =
+        type === 0 ? "Turn left" :
+          type === 1 ? "Turn right" :
+            type === 2 ? "Sharp right" :
+              type === 3 ? "Sharp left" :
+                "Continue straight";
 
+      if (type === 6) {
+        accumulatedDistance += distance;
+      } else {
+        if (accumulatedDistance > 0) {
+          cues.push({
+            instruction: "Continue straight",
+            distance_m: Number(accumulatedDistance * 1000).toFixed(1),
+            type: 6,
+            duration: 0,
+          });
+          accumulatedDistance = 0;
+        }
+        cues.push({
+          instruction,
+          distance_m: Number(distance * 1000).toFixed(1),
+          type,
+          duration: 0,
+        });
+      }
+    }
+
+    if (accumulatedDistance > 0) {
       cues.push({
-        instruction: instruction,
-        distanceKm: Number(distance.toFixed(2))
+        instruction: "Continue straight",
+        distance_m: Number(accumulatedDistance * 1000).toFixed(1),
+        type: 6,
+        duration: 0,
       });
     }
+
+    cues.push({
+      instruction: "Arrive at destination",
+      distance_m: 0,
+      type: 10,
+      duration: 0,
+    });
+
     return cues;
   }
 
@@ -189,7 +223,11 @@ export default function UserProfile() {
         totalDistance += haversineDistance(waypoints[i - 1], waypoints[i]);
       }
 
-      const cueSheet = generateCueSheet(waypoints);
+      const cues = generateCueSheet(waypoints);
+
+      const formattedCues = cues.map(cue => {
+        return `${cue.instruction} (${cue.distance_m} m)`;
+      });
 
       const rawStats = {
         distanceKm: totalDistance,
@@ -209,7 +247,7 @@ export default function UserProfile() {
           routeName: routeNameFinal,
           waypoints,
           rawStats,
-          cueSheet,
+          cueSheet : formattedCues,
           username: authUser.username,
         }),
         credentials: 'include',
@@ -295,7 +333,7 @@ export default function UserProfile() {
           elevationM: route.elevation_gain_m || route.elevation || 0,
           totalRideTime: route.total_ride_time || null,
         },
-        cueSheet: route.instructions || [],
+        cueSheet: route.cueSheet || [],
       },
     });
   };

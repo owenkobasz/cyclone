@@ -187,11 +187,6 @@ app.use('/api/routes', savedRoutesRouter);
 app.use('/api/routes', importRoutesRouter);
 
 app.post('/api/import-route', async (req, res) => {
-  console.log('POST /api/import-route called');
-  console.log('Request body:', req.body);
-  console.log('Session:', req.session?.user);
-
-  // Check authentication
   if (!req.session?.user || !req.session.user.id) {
     console.log('Authentication failed: Invalid user');
     return res.status(401).json({ error: 'Please log in first' });
@@ -200,7 +195,7 @@ app.post('/api/import-route', async (req, res) => {
   try {
     await ensureRoutesFile();
     const username = req.session.user.username;
-    const { routeName, waypoints, rawStats } = req.body;
+    const { routeName, waypoints, rawStats, cueSheet } = req.body;
 
     if (!routeName || !Array.isArray(waypoints) || waypoints.length === 0) {
       console.log('Import route failed: Missing or invalid routeName/waypoints', { body: req.body });
@@ -213,7 +208,7 @@ app.post('/api/import-route', async (req, res) => {
       routeName,
       waypoints,
       rawStats: rawStats || null,
-      cueSheet: [],
+      cueSheet: cueSheet || [],
       preferences: null,
       createdAt: new Date().toISOString(),
     };

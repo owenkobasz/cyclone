@@ -22,6 +22,8 @@ const ROUTING_APIS = {
   },
 };
 
+const GEOAPIFY_API_KEY = process.env.GEOAPIFY_API_KEY || null;
+
 module.exports = {
   // Environment variables
   OPENAI_API_KEY,
@@ -31,5 +33,6 @@ module.exports = {
   OPENAI_API_URL,
   
   // Configuration objects
-  ROUTING_APIS
+  ROUTING_APIS,
+  GEOAPIFY_API_KEY
 };

@@ -61,3 +61,5 @@ profiles.json
 
 # Profile Pictures
 /server/public/
+server/setup_env.sh
+*.json
