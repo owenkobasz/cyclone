@@ -128,17 +128,10 @@ router.post('/plan/save', async (req, res) => {
 });
 
 router.post('/import-route', requireAuth, async (req, res) => {
-  console.log('POST /api/routes/import-route called');
-  console.log('Request body:', req.body);
-  console.log('Session in import-route:', {
-    hasSession: !!req.session,
-    hasUser: !!(req.session && req.session.user),
-    username: req.session?.user?.username
-  });
   try {
     await ensureDataFile();
     const username = req.session.user.username;
-    const { routeName, waypoints, rawStats, cueSheet } = req.body;
+    const { routeName, waypoints, rawStats, cueSheet, forceImport } = req.body;
 
     if (!routeName || !Array.isArray(waypoints) || waypoints.length === 0) {
       console.log('Import route failed: Missing or invalid routeName/waypoints', { body: req.body });
@@ -156,8 +149,6 @@ router.post('/import-route', requireAuth, async (req, res) => {
       createdAt: new Date().toISOString(),
     };
 
-    console.log('Importing route:', newRoute);
-
     let routes = [];
     try {
       const raw = await fs.readFile(dataPath, 'utf8');
@@ -171,18 +162,18 @@ router.post('/import-route', requireAuth, async (req, res) => {
       routes = [];
     }
 
-    if (routeName) {
-      let userRoutes = [];
-      const data = await fs.readFile(dataPath, 'utf-8');
-      userRoutes = JSON.parse(data || "{}");
-      if (userRoutes?.some(r => r.username === username && r.routeName.trim().toLowerCase() === routeName.trim().toLowerCase())) {
-        return res.status(409).json({ error: "Route name already exists for this user." });
-      }
+    const userRoutes = routes.filter(r => r.username === username);
+
+    if (!forceImport && userRoutes.some(r => r.routeName.trim().toLowerCase() === routeName.trim().toLowerCase())) {
+      return res.status(409).json({ error: "Route name already exists", duplicateType: "name" });
+    }
+
+    if (!forceImport && userRoutes.some(r => JSON.stringify(r.waypoints) === JSON.stringify(waypoints))) {
+      return res.status(409).json({ error: "A similar route already exists", duplicateType: "similar" });
     }
 
     routes.push(newRoute);
     await fs.writeFile(dataPath, JSON.stringify(routes, null, 2));
-    console.log('GPX Route imported successfully to routes.json:', newRoute);
     res.json({ message: 'GPX Route imported successfully' });
   } catch (err) {
     console.error('Error importing GPX route:', err);
@@ -335,16 +326,16 @@ router.delete('/delete-routes/:id', requireAuth, async (req, res) => {
 
     const raw = await fs.readFile(dataPath, 'utf8');
     let routes = JSON.parse(raw || '[]');
-    
+
     const routeIndex = routes.findIndex(route => String(route.id) === String(routeId));
     if (routeIndex === -1) {
       return res.status(404).json({ error: 'Route not found' });
     }
-    
+
     if (routes[routeIndex].username !== username) {
       return res.status(403).json({ error: 'Unauthorized: You can only delete your own routes' });
     }
-    
+
     routes = routes.filter(route => String(route.id) !== String(routeId));
     await fs.writeFile(dataPath, JSON.stringify(routes, null, 2));
     res.status(200).json({ message: 'Route deleted successfully' });

@@ -197,7 +197,7 @@ export default function UserProfile() {
     }
   };
 
-  const handleFileUpload = async (file, customRouteName) => {
+  const handleFileUpload = async (file, customRouteName, forceImport = false) => {
     if (!file) return;
 
     try {
@@ -252,24 +252,34 @@ export default function UserProfile() {
           rawStats,
           cueSheet: formattedCues,
           username: authUser.username,
+          forceImport,
         }),
         credentials: 'include',
       });
 
       if (response.status === 409) {
-        alert("That route name is already taken. Please enter a different one.");
+        const errorData = await response.json();
+        if (errorData.duplicateType === "name") {
+          alert("A route with the same name already exists. Please choose a different name.");
+          return;
+        }
+        if (errorData.duplicateType === "similar") {
+          const confirmImport = window.confirm("A very similar route already exists. Do you still want to import this route?");
+          if (confirmImport) {
+            await handleFileUpload(file, customRouteName, true);
+          }
+          return;
+        }
       }
-      else if (!response.ok) {
+      if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to save route');
       }
-      else {
-        fetchRoutes();
-        setIsImportModalOpen(false);
-        setRouteName('');
-        fileInputRef.current.value = '';
-        alert('Route imported successfully!');
-      }
+      fetchRoutes();
+      setIsImportModalOpen(false);
+      setRouteName('');
+      fileInputRef.current.value = '';
+      alert('Route imported successfully!');
     } catch (err) {
       console.error('Error processing GPX file:', err);
       alert('Failed to import route: ' + err.message);
