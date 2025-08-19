@@ -63,3 +63,4 @@ profiles.json
 /server/public/
 server/setup_env.sh
 *.json
+server/databases/routes.json
