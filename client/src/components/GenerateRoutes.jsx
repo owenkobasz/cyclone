@@ -12,6 +12,7 @@ import { generateRoute, generateGpxFile } from "../utils/routeApi";
 import { useAuth } from "../contexts/AuthContext";
 import { useUnits } from "../contexts/UnitsContext";
 import { kmToUi, distLabel } from "../utils/units";
+import SaveAndExport from "./SaveAndExport";
 
 const GenerateRoutes = () => {
   const navigate = useNavigate();
@@ -334,43 +335,15 @@ const GenerateRoutes = () => {
               )}
             </div>
 
-            {/* Right - Cue Sheet */}
+            {/* Center - Cue Sheet */}
             <div>
               <CueSheet cueSheet={cueSheet} instructions={instructions} />
             </div>
+            {/* Left - Save and Export */}
             <div>
-              <div className="mt-4 space-y-3">
-                <Button
-                  className="w-full"
-                  onClick={() => {
-                    console.log("Saving route...");
-                    // TODO: implement save route API call
-                  }}
-                >
-                  Save Route
-                </Button>
-                <Button
-                  className="w-full"
-                  onClick={() => {
-                    console.log("Exporting route as GPX...");
-                    generateGpxFile(routeData.route, routeData.gpt_metadata?.gpt_route_name);
-                  }}
-                  white
-                >
-                  Export GPX
-                </Button>
-                <Button
-                  className="w-full"
-                  onClick={() => {
-                    console.log("Sharing route...");
-                  }}
-                  disabled={!canUseRouteActions}
-                  outline
-                >
-                  Share Route
-                </Button>
-              </div>
-              </div>
+              <SaveAndExport routeData={routeData} />
+            </div>
+
           </motion.div>
         )}
       </div>

@@ -106,7 +106,8 @@ export async function generateRoute(preferences) {
 export async function generateGpxFile(route, routeName = null) {
 
   // check route is valid
-  if (route == null || route.lat || route.lon) {
+  if (!route || !Array.isArray(route) || route.length === 0) {
+    console.warn("Invalid route data for GPX export:", route);
     return;
   }
   
@@ -127,11 +128,23 @@ export async function generateGpxFile(route, routeName = null) {
   
   // parse json file for latitude and longitude
   const body = [];
-  for (const row in route) {
-    const lat = route[row].lat;
-    const long = route[row].lon;
-    body.push(`<trkpt lat="${lat}" lon="${long}"></trkpt>`)
+  console.log("Processing route for GPX export:", route);
+  
+  for (let i = 0; i < route.length; i++) {
+    const point = route[i];
+    if (point && typeof point.lat === 'number' && typeof point.lon === 'number') {
+      body.push(`<trkpt lat="${point.lat}" lon="${point.lon}"></trkpt>`);
+    } else {
+      console.warn(`Invalid coordinate at index ${i}:`, point);
+    }
   }
+  
+  if (body.length === 0) {
+    console.error("No valid coordinates found in route for GPX export");
+    return;
+  }
+  
+  console.log(`Generated ${body.length} track points for GPX export`);
 
   // build string
   const header = `<?xml version="1.0" encoding="UTF-8"?>
