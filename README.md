@@ -114,9 +114,6 @@ FRONTEND_ORIGIN=http://localhost:5173
 ```bash
 # Development mode
 ./start-dev.sh
-
-# Production mode
-docker-compose up -d
 ```
 
 ### Using the Application
@@ -165,19 +162,6 @@ const user = await loginUser({
 - `PUT /api/profile` - Update user profile
 - `POST /api/profile/avatar` - Upload profile picture
 
-## 🐳 Docker Deployment
-
-```bash
-# Build and start services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop services
-docker-compose down
-```
-
 ## 🧪 Development
 
 ### Project Structure
@@ -185,7 +169,6 @@ docker-compose down
 cyclone/
 ├── client/          # React frontend
 ├── server/          # Node.js backend
-├── docker-compose.yml
 ├── start-dev.sh     # Development startup script
 └── requirements.md  # Detailed setup instructions
 ```
@@ -207,26 +190,6 @@ node setup.js        # Run setup and validation
 2. **Backend**: `cd server && node server.js` (runs on port 3000)
 3. **Full Stack**: `./start-dev.sh` from project root
 
-## 🤝 Contributing
-
-We welcome contributions! Please follow these steps:
-
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
-4. **Push** to the branch (`git push origin feature/amazing-feature`)
-5. **Open** a Pull Request
-
-### Development Guidelines
-- Follow the existing code style and conventions
-- Add tests for new features
-- Update documentation as needed
-- Ensure all tests pass before submitting
-
-## 📄 License
-
-This project is licensed under the **ISC License** - see the [LICENSE](LICENSE) file for details.
-
 ## 🙏 Acknowledgments
 
 - **UPenn MCIT SPARC 2025** - Challenge platform and support
@@ -239,7 +202,7 @@ This project is licensed under the **ISC License** - see the [LICENSE](LICENSE) 
 
 - **Issues**: [GitHub Issues](https://github.com/yourusername/cyclone/issues)
 - **Documentation**: [Wiki](https://github.com/yourusername/cyclone/wiki)
-- **Email**: your-email@example.com
+- **Email**: owen@owenkobasz.com
 
 ---
 
