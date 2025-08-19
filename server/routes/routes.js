@@ -71,11 +71,22 @@ const writeProfiles = async (profiles) => {
 };
 
 function requireAuth(req, res, next) {
-  if (!req.user || !req.user.id) {
-    console.log('Authentication failed: Invalid user', { headers: req.headers });
+  console.log('requireAuth called with session:', {
+    hasSession: !!req.session,
+    hasUser: !!(req.session && req.session.user),
+    username: req.session?.user?.username,
+    sessionKeys: req.session ? Object.keys(req.session) : 'no session'
+  });
+  
+  if (!req.session || !req.session.user || !req.session.user.username) {
+    console.log('Authentication failed: Invalid session', { 
+      hasSession: !!req.session,
+      hasUser: !!(req.session && req.session.user),
+      username: req.session?.user?.username 
+    });
     return res.status(401).json({ error: 'Please log in first' });
   }
-  console.log('Authenticated user:', req.user);
+  console.log('Authenticated user:', req.session.user);
   next();
 }
 
@@ -131,9 +142,14 @@ router.post('/plan/save', async (req, res) => {
 router.post('/import-route', requireAuth, async (req, res) => {
   console.log('POST /api/routes/import-route called');
   console.log('Request body:', req.body);
+  console.log('Session in import-route:', {
+    hasSession: !!req.session,
+    hasUser: !!(req.session && req.session.user),
+    username: req.session?.user?.username
+  });
   try {
     await ensureDataFile();
-    const username = req.session.user.id;
+    const username = req.session.user.username;
     const { routeName, waypoints, rawStats, cueSheet } = req.body;
 
     if (!routeName || !Array.isArray(waypoints) || waypoints.length === 0) {

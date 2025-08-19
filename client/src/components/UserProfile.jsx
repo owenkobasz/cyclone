@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { homeBackground } from '../assets/home';
 import * as toGeoJSON from '@tmcw/togeojson';
 import { DOMParser } from 'xmldom';
+import { generateGpxFile } from '../utils/routeApi';
 
 export default function UserProfile() {
   const { user: authUser } = useAuth();
@@ -240,7 +241,7 @@ export default function UserProfile() {
       };
 
       const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
-      const response = await fetch(`${base}/api/import-route`, {
+      const response = await fetch(`${base}/api/routes/import-route`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -338,6 +339,28 @@ export default function UserProfile() {
     });
   };
 
+  const handleExportGpx = (route, event) => {
+    event.stopPropagation(); // Prevent route click when clicking export button
+    
+    if (!route.waypoints || route.waypoints.length === 0) {
+      alert("No route data available for export");
+      return;
+    }
+    
+    console.log("Exporting route as GPX...", route);
+    const routeName = route.routeName || 'Unnamed Route';
+    console.log("Route name for export:", routeName);
+    
+    // Convert waypoints to the format expected by generateGpxFile
+    const routeCoordinates = route.waypoints.map(wp => ({
+      lat: wp.lat,
+      lon: wp.lon,
+      ele: wp.ele || 0
+    }));
+    
+    generateGpxFile(routeCoordinates, routeName);
+  };
+
   if (!authUser) {
     return (
       <div className="p-4 text-center text-n-1 font-code">
@@ -350,8 +373,8 @@ export default function UserProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-n-8/90 backdrop-blur-sm border-t border-n-6">
-      <div className="fixed inset-0 w-screen h-screen z-0">
+    <div className="min-h-screen backdrop-blur-sm border-t border-n-6 relative">
+      <div className="absolute inset-0 w-full h-full z-0">
         <div className="relative w-full h-full">
           <img
             src={homeBackground}
@@ -361,9 +384,11 @@ export default function UserProfile() {
           <div className="absolute inset-0 bg-gradient-to-b from-n-8/2 via-n-8/5 to-n-8/10 backdrop-blur-[1px]"></div>
         </div>
       </div>
+      
+
 
       <div className="relative z-10">
-        <div className="pt-24 px-2 lg:px-4 xl:px-6 max-w-4xl mx-auto">
+        <div className="pt-24 px-2 lg:px-4 xl:px-6 max-w-4xl mx-auto pb-8">
           <h2 className="font-code text-2xl lg:text-3xl uppercase text-n-1 text-center mb-8">
             User Profile
           </h2>
@@ -382,7 +407,10 @@ export default function UserProfile() {
                 <strong>Address:</strong> {user?.address || 'Not set'}
               </p>
             </div>
-            <Button onClick={handleImportClick}>Import Route</Button>
+            <div className="flex gap-3">
+              <Button onClick={handleImportClick}>Import Route</Button>
+              <Button onClick={() => navigate('/edit-profile')}>Edit Profile</Button>
+            </div>
           </Card>
 
           {isImportModalOpen && (
@@ -424,39 +452,64 @@ export default function UserProfile() {
             </div>
           )}
 
-          <h3 className="font-code text-xl lg:text-2xl uppercase text-n-1 mt-10 mb-4">
-            Saved Routes
-          </h3>
+          <div className="mt-10 p-6 bg-n-8/80 backdrop-blur-sm border border-n-6 rounded-lg">
+            <h3 className="font-code text-xl lg:text-2xl uppercase text-n-1 mb-4">
+              Saved Routes
+            </h3>
 
-          {routes.length === 0 ? (
-            <p className="text-n-1/50 font-code text-base lg:text-lg">
-              No routes saved yet.
-            </p>
-          ) : (
-            <ul className="space-y-4">
-              {routes.map((route, idx) => {
-                const startAddress = routeAddresses[route.id]?.start?.address || 'Loading...';
-                const endAddress = routeAddresses[route.id]?.end?.address || 'Loading...';
-                return (
-                  <li
-                    key={route.id || idx}
-                    className="border border-n-6 rounded p-4 bg-transparent backdrop-blur-sm shadow-sm transition-all duration-300 hover:bg-n-6/50 hover:scale-[1.01] hover:shadow-md"
-                    onClick={() => handleRouteClick(route)}
-                  >
-                    <p className="font-code text-n-1 font-semibold text-base lg:text-lg">
-                      {route.routeName || 'Unnamed Route'}
-                    </p>
-                    <p className="font-code text-n-1/50 text-sm lg:text-base">
-                      From: {startAddress}
-                    </p>
-                    <p className="font-code text-n-1/50 text-sm lg:text-base">
-                      To: {endAddress}
-                    </p>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+            {routes.length === 0 ? (
+              <p className="text-n-1/50 font-code text-base lg:text-lg">
+                No routes saved yet.
+              </p>
+            ) : (
+              <ul className="space-y-4">
+                {routes.map((route, idx) => {
+                  const distance = route.rawStats?.distanceKm || 
+                                 route.total_distance_km || 
+                                 route.distance || 
+                                 route.total_length_km || 0;
+                  const elevation = route.rawStats?.elevationM || 
+                                   route.elevation_gain_m || 
+                                   route.elevation || 
+                                   route.total_elevation_gain || 0;
+                  
+                  // Calculate difficulty based on elevation and distance
+                  let difficulty = 'Easy';
+                  if (elevation > 500 || distance > 50) difficulty = 'Hard';
+                  else if (elevation > 200 || distance > 25) difficulty = 'Medium';
+                  
+                  return (
+                    <li
+                      key={route.id || idx}
+                      className="border border-n-6 rounded p-4 bg-n-7/50 backdrop-blur-sm shadow-sm transition-all duration-300 hover:bg-n-6/50 hover:scale-[1.01] hover:shadow-md"
+                      onClick={() => handleRouteClick(route)}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <p className="font-code text-n-1 font-semibold text-base lg:text-lg">
+                            {route.routeName || 'Unnamed Route'}
+                          </p>
+                          <p className="font-code text-n-1/50 text-sm lg:text-base">
+                            Distance: {distance.toFixed(1)} km
+                          </p>
+                          <p className="font-code text-n-1/50 text-sm lg:text-base">
+                            Difficulty: {difficulty}
+                          </p>
+                        </div>
+                        <Button
+                          className="ml-4 px-3 py-1 text-xs"
+                          onClick={(e) => handleExportGpx(route, e)}
+                          white
+                        >
+                          Export GPX
+                        </Button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
         </div>
       </div>
     </div>
