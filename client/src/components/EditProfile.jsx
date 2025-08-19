@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -13,6 +13,7 @@ export default function EditProfile() {
   const [avatarFile, setAvatarFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const formRef = useRef(null);
 
   useEffect(() => {
     if (!loading && !authUser) {
@@ -50,6 +51,20 @@ export default function EditProfile() {
     };
     fetchProfile();
   }, [authUser, navigate]);
+
+  // Handle clicks outside the form
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (formRef.current && !formRef.current.contains(event.target)) {
+        navigate('/profile');
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [navigate]);
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
@@ -112,7 +127,7 @@ export default function EditProfile() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 bg-white shadow-lg rounded-lg">
+    <div className="max-w-md mx-auto mt-10 p-6 bg-white shadow-lg rounded-lg" ref={formRef}>
       <h2 className="text-2xl font-bold mb-4">Edit Profile</h2>
       
       {submitError && (
