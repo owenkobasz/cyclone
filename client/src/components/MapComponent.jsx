@@ -7,6 +7,25 @@ import LocationAutocomplete from './LocationAutocomplete';
 import { useUnits } from '../contexts/UnitsContext';
 import { kmToUi, distLabel } from '../utils/units';
 
+// Add custom marker styles
+const customMarkerStyles = `
+  .custom-start-marker {
+    background: transparent !important;
+    border: none !important;
+  }
+  .custom-end-marker {
+    background: transparent !important;
+    border: none !important;
+  }
+`;
+
+// Inject custom styles
+if (typeof document !== 'undefined') {
+  const styleElement = document.createElement('style');
+  styleElement.textContent = customMarkerStyles;
+  document.head.appendChild(styleElement);
+}
+
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -339,7 +358,15 @@ function MapResizeHandler() {
   return null;
 }
 
-const MapComponent = ({ location, setLocation, error, setError, routeData, isGenerating = false }) => {
+const MapComponent = ({ 
+  location, 
+  setLocation, 
+  error, 
+  setError, 
+  routeData, 
+  isGenerating,
+  endingPointCoords = null 
+}) => {
   const mapRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
   const [hasInitialLocation, setHasInitialLocation] = useState(false);
@@ -629,16 +656,49 @@ const MapComponent = ({ location, setLocation, error, setError, routeData, isGen
               maxZoom={19}
             />
             
-            {/* Current Location Marker. This will only show if location is set and no route generated */}
-            {location && !routeData && (
-              <Marker position={location}>
-                <Popup>
-                  <div className="text-sm text-center">
-                    <strong>Current Location</strong><br />
-                    Click "Generate Route" to create your cycling route
-                  </div>
-                </Popup>
-              </Marker>
+            {/* Start and End Point Markers (show when coordinates are available) */}
+            {!routeData && (
+              <>
+                {/* Starting Point Marker */}
+                {location && (
+                  <Marker 
+                    position={location}
+                    icon={L.divIcon({
+                      className: 'custom-start-marker',
+                      html: '<div style="background-color: #10B981; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+                      iconSize: [20, 20],
+                      iconAnchor: [10, 10]
+                    })}
+                  >
+                    <Popup>
+                      <div className="text-sm text-center">
+                        <strong>Starting Point</strong><br />
+                        Your route will begin here
+                      </div>
+                    </Popup>
+                  </Marker>
+                )}
+                
+                {/* Ending Point Marker */}
+                {endingPointCoords && (
+                  <Marker 
+                    position={[endingPointCoords.lat, endingPointCoords.lng]}
+                    icon={L.divIcon({
+                      className: 'custom-end-marker',
+                      html: '<div style="background-color: #EF4444; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+                      iconSize: [20, 20],
+                      iconAnchor: [10, 10]
+                    })}
+                  >
+                    <Popup>
+                      <div className="text-sm text-center">
+                        <strong>Ending Point</strong><br />
+                        Your route will end here
+                      </div>
+                    </Popup>
+                  </Marker>
+                )}
+              </>
             )}
             
             {/* Route Start and Destination Markers */}
@@ -647,6 +707,12 @@ const MapComponent = ({ location, setLocation, error, setError, routeData, isGen
                 {/* Start Marker */}
                 <Marker 
                   position={[routeData.route[0].lat, routeData.route[0].lon]}
+                  icon={L.divIcon({
+                    className: 'custom-start-marker',
+                    html: '<div style="background-color: #10B981; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                  })}
                 >
                   <Popup>
                     <div className="text-sm text-center">
@@ -661,6 +727,12 @@ const MapComponent = ({ location, setLocation, error, setError, routeData, isGen
                     routeData.route[routeData.route.length - 1].lat, 
                     routeData.route[routeData.route.length - 1].lon
                   ]}
+                  icon={L.divIcon({
+                    className: 'custom-end-marker',
+                    html: '<div style="background-color: #EF4444; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                  })}
                 >
                   <Popup>
                     <div className="text-sm text-center">

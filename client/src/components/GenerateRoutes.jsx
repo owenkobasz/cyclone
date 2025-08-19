@@ -108,6 +108,24 @@ const GenerateRoutes = () => {
     }
   }, [preferences?.startingPointCoords]);
 
+  // When user selects an Ending Point, update the map to show both pins
+  useEffect(() => {
+    if (preferences?.endingPointCoords?.lat && preferences?.endingPointCoords?.lng) {
+      // If we have both start and end points, center the map to show both
+      if (preferences?.startingPointCoords?.lat && preferences?.startingPointCoords?.lng) {
+        const startLat = preferences.startingPointCoords.lat;
+        const startLng = preferences.startingPointCoords.lng;
+        const endLat = preferences.endingPointCoords.lat;
+        const endLng = preferences.endingPointCoords.lng;
+        
+        // Calculate center point between start and end
+        const centerLat = (startLat + endLat) / 2;
+        const centerLng = (startLng + endLng) / 2;
+        setLocation([centerLat, centerLng]);
+      }
+    }
+  }, [preferences?.endingPointCoords]);
+
   const handleGenerateRoute = async () => {
     const hasLocation = location || preferences.startingPointCoords;
     const hasCoordinates = location?.lat || preferences.startingPointCoords?.lat;
@@ -285,6 +303,7 @@ const GenerateRoutes = () => {
               setError={setError}
               routeData={routeData}
               isGenerating={isGenerating}
+              endingPointCoords={preferences.endingPointCoords}
             />
           </motion.div>
         </div>
