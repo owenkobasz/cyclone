@@ -212,91 +212,52 @@ async function checkPrerequisites() {
   });
 }
 
-async function installRootDependencies() {
-  console.log('📦 Installing root-level dependencies...');
-  return new Promise((resolve, reject) => {
-    const npm = spawn('npm', ['install'], { 
-      cwd: path.join(__dirname, '..'), 
-      stdio: 'pipe'
-    });
-    
-    let output = '';
-    npm.stdout.on('data', (data) => {
-      output += data.toString();
-    });
-    
-    npm.stderr.on('data', (data) => {
-      output += data.toString();
-    });
-    
-    npm.on('close', (code) => {
-      if (code === 0) {
-        console.log('✅ Root dependencies installed successfully.');
-        resolve();
-      } else {
-        console.error('❌ Failed to install root dependencies.');
-        console.error(output);
-        reject(new Error('npm install failed for root'));
-      }
-    });
-  });
+async function checkDependencies() {
+  console.log('📦 Checking dependencies...');
+  
+  // Check if node_modules exist in server directory
+  const serverNodeModules = path.join(__dirname, 'node_modules');
+  if (!fs.existsSync(serverNodeModules)) {
+    console.log('⚠️  Server dependencies not installed. Please run: cd server && npm install');
+    return false;
+  }
+  
+  // Check if node_modules exist in client directory
+  const clientNodeModules = path.join(__dirname, '../client/node_modules');
+  if (!fs.existsSync(clientNodeModules)) {
+    console.log('⚠️  Client dependencies not installed. Please run: cd client && npm install');
+    return false;
+  }
+  
+  console.log('✅ All dependencies are installed.');
+  return true;
 }
 
-async function installClientDependencies() {
-  console.log('📦 Installing client dependencies...');
-  return new Promise((resolve, reject) => {
-    const npm = spawn('npm', ['install'], { 
-      cwd: path.join(__dirname, '../client'), 
+async function installPythonDependencies() {
+  return new Promise((resolve) => {
+    console.log('🐍 Installing Python dependencies...');
+    const pip = spawn('pip3', ['install', '-r', 'requirements.txt'], {
+      cwd: __dirname,
       stdio: 'pipe'
     });
     
     let output = '';
-    npm.stdout.on('data', (data) => {
+    pip.stdout.on('data', (data) => {
       output += data.toString();
     });
     
-    npm.stderr.on('data', (data) => {
+    pip.stderr.on('data', (data) => {
       output += data.toString();
     });
     
-    npm.on('close', (code) => {
+    pip.on('close', (code) => {
       if (code === 0) {
-        console.log('✅ Client dependencies installed successfully.');
-        resolve();
+        console.log('✅ Python dependencies installed successfully.');
+        resolve(true);
       } else {
-        console.error('❌ Failed to install client dependencies.');
-        console.error(output);
-        reject(new Error('npm install failed for client'));
-      }
-    });
-  });
-}
-
-async function installServerDependencies() {
-  console.log('� Installing server dependencies...');
-  return new Promise((resolve, reject) => {
-    const npm = spawn('npm', ['install'], { 
-      cwd: __dirname, 
-      stdio: 'pipe'
-    });
-    
-    let output = '';
-    npm.stdout.on('data', (data) => {
-      output += data.toString();
-    });
-    
-    npm.stderr.on('data', (data) => {
-      output += data.toString();
-    });
-    
-    npm.on('close', (code) => {
-      if (code === 0) {
-        console.log('✅ Server dependencies installed successfully.');
-        resolve();
-      } else {
-        console.error('❌ Failed to install server dependencies.');
-        console.error(output);
-        reject(new Error('npm install failed for server'));
+        console.warn('⚠️  Python dependencies installation failed or incomplete.');
+        console.log('You may need to run: pip3 install -r requirements.txt manually');
+        resolve(false); // Don't fail the entire setup
       }
     });
   });
@@ -304,9 +265,9 @@ async function installServerDependencies() {
 
 async function preloadUserLocationGraph() {
   try {
-  // Get user's IP-based location (use env override if present)
-  const backendBase = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
-  const response = await axios.get(`${backendBase}/api/location`, { timeout: 5000 });
+    // Get user's IP-based location (use env override if present)
+    const backendBase = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+    const response = await axios.get(`${backendBase}/api/location`, { timeout: 5000 });
     
     if (response.data && response.data.success) {
       const userLocation = response.data.location;
@@ -336,36 +297,6 @@ async function preloadUserLocationGraph() {
   }
 }
 
-async function installPythonDependencies() {
-  return new Promise((resolve) => {
-    console.log('� Installing Python dependencies...');
-    const pip = spawn('pip3', ['install', '-r', 'requirements.txt'], {
-      cwd: __dirname,
-      stdio: 'pipe'
-    });
-    
-    let output = '';
-    pip.stdout.on('data', (data) => {
-      output += data.toString();
-    });
-    
-    pip.stderr.on('data', (data) => {
-      output += data.toString();
-    });
-    
-    pip.on('close', (code) => {
-      if (code === 0) {
-        console.log('✅ Python dependencies installed successfully.');
-        resolve(true);
-      } else {
-        console.warn('⚠️  Python dependencies installation failed or incomplete.');
-        console.log('You may need to run: pip3 install -r requirements.txt manually');
-        resolve(false); // Don't fail the entire setup
-      }
-    });
-  });
-}
-
 async function main() {
   console.log('🚀 CYCLONE PROJECT SETUP');
   console.log('='.repeat(60));
@@ -382,70 +313,65 @@ async function main() {
     return;
   }
 
-  // Install all dependencies
-  try {
-    await installRootDependencies();
-    await installClientDependencies();
-    await installServerDependencies();
-    
-    let pythonWorking = false;
-    if (pythonAvailable) {
-      pythonWorking = await installPythonDependencies();
-    }
-
-    // Setup directories and validate configuration
-    setupTempDirectories();
-    const envValid = await validateEnvironmentVariables();
-    const apiKeysValid = await validateApiKeys();
-    cleanTemporaryFiles();
-    await testApiConnectivity();
-    
-    // Only run server-dependent tests if APIs are working
-    if (envValid && apiKeysValid) {
-      await preloadUserLocationGraph();
-    }
-
-    // Show completion message
-    console.log('\n' + '='.repeat(60));
-    console.log('🎉 CYCLONE SETUP COMPLETE!');
-    console.log('='.repeat(60));
-    
-    if (envValid && apiKeysValid) {
-      console.log('✅ All systems ready! You can now:');
-      console.log('');
-      console.log('   Start development:');
-      console.log('   ./start-dev.sh');
-      console.log('');
-      console.log('   Or start manually:');
-      console.log('   Backend:  cd server && node server.js');
-      console.log('   Frontend: cd client && npm run dev');
-    } else {
-      console.log('⚠️  Setup completed with warnings:');
-      if (!envValid) {
-        console.log('   • Update API keys in .env file');
-      }
-      if (!apiKeysValid) {
-        console.log('   • Some features may not work without valid API keys');
-      }
-    }
-    
-    if (!pythonWorking) {
-      console.log('   • Install Python dependencies manually if needed');
-    }
-    
-    console.log('');
-    console.log('📚 Documentation: requirements.md');
-    console.log('='.repeat(60));
-    
-  } catch (error) {
-    console.error('\n❌ Setup failed:', error.message);
-    console.log('\nYou can try running individual steps:');
-    console.log('  npm install                    # In root directory');
-    console.log('  cd client && npm install       # Client dependencies');
-    console.log('  cd server && npm install       # Server dependencies');
-    console.log('  pip3 install -r server/requirements.txt  # Python deps');
-    process.exit(1);
+  // Check if dependencies are installed
+  const depsInstalled = await checkDependencies();
+  if (!depsInstalled) {
+    console.log('\n⚠️  Please install dependencies first:');
+    console.log('   cd server && npm install');
+    console.log('   cd client && npm install');
+    console.log('\nThen run setup again: node server/setup.js');
+    return;
   }
+
+  // Install Python dependencies if available
+  let pythonWorking = false;
+  if (pythonAvailable) {
+    pythonWorking = await installPythonDependencies();
+  }
+
+  // Setup directories and validate configuration
+  setupTempDirectories();
+  const envValid = await validateEnvironmentVariables();
+  const apiKeysValid = await validateApiKeys();
+  cleanTemporaryFiles();
+  await testApiConnectivity();
+  
+  // Only run server-dependent tests if APIs are working
+  if (envValid && apiKeysValid) {
+    await preloadUserLocationGraph();
+  }
+
+  // Show completion message
+  console.log('\n' + '='.repeat(60));
+  console.log('🎉 CYCLONE SETUP COMPLETE!');
+  console.log('='.repeat(60));
+  
+  if (envValid && apiKeysValid) {
+    console.log('✅ All systems ready! You can now:');
+    console.log('');
+    console.log('   Start development (in separate terminal windows):');
+    console.log('   Terminal 1: cd server && npm start');
+    console.log('   Terminal 2: cd client && npm run dev');
+    console.log('');
+    console.log('   Or use the start script:');
+    console.log('   ./start-dev.sh');
+  } else {
+    console.log('⚠️  Setup completed with warnings:');
+    if (!envValid) {
+      console.log('   • Update API keys in .env file');
+    }
+    if (!apiKeysValid) {
+      console.log('   • Some features may not work without valid API keys');
+    }
+  }
+  
+  if (!pythonWorking) {
+    console.log('   • Install Python dependencies manually if needed');
+  }
+  
+  console.log('');
+  console.log('📚 Documentation: requirements.md');
+  console.log('='.repeat(60));
 }
 
 main().catch((error) => {
