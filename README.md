@@ -1,4 +1,4 @@
-# 🚴‍♂️ Cyclone - AI-Powered Cycling Route Generator
+# Cyclone - AI-Powered Cycling Route Generator
 
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
