@@ -56,7 +56,8 @@ function generateGPTPrompt(start, end, options) {
     avoid_traffic = false,
     avoid_hills = false,
     starting_point_name,
-    destination_name
+    destination_name,
+    custom_description
   } = options;
   
   // Calculate distance requirements based on target distance
@@ -83,19 +84,33 @@ function generateGPTPrompt(start, end, options) {
   let routeTypeDescription;
   switch (route_type) {
     case 'scenic':
-      routeTypeDescription = 'focused on scenic rides with beautiful views, landscapes, and interesting landmarks';
+      routeTypeDescription = 'focused on scenic routes with paved roads and beautiful views';
       break;
-    case 'nature':
-      routeTypeDescription = 'focused on nature (parks, trails and optimized for green spaces), zero repeated paths, low traffic roads that lead to nature destinations';
+    case 'custom':
+      routeTypeDescription = 'customized according to your specific preferences';
       break;
-    case 'fitness':
-      routeTypeDescription = 'challenging routes and focused on elevation training for fitness enthusiasts';
+    case 'offroad':
+      routeTypeDescription = 'focused on off-road trails with unpaved nature paths and green spaces';
       break;
-    case 'urban':
+    case 'training':
+      routeTypeDescription = 'focused on training routes with challenging elevation for fitness enthusiasts';
+      break;
+    case 'city':
       routeTypeDescription = 'focused on exploring city streets, urban attractions, new neighborhoods, local culture, and hidden gems';
       break;
     default:
-      routeTypeDescription = 'focused on scenic rides with beautiful views and landscapes';
+      routeTypeDescription = 'focused on scenic routes with paved roads and beautiful views';
+  }
+  
+  // Add custom description if provided and route type is custom
+  if (route_type === 'custom') {
+    if (custom_description && custom_description.trim()) {
+      routeTypeDescription = custom_description.trim();
+    } else {
+      routeTypeDescription = 'customized according to your specific preferences (please provide details)';
+    }
+  } else if (custom_description && custom_description.trim()) {
+    routeTypeDescription += `. Additionally, ${custom_description.trim()}`;
   }
   
   const systemPrompt = `You are a cycling route planning expert. Generate a bicycle route with specific waypoints that can be used to create turn-by-turn directions.
@@ -104,7 +119,8 @@ IMPORTANT: You must respond with a JSON object containing:
 1. "waypoints": An array of coordinate objects with "lat" and "lon" properties (${distanceReqs.minWaypoints}-${distanceReqs.maxWaypoints} waypoints)
 2. "difficulty": A string rating ("Easy", "Moderate", "Challenging", "Expert")
 3. "description": A brief description of the route highlights
-4. "route_name": A creative, descriptive name for this route (e.g., "Riverside Scenic Loop", "Downtown Urban Adventure", "Mountain Vista Challenge")
+4. "route_name": A creative, descriptive name for this route (e.g., "Riverside Scenic Loop", "Mountain Training Challenge", "Downtown Urban Explorer")
+
 
 CRITICAL REQUIREMENTS FOR ${target_distance} ROUTES:
 - The first waypoint MUST be the exact starting location provided: ${start.lat}, ${start.lon}
@@ -113,7 +129,12 @@ CRITICAL REQUIREMENTS FOR ${target_distance} ROUTES:
 - ${distanceReqs.distanceGuidance}
 - Intermediate waypoints should be ${distanceReqs.waypointSpacing}
 - For loop routes (same start/end), create waypoints that form a circuit back to the starting point
-- Consider the route type when placing intermediate waypoints (scenic = parks/views, urban = neighborhoods, etc.)
+- Consider the route type when placing intermediate waypoints (scenic = paved roads with views, custom = user preferences, city = urban neighborhoods, etc.)
+
+
+
+// Future reference - original scenic route guidance (commented out)
+// - Consider the route type when placing intermediate waypoints (scenic = paved roads with views, city = urban neighborhoods, etc.)
 - CRITICAL: The waypoints must be spaced far enough apart to actually create a ${target_distance} route when connected by roads
 
 The waypoints should create a route that matches both the requested distance and route type preferences.`;
@@ -126,7 +147,7 @@ WAYPOINT SPECIFICATIONS:
 - Start at: ${start.lat}, ${start.lon} (EXACT coordinates required)
 - End at: ${end ? `${end.lat}, ${end.lon}` : `${start.lat}, ${start.lon}`} (EXACT coordinates required)
 - Place ${distanceReqs.minWaypoints}-${distanceReqs.maxWaypoints} intermediate waypoints ${distanceReqs.waypointSpacing}
-- Each waypoint should align with the ${route_type} route type
+- Each waypoint should align with the ${route_type} route type${route_type === 'custom' && custom_description && custom_description.trim() ? ` and incorporate the custom preferences: "${custom_description.trim()}"` : ''}
 
 CRITICAL: Make sure your waypoints are spread out enough to actually create a ${target_distance} route when connected by roads. Roads add significant distance compared to straight-line distances.`;
 

@@ -32,9 +32,17 @@ const About = () => {
                 />
                 <Cards
                     icon={<Landmark className="w-8 h-8 text-color-1" />}
+                    title="Custom Tailored"
+                    text="Create your own personalized routes with specific preferences and requirements."
+                />
+                
+                {/*
+                <Cards
+                    icon={<Landmark className="w-8 h-8 text-color-1" />}
                     title="Scenic Rides"
                     text="Prioritize greenways, parks & iconic views for unforgettable rides."
                 />
+                */}
             </motion.div>
         </div>
         <div className="container relative z-10 max-w-67xl mx-auto mt-20 lg:mt-22">
@@ -51,18 +59,18 @@ const About = () => {
                 viewport={{ once: true, margin: "-20% 0px" }}
             >
                 <Cards
-                    title="Nature Lovers"
-                    text="Explore scenic routes with zero repeats, optimized for green spaces, parkways, and low-traffic roads that lead to nature destinations."
+                    title="Training Rides"
+                    text="Ideal for cyclists focused on training goals, with challenging elevation and structured workouts."
                     icon={<Bike className="w-8 h-8 text-color-1" />}
                 />
                 <Cards 
-                    title="Fitness Enthusiast"
-                    text="Ideal for cyclists focused on training goals, with precise elevation and distance control for structured workouts."
+                    title="Off-road Adventures"
+                    text="Explore unpaved nature trails and green spaces for adventurous cycling experiences."
                     icon={<Mountain className="w-8 h-8 text-color-1" />}
                 />
                 <Cards 
-                    title="Urban Explorer"
-                    text="Great for city cyclists who want to discover new neighborhoods and hidden gems in their urban environment."
+                    title="Scenic Routes "
+                    text="Prioritize greenways, parks & iconic views for unforgettable rides. "
                     icon={<Users className="w-8 h-8 text-color-1" />}
                 />
             </motion.div>

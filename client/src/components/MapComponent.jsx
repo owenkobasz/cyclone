@@ -704,24 +704,7 @@ const MapComponent = ({
             {/* Route Start and Destination Markers */}
             {routeData && routeData.route && routeData.route.length > 0 && (
               <>
-                {/* Start Marker */}
-                <Marker 
-                  position={[routeData.route[0].lat, routeData.route[0].lon]}
-                  icon={L.divIcon({
-                    className: 'custom-start-marker',
-                    html: '<div style="background-color: #10B981; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
-                    iconSize: [20, 20],
-                    iconAnchor: [10, 10]
-                  })}
-                >
-                  <Popup>
-                    <div className="text-sm text-center">
-                      <strong>Route Start</strong>
-                    </div>
-                  </Popup>
-                </Marker>
-                
-                {/* Destination Marker */}
+                {/* Destination Marker - render first so it's underneath */}
                 <Marker 
                   position={[
                     routeData.route[routeData.route.length - 1].lat, 
@@ -740,6 +723,23 @@ const MapComponent = ({
                       <span className="text-xs text-gray-600">
                         Total distance: {routeData.total_length_formatted || `${kmToUi(routeData.total_length_km || 0, units).toFixed(1)} ${distLabel(units)}`}
                       </span>
+                    </div>
+                  </Popup>
+                </Marker>
+                
+                {/* Start Marker - render second so it's on top */}
+                <Marker 
+                  position={[routeData.route[0].lat, routeData.route[0].lon]}
+                  icon={L.divIcon({
+                    className: 'custom-start-marker',
+                    html: '<div style="background-color: #10B981; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                  })}
+                >
+                  <Popup>
+                    <div className="text-sm text-center">
+                      <strong>Route Start</strong>
                     </div>
                   </Popup>
                 </Marker>

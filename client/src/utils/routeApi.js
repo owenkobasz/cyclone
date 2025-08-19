@@ -45,6 +45,7 @@ export async function generateRoute(preferences) {
     })(),
     unit_system: preferences.unitSystem || "imperial",
     route_type: preferences.routeType || "scenic",
+    custom_description: preferences.customDescription || null,
     avoid_traffic: preferences.avoidHighTraffic || false,
     points_of_interest: preferences.pointsOfInterest || false,
     prefer_greenways: preferences.preferGreenways || false,

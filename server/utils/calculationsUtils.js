@@ -84,20 +84,24 @@ function calculateRouteDifficulty(routeData, options) {
   
   // Route type factor (0-20 points)
   switch (options.route_type) {
-    case 'fitness':
+    case 'training':
       difficultyScore += 20;
       break;
-    case 'urban':
+    case 'city':
       difficultyScore += 15;
       break;
-    case 'nature':
+    case 'scenic':
       difficultyScore += 10;
       break;
-    case 'scenic':
+    case 'custom':
     default:
       difficultyScore += 5;
       break;
   }
+
+  // case 'scenic':
+  //   difficultyScore += 5;
+  //   break;
   
   // Advanced options factor (0-10 points)
   if (options.avoid_hills) difficultyScore -= 5;

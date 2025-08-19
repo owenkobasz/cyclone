@@ -26,11 +26,18 @@ export default function RoutePreferences({ preferences, setPreferences, userLoca
     };
 
     const routeTypes = [
-        { id: 'scenic', label: 'Scenic rides', description: 'Beautiful views and landscapes' },
-        { id: 'nature', label: 'Nature focused', description: 'Parks, trails, and green spaces' },
-        { id: 'fitness', label: 'Fitness enthusiast', description: 'Challenging routes for elevation training' },
-        { id: 'urban', label: 'Urban explorer', description: 'City streets and urban attractions' },
+        { id: 'scenic', label: 'Scenic Route', description: 'Scenic views and landmarks' },
+        { id: 'training', label: 'Training Ride', description: 'Fitness-focused with elevation' },
+        { id: 'city', label: 'Urban Exploration', description: 'City streets and attractions' },
+        { id: 'custom', label: 'Custom Route', description: 'Your own route preferences' },
     ];
+
+    // const routeTypes = [
+    //     { id: 'scenic', label: 'scenic', description: 'Paved roads with views' },
+    //     { id: 'offroad', label: 'Off-Road Trails', description: 'Unpaved nature trails' },
+    //     { id: 'training', label: 'Training Ride', description: 'Fitness-focused with elevation' },
+    //     { id: 'city', label: 'Urban Exploration', description: 'City streets and attractions' },
+    // ];
 
     const hasStartingPoint = preferences.startingPoint && preferences.startingPoint.trim().length > 0;
 
@@ -129,7 +136,13 @@ export default function RoutePreferences({ preferences, setPreferences, userLoca
                                 key={type.id}
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
-                                onClick={() => handleChange('routeType')(type.id)}
+                                onClick={() => {
+                                    // Clear custom description when switching away from custom route type
+                                    if (preferences.routeType === 'custom' && type.id !== 'custom') {
+                                        setPreferences(prev => ({ ...prev, customDescription: '' }));
+                                    }
+                                    handleChange('routeType')(type.id);
+                                }}
                                 className={`p-3 rounded-xl border transition-all duration-300 text-left ${
                                     preferences.routeType === type.id
                                         ? 'border-color-1 bg-color-1/10 text-color-1'
@@ -141,6 +154,41 @@ export default function RoutePreferences({ preferences, setPreferences, userLoca
                             </motion.button>
                         ))}
                     </div>
+                    
+                    {/* Custom Route Description - Only show when custom route is selected */}
+                    {preferences.routeType === 'custom' && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            transition={{ duration: 0.4, ease: "easeOut" }}
+                            className="mt-4"
+                        >
+                            <label htmlFor="customDescription" className="body-2 text-n-3 mb-2 block">
+                                <span className="text-color-1 font-medium">Custom Route Description</span>
+                            </label>
+                            <div className="mb-3 p-3 bg-color-1/10 border border-color-1/20 rounded-lg">
+                                <p className="text-sm text-n-2">
+                                    Describe your ideal route! Examples: "Include coffee shops and local breweries", 
+                                    "Avoid busy intersections", "Pass by historical landmarks", "Follow bike paths along the river"
+                                </p>
+                            </div>
+                            <textarea
+                                id="customDescription"
+                                name="customDescription"
+                                value={preferences.customDescription || ''}
+                                onChange={(e) => handleChange('customDescription')(e.target.value)}
+                                placeholder="Describe your perfect route..."
+                                aria-label="Add custom details about your preferred route"
+                                className="w-full px-4 py-3 bg-n-7 border border-color-1 rounded-xl text-n-1 placeholder-n-4 focus:outline-none transition-all duration-300 focus:shadow-[0_0_15px_rgba(172,108,255,0.3)] resize-none"
+                                rows="3"
+                                maxLength="200"
+                                required
+                            />
+                            <div className="text-sm text-n-4 mt-2 text-right">
+                                {preferences.customDescription ? preferences.customDescription.length : 0}/200
+                            </div>
+                        </motion.div>
+                    )}
                 </motion.div>
             )}
 

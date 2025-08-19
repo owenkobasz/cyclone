@@ -78,6 +78,7 @@ async function generateRoute(userPreferences) {
       avoid_hills = false,
       starting_point_name,
       destination_name,
+      custom_description,
       routing_backend = 'gpt_powered'
     } = userOptions || {};
 
@@ -97,6 +98,7 @@ async function generateRoute(userPreferences) {
       avoid_hills,
       starting_point_name,
       destination_name,
+      custom_description,
       routing_backend
     };
 

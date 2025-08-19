@@ -771,7 +771,8 @@ app.post('/api/generate-custom-route', async (req, res) => {
     unit_system = "imperial",
     route_type = "scenic",
     avoid_traffic = false,
-    elevation_focus = false
+    elevation_focus = false,
+    custom_description = ""
   } = req.body;
 
   console.log('Route generation request received:', {

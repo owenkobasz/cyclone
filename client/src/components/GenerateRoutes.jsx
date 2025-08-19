@@ -30,6 +30,7 @@ const GenerateRoutes = () => {
     distanceTarget: 10,
     elevationTarget: 1000,
     routeType: "scenic",
+    customDescription: "",
     bikeLanes: false,
     pointsOfInterest: false,
     avoidHills: false,
