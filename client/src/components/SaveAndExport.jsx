@@ -18,8 +18,8 @@ export default function SaveAndExport({
     title = "Save & Export"
 }) {
     const { user } = useAuth();
-    const [routeName, setRouteName] = useState("");
-    const [gpxName, setGpxName] = useState("");
+    const [routeName, setRouteName] = useState(routeData?.gpt_metadata?.gpt_route_name || "");
+    const [gpxName, setGpxName] = useState(routeData?.gpt_metadata?.gpt_route_name || "");
 
     // Default canSave logic if not provided
     const shouldAllowSave = canSave !== undefined ? canSave : (routeData && routeData.route && user);
@@ -104,37 +104,37 @@ export default function SaveAndExport({
             <div>
                 <div className="mt-4 space-y-3">
                     <div className="flex gap-2">
-                        <Button
-                            className="w-1/2"
-                            onClick={handleSaveRoute}
-                            disabled={!shouldAllowSave}
-                        >
-                            {getSaveButtonText()}
-                        </Button>
                         <input
                             type="text"
                             placeholder="As (optional)"
                             value={routeName}
                             onChange={(e) => setRouteName(e.target.value)}
-                            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-color-1"
+                            className="w-48 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-color-1"
                         />
+                        <Button
+                            className="flex-1"
+                            onClick={handleSaveRoute}
+                            disabled={!shouldAllowSave}
+                        >
+                            {getSaveButtonText()}
+                        </Button>
                     </div>
                     <div className="flex gap-2">
+                        <input
+                            type="text"
+                            placeholder="As (optional)"
+                            value={gpxName}
+                            onChange={(e) => setGpxName(e.target.value)}
+                            className="w-48 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-color-1"
+                        />
                         <Button
-                            className="w-1/2"
+                            className="flex-1"
                             onClick={handleExportGpx}
                             disabled={!shouldAllowExport}
                             white
                         >
                             {getExportButtonText()}
                         </Button>
-                        <input
-                            type="text"
-                            placeholder="As (optional)"
-                            value={gpxName}
-                            onChange={(e) => setGpxName(e.target.value)}
-                            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-color-1"
-                        />
                     </div>
                 </div>
             </div>
