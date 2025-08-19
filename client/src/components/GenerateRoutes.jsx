@@ -27,7 +27,7 @@ const GenerateRoutes = () => {
     startingPointCoords: null,
     endingPoint: "",
     endingPointCoords: null,
-    distanceTarget: 5,
+    distanceTarget: 10,
     elevationTarget: 1000,
     routeType: "scenic",
     bikeLanes: false,
@@ -215,12 +215,7 @@ const GenerateRoutes = () => {
     }
   };
 
-  const canUseRouteActions = user && routeData?.route?.length;
 
-  const exportGpx = async () => {
-    // call backend api
-    const res = await fetch()
-  }
 
   const hasPreferences =
     preferences.startingPoint || preferences.endingPoint || location;
@@ -339,65 +334,14 @@ const GenerateRoutes = () => {
             <div>
               <CueSheet cueSheet={cueSheet} instructions={instructions} />
             </div>
-            {/* Left - Save and Export */}
+            {/* Right - Save and Export */}
             <div>
-              <div className="mt-4 space-y-3">
-                <Button
-                  className="w-full"
-                  onClick={async () => {
-                    console.log("Saving route...");
-                    if (!user || !routeData) {
-                      alert("You must be logged in and have a generated route to save.");
-                      return;
-                    }
-                    try {
-                      const res = await fetch("http://localhost:3000/api/routes/plan/save", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        credentials: "include",
-                        body: JSON.stringify({
-                          routeName: routeData.routeName || "My Route",
-                          waypoints: routeData.route || [],
-                          rawStats: stats,
-                          cueSheet,
-                          preferences,
-                        }),
-                      });
-
-                      const data = await res.json();
-                      if (!res.ok) throw new Error(data.error || "Failed to save route");
-
-                      alert("Route saved successfully!");
-                      console.log("Saved route:", data.route);
-                    } catch (err) {
-                      console.error("Save route error:", err);
-                      alert("Failed to save route: " + err.message);
-                    }
-                  }}
-                >
-                  Save Route
-                </Button>
-                <Button
-                  className="w-full"
-                  onClick={() => {
-                    console.log("Exporting route as GPX...");
-                    generateGpxFile(routeData.route, routeData.gpt_metadata?.gpt_route_name);
-                  }}
-                  white
-                >
-                  Export GPX
-                </Button>
-                <Button
-                  className="w-full"
-                  onClick={() => {
-                    console.log("Sharing route...");
-                  }}
-                  disabled={!canUseRouteActions}
-                  outline
-                >
-                  Share Route
-                </Button>
-              </div>
+              <SaveAndExport 
+                routeData={routeData}
+                stats={stats}
+                cueSheet={cueSheet}
+                preferences={preferences}
+              />
             </div>
           </motion.div>
         )}

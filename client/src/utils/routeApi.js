@@ -97,6 +97,50 @@ export async function generateRoute(preferences) {
 }
 
 /**
+ * Saves a route to the user's profile
+ * @param {Object} routeData - The route data to save
+ * @param {string} routeData.routeName - Name of the route
+ * @param {Array} routeData.waypoints - Array of route coordinates
+ * @param {Object} routeData.rawStats - Route statistics
+ * @param {Array} routeData.cueSheet - Turn-by-turn instructions
+ * @param {Object} routeData.preferences - Route generation preferences
+ * @returns {Promise<Object>} The saved route data
+ */
+export async function saveRoute(routeData) {
+  const response = await fetch(`${API_BASE_URL}/api/routes/plan/save`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(routeData)
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to save route');
+  }
+
+  return response.json();
+}
+
+/**
+ * Fetches the user's saved routes
+ * @returns {Promise<Array>} Array of saved routes
+ */
+export async function getSavedRoutes() {
+  const response = await fetch(`${API_BASE_URL}/api/routes`, {
+    method: 'GET',
+    credentials: 'include'
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to fetch saved routes');
+  }
+
+  return response.json();
+}
+
+/**
  * This method takes a route array, which contains rows of json files of 
  * lat: and lon: and converts it into a gpx file, user can then download this
  * @param {*} route 
