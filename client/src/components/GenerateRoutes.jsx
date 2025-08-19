@@ -72,6 +72,8 @@ const GenerateRoutes = () => {
           distanceFormatted: transformedRouteData.total_length_formatted,
           elevationM: selectedRoute.rawStats.elevationM || 0,
           totalRideTime: selectedRoute.rawStats.totalRideTimeMin || null,
+          routeName: selectedRoute.gpt_metadata?.gpt_route_name || null,
+          routeDescription: selectedRoute.gpt_metadata?.gpt_description || null
         })
       };
       setElevationProfile(selectedRoute.elevation_profile || []);
@@ -139,7 +141,9 @@ const GenerateRoutes = () => {
         distanceFormatted: data.total_length_formatted || null,
         elevationM: data.elevation_gain_m || data.total_elevation_gain || null,
         totalRideTime: data.total_ride_time || null,
-        difficulty: data.difficulty || null
+        difficulty: data.difficulty || null,
+        routeName: data.gpt_metadata?.gpt_route_name || null,
+        routeDescription: data.gpt_metadata?.gpt_description || null
       });
       setElevationProfile(data.elevation_profile || []);
       setElevationStats(data.elevation_stats || null);
@@ -330,7 +334,7 @@ const GenerateRoutes = () => {
                   className="w-full"
                   onClick={() => {
                     console.log("Exporting route as GPX...");
-                    generateGpxFile(routeData.route);
+                    generateGpxFile(routeData.route, routeData.gpt_metadata?.gpt_route_name);
                   }}
                   white
                 >

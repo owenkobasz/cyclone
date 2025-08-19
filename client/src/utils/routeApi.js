@@ -96,13 +96,29 @@ export async function generateRoute(preferences) {
  * This method takes a route array, which contains rows of json files of 
  * lat: and lon: and converts it into a gpx file, user can then download this
  * @param {*} route 
+ * @param {string} routeName
  * @returns 
  */
-export async function generateGpxFile(route, filename="map.gpx") {
+export async function generateGpxFile(route, routeName = null) {
 
   // check route is valid
   if (route == null || route.lat || route.lon) {
     return;
+  }
+  
+  // Generate filename based on route name or use default
+  let filename = "route.gpx";
+  if (routeName) {
+    // Sanitize the route name for filename compatibility
+    const sanitizedName = routeName
+      .replace(/[<>:"/\\|?*]/g, '') // Remove invalid filename characters
+      .replace(/\s+/g, '_') // Replace spaces with underscores
+      .replace(/[^\w\s-]/g, '') // Remove special characters except underscores and hyphens
+      .trim();
+    
+    if (sanitizedName.length > 0) {
+      filename = `${sanitizedName}.gpx`;
+    }
   }
   
   // parse json file for latitude and longitude

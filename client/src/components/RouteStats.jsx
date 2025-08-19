@@ -34,6 +34,16 @@ export default function RouteStats({ stats, elevationProfile, elevationStats }) 
         >
             <h3 className="h3 mb-4 text-n-1">Route Stats</h3>
 
+            {/* Route Name and Description */}
+            {stats?.routeName && (
+                <div className="mb-6 p-4 bg-gradient-to-r from-color-1/10 to-color-2/10 border border-color-1/20 rounded-xl">
+                    <h4 className="text-lg font-semibold text-color-1 mb-2">{stats.routeName}</h4>
+                    {stats.routeDescription && (
+                        <p className="text-sm text-n-3">{stats.routeDescription}</p>
+                    )}
+                </div>
+            )}
+
             {stats?.distanceKm != null ? (
                 <div className="space-y-3">
                     <div className="flex justify-between items-center">

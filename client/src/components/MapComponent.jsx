@@ -477,7 +477,16 @@ const MapComponent = ({ location, setLocation, error, setError, routeData, isGen
     >
       {/* Title and Search Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-        <h3 className="h3 text-n-1">Route Map</h3>
+        <div className="flex flex-col">
+          <h3 className="h3 text-n-1">
+            {routeData?.gpt_metadata?.gpt_route_name || 'Route Map'}
+          </h3>
+          {routeData?.gpt_metadata?.gpt_route_name && (
+            <p className="text-sm text-n-3 mt-1">
+              {routeData.gpt_metadata.gpt_description}
+            </p>
+          )}
+        </div>
         <div className="flex-1 max-w-md">
           <div className="flex gap-2">
           </div>

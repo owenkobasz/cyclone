@@ -126,6 +126,7 @@ async function generateRoute(userPreferences) {
         gptMetadata = {
           gpt_description: gptResult.gptDescription,
           gpt_difficulty: gptResult.gptDifficulty,
+          gpt_route_name: gptResult.gptRouteName,
           waypoints_count: gptResult.waypoints.length
         };
         
@@ -156,6 +157,7 @@ async function generateRoute(userPreferences) {
           gptMetadata = {
             gpt_description: 'Direct route due to GPT failure',
             gpt_difficulty: 'Not specified',
+            gpt_route_name: 'Direct Route',
             waypoints_count: fallbackWaypoints.length
           };
           

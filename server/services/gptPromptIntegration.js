@@ -104,6 +104,7 @@ IMPORTANT: You must respond with a JSON object containing:
 1. "waypoints": An array of coordinate objects with "lat" and "lon" properties (${distanceReqs.minWaypoints}-${distanceReqs.maxWaypoints} waypoints)
 2. "difficulty": A string rating ("Easy", "Moderate", "Challenging", "Expert")
 3. "description": A brief description of the route highlights
+4. "route_name": A creative, descriptive name for this route (e.g., "Riverside Scenic Loop", "Downtown Urban Adventure", "Mountain Vista Challenge")
 
 CRITICAL REQUIREMENTS FOR ${target_distance} ROUTES:
 - The first waypoint MUST be the exact starting location provided: ${start.lat}, ${start.lon}
@@ -278,7 +279,8 @@ function parseWaypointsFromGPT(gptResponse, start, end, routingAPI = 'valhalla')
     return {
       waypoints: preservedWaypoints,
       gptDescription: parsedResponse.description || 'No description provided',
-      gptDifficulty: parsedResponse.difficulty || 'Not specified'
+      gptDifficulty: parsedResponse.difficulty || 'Not specified',
+      gptRouteName: parsedResponse.route_name || 'No route name provided'
     };
   } catch (error) {
     console.error('Error parsing GPT response:', error);
@@ -289,7 +291,8 @@ function parseWaypointsFromGPT(gptResponse, start, end, routingAPI = 'valhalla')
         end ? { lat: end.lat, lon: end.lon } : { lat: start.lat, lon: start.lon }
       ],
       gptDescription: 'Fallback route due to GPT parsing error',
-      gptDifficulty: 'Not specified'
+      gptDifficulty: 'Not specified',
+      gptRouteName: 'Fallback route'
     };
   }
 }
@@ -321,7 +324,8 @@ async function generateGPTRoute(start, end, options) {
       waypoints: gptResult.waypoints,
       gptResponse: gptResponse,
       gptDescription: gptResult.gptDescription,
-      gptDifficulty: gptResult.gptDifficulty
+      gptDifficulty: gptResult.gptDifficulty,
+      gptRouteName: gptResult.gptRouteName
     };
   } catch (error) {
     console.error('GPT route generation failed:', error);

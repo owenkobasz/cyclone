@@ -195,6 +195,7 @@ export default function RoutePreferences({ preferences, setPreferences, userLoca
 
 
             {/* Advanced Options Dropdown Menu */}
+            {/*
             <div className="mb-4">
                 <button
                     onClick={() => setShowAdvanced(!showAdvanced)}
@@ -215,7 +216,6 @@ export default function RoutePreferences({ preferences, setPreferences, userLoca
                 </button>
             </div>
 
-            {/* Advanced Options Content */}
             <motion.div
                 initial={false}
                 animate={{
@@ -226,7 +226,6 @@ export default function RoutePreferences({ preferences, setPreferences, userLoca
                 className="overflow-hidden"
             >
                 <div className="space-y-4 pb-4">
-                    {/* Toggle Options */}
                     <div className="space-y-3">
                         <Toggle
                             checked={preferences.bikeLanes || false}
@@ -250,7 +249,7 @@ export default function RoutePreferences({ preferences, setPreferences, userLoca
                         />
                     </div>
                 </div>
-            </motion.div>
+            </motion.div>*/}
         </motion.div>
     );
 }
