@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { MouseParallax } from "react-just-parallax";
+import { motion } from "framer-motion";
 import PlusSvg from "../../assets/svg/PlusSvg";
 
 export const Gradient = () => {
@@ -96,5 +97,89 @@ const Rings = () => {
         </div>
       </MouseParallax>
     </div>
+  );
+};
+
+export const ScrollToAboutAnimation = ({ onScrollClick }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ 
+        duration: 1.5,
+        delay: 0.5
+      }}
+      className="flex flex-col items-center gap-4"
+    >
+      <motion.button
+        type="button"
+        onClick={onScrollClick}
+        animate={{ 
+          y: [0, 8, 0],
+        }}
+        transition={{
+          duration: 2,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+        className="flex flex-col items-center cursor-pointer bg-transparent border-none"
+        aria-label="Scroll to About"
+      >
+        <ScrollIndicatorBody />
+        <ChevronDown />
+      </motion.button>
+    </motion.div>
+  );
+};
+
+const ScrollIndicatorBody = () => {
+  return (
+    <div className="w-6 h-10 border-2 border-color-1 rounded-full flex justify-center">
+      <motion.div
+        animate={{
+          y: [0, 12, 0],
+          opacity: [0, 1, 0]
+        }}
+        transition={{
+          duration: 2,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+        className="w-1 h-3 bg-color-1 rounded-full mt-2"
+      />
+    </div>
+  );
+};
+
+const ChevronDown = () => {
+  return (
+    <motion.div
+      animate={{ 
+        y: [0, 4, 0],
+      }}
+      transition={{
+        duration: 2,
+        repeat: Infinity,
+        ease: "easeInOut",
+        delay: 0.1
+      }}
+      className="mt-2"
+    >
+      <svg 
+        width="20" 
+        height="12" 
+        viewBox="0 0 20 12" 
+        fill="none" 
+        className="text-color-1"
+      >
+        <path 
+          d="M2 2L10 10L18 2" 
+          stroke="currentColor" 
+          strokeWidth="3" 
+          strokeLinecap="round" 
+          strokeLinejoin="round"
+        />
+      </svg>
+    </motion.div>
   );
 };

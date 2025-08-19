@@ -58,7 +58,7 @@ export default function RoutePreferences({ preferences, setPreferences, userLoca
                         name="startingPoint"
                         value={preferences.startingPoint || ''}
                         onChange={handleChange('startingPoint')}
-                        placeholder="e.g., City Hall, Central Park, Main Street"
+                        placeholder="e.g City Hall, Central Park, Main Street"
                         ariaLabel="Enter starting location for your route"
                         userLocation={userLocation}
                         onLocationSelect={(locationData) => {
@@ -157,11 +157,14 @@ export default function RoutePreferences({ preferences, setPreferences, userLoca
                         name="distanceNumber"
                         type="number"
                         inputMode="numeric"
-                        value={preferences.distanceTarget || 10}
-                        onChange={(e) => handleChange("distanceTarget")(e.target.value)}
+                        value={preferences.distanceTarget ?? ''}
+                        placeholder=""
+                        onChange={(e) => {
+                            const v = e.target.value;
+                            handleChange("distanceTarget")(v === '' ? undefined : Number(v));
+                        }}
                         aria-label="Route distance"
-                        className="w-20 text-xl text-color-1 font-semibold text-center bg-transparent border-none focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        placeholder="0"
+                        className="w-24 px-4 py-3 bg-n-7 border border-n-6 rounded-xl text-n-1 text-center focus:border-color-1 focus:outline-none transition-all duration-300 focus:shadow-[0_0_15px_rgba(172,108,255,0.3)] focus:scale-105 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
 
                     {/* Unit Toggle */}

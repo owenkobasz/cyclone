@@ -1,7 +1,7 @@
 import { curve, CYCLONE, homeBackground as homeBackground } from "../assets/home";
 import Button from "./Button";
 import Section from "./Section";
-import { BackgroundCircles, BottomLine, Gradient } from "./design/Home";
+import { BackgroundCircles, BottomLine, Gradient, ScrollToAboutAnimation } from "./design/Home";
 import { ScrollParallax } from "react-just-parallax";
 import { motion } from "framer-motion";
 import AuthModal from "./AuthModal";
@@ -88,24 +88,18 @@ return (
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 1.2 }}
-                className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+                className="flex flex-col justify-center items-center"
               >
-                <Button onClick={() => {
-                  window.location.hash = 'generate-routes';
-                  document.getElementById('generate-routes').scrollIntoView({ behavior: 'smooth' });
-                }} white>
-                  Generate a Route
-                </Button>
-                {!user && (
-                  <Button onClick={() => openAuthModal("signup")} white>
-                    Create an Account
-                  </Button>
-                )}
-                {user && (
-                  <Button white onClick={() => navigate("/profile")}>
-                    Welcome {user.firstName} !
-                  </Button>
-                )}
+                <ScrollToAboutAnimation 
+                  onScrollClick={() => {
+                    const el = document.getElementById('about');
+                    if (el) {
+                      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    } else {
+                      window.location.hash = '#about';
+                    }
+                  }}
+                />
               </motion.div>
             </div>
           </div>

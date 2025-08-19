@@ -38,7 +38,11 @@ export async function generateRoute(preferences) {
     avoid_hills: preferences.avoidHills || false,
     include_elevation: preferences.includeElevation || false,
     use_bike_lanes: preferences.bikeLanes !== false, // Default to true
-    target_distance: parseFloat(preferences.distanceTarget) || 5.0,
+    // If the user didn't provide a valid number, default to 5
+    target_distance: (function() {
+      const d = parseFloat(preferences.distanceTarget);
+      return Number.isFinite(d) ? d : 5.0;
+    })(),
     unit_system: preferences.unitSystem || "imperial",
     route_type: preferences.routeType || "scenic",
     avoid_traffic: preferences.avoidHighTraffic || false,
