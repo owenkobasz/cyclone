@@ -83,6 +83,15 @@ router.post('/plan/save', async (req, res) => {
       return res.status(400).json({ error: 'Missing or invalid route name or waypoints' });
     }
 
+    if (routeName) {
+      let userRoutes = [];
+      const data = await fs.readFile(dataPath, 'utf-8');
+      userRoutes = JSON.parse(data || "{}");
+      if (userRoutes?.some(r => r.username === username && r.routeName.trim().toLowerCase() === routeName.trim().toLowerCase())) {
+        return res.status(409).json({ error: "Route name already exists for this user." });
+      }
+    }
+
     const newRoute = {
       id: Date.now(),
       username,
@@ -111,8 +120,6 @@ router.post('/plan/save', async (req, res) => {
 
     routes.push(newRoute);
     await fs.writeFile(dataPath, JSON.stringify(routes, null, 2));
-    console.log('Route saved successfully to routes.json:', newRoute);
-
     res.json({ message: 'Route saved successfully' });
   } catch (err) {
     console.error('Error saving route:', err);

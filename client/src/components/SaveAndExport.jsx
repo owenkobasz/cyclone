@@ -70,12 +70,14 @@ export default function SaveAndExport({
                 cueSheet,
                 preferences,
             });
-
             alert("Route saved successfully!");
-            console.log("Saved route:", data.route);
         } catch (err) {
-            console.error("Save route error:", err);
-            alert("Failed to save route: " + err.message);
+            if (err.message.includes("409")) {
+                alert("That route name is already taken. Please enter a different one.");
+            } else {
+                console.error("Save route error:", err);
+                alert("Failed to save route: " + err.message);
+            }
         }
     };
 
