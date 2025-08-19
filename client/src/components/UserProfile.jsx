@@ -21,6 +21,8 @@ export default function UserProfile() {
   const { openAuthModal } = useAuthModal();
   const fileInputRef = useRef(null); // Reference for file input
   const GEOAPIFY_API_KEY = import.meta.env.VITE_GEOAPIFY_API_KEY;
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [routeToDelete, setRouteToDelete] = useState(null);
 
   // Helper function to build correct avatar URL
   const getAvatarUrl = (user) => {
@@ -248,22 +250,26 @@ export default function UserProfile() {
           routeName: routeNameFinal,
           waypoints,
           rawStats,
-          cueSheet : formattedCues,
+          cueSheet: formattedCues,
           username: authUser.username,
         }),
         credentials: 'include',
       });
 
-      if (!response.ok) {
+      if (response.status === 409) {
+        alert("That route name is already taken. Please enter a different one.");
+      }
+      else if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to save route');
       }
-
-      fetchRoutes();
-      setIsImportModalOpen(false);
-      setRouteName('');
-      fileInputRef.current.value = '';
-      alert('Route imported successfully!');
+      else {
+        fetchRoutes();
+        setIsImportModalOpen(false);
+        setRouteName('');
+        fileInputRef.current.value = '';
+        alert('Route imported successfully!');
+      }
     } catch (err) {
       console.error('Error processing GPX file:', err);
       alert('Failed to import route: ' + err.message);
@@ -341,24 +347,64 @@ export default function UserProfile() {
 
   const handleExportGpx = (route, event) => {
     event.stopPropagation(); // Prevent route click when clicking export button
-    
+
     if (!route.waypoints || route.waypoints.length === 0) {
       alert("No route data available for export");
       return;
     }
-    
+
     console.log("Exporting route as GPX...", route);
     const routeName = route.routeName || 'Unnamed Route';
     console.log("Route name for export:", routeName);
-    
+
     // Convert waypoints to the format expected by generateGpxFile
     const routeCoordinates = route.waypoints.map(wp => ({
       lat: wp.lat,
       lon: wp.lon,
       ele: wp.ele || 0
     }));
-    
+
     generateGpxFile(routeCoordinates, routeName);
+  };
+
+  // Add this function after handleExportGpx
+  const handleDeleteRoute = async (routeId, event) => {
+    event.stopPropagation(); // Prevent route click when clicking delete button
+
+    try {
+      const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+      const response = await fetch(`${base}/api/routes/delete-routes/${routeId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete route');
+      }
+
+      // Update local state
+      setRoutes(routes.filter(route => route.id !== routeId));
+      setRouteAddresses(prev => {
+        const newAddresses = { ...prev };
+        delete newAddresses[routeId];
+        return newAddresses;
+      });
+
+      setIsDeleteModalOpen(false);
+      setRouteToDelete(null);
+      alert('Route deleted successfully!');
+    } catch (err) {
+      console.error('Error deleting route:', err);
+      alert('Failed to delete route: ' + err.message);
+    }
+  };
+
+  // Add this helper function to open the delete confirmation modal
+  const openDeleteModal = (route, event) => {
+    event.stopPropagation(); // Prevent route click when clicking delete button
+    setRouteToDelete(route);
+    setIsDeleteModalOpen(true);
   };
 
   if (!authUser) {
@@ -384,7 +430,7 @@ export default function UserProfile() {
           <div className="absolute inset-0 bg-gradient-to-b from-n-8/2 via-n-8/5 to-n-8/10 backdrop-blur-[1px]"></div>
         </div>
       </div>
-      
+
 
 
       <div className="relative z-10">
@@ -464,20 +510,20 @@ export default function UserProfile() {
             ) : (
               <ul className="space-y-4">
                 {routes.map((route, idx) => {
-                  const distance = route.rawStats?.distanceKm || 
-                                 route.total_distance_km || 
-                                 route.distance || 
-                                 route.total_length_km || 0;
-                  const elevation = route.rawStats?.elevationM || 
-                                   route.elevation_gain_m || 
-                                   route.elevation || 
-                                   route.total_elevation_gain || 0;
-                  
+                  const distance = route.rawStats?.distanceKm ||
+                    route.total_distance_km ||
+                    route.distance ||
+                    route.total_length_km || 0;
+                  const elevation = route.rawStats?.elevationM ||
+                    route.elevation_gain_m ||
+                    route.elevation ||
+                    route.total_elevation_gain || 0;
+
                   // Calculate difficulty based on elevation and distance
                   let difficulty = 'Easy';
                   if (elevation > 500 || distance > 50) difficulty = 'Hard';
                   else if (elevation > 200 || distance > 25) difficulty = 'Medium';
-                  
+
                   return (
                     <li
                       key={route.id || idx}
@@ -503,10 +549,44 @@ export default function UserProfile() {
                         >
                           Export GPX
                         </Button>
+                        <Button
+                          className="ml-4 px-3 py-1 text-xs"
+                          onClick={(e) => openDeleteModal(route, e)}
+                        >
+                          Delete
+                        </Button>
                       </div>
                     </li>
                   );
                 })}
+                {isDeleteModalOpen && (
+                  <div className="fixed inset-0 bg-n-8/80 backdrop-blur-sm flex items-center justify-center z-20">
+                    <Card className="p-6 bg-n-8/90 border border-n-6 shadow-lg max-w-md w-full">
+                      <h3 className="font-code text-xl text-n-1 mb-4">Confirm Delete</h3>
+                      <p className="font-code text-n-1 text-sm mb-4">
+                        Are you sure you want to delete the route "{routeToDelete?.routeName || 'Unnamed Route'}"?
+                        This action cannot be undone.
+                      </p>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            setIsDeleteModalOpen(false);
+                            setRouteToDelete(null);
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          className="bg-red-600 hover:bg-red-700"
+                          onClick={(e) => handleDeleteRoute(routeToDelete.id, e)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </Card>
+                  </div>
+                )}
               </ul>
             )}
           </div>

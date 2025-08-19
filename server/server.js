@@ -172,6 +172,7 @@ app.use(session({
 const savedRoutesRouter = require('./saveRoutesFeature.js');
 const userProfilesRouter = require('./userProfilesFeature.js');
 const importRoutesRouter = require('./routes/routes.js');
+const deleteRoutesRouter = require('./routes/routes.js')
 
 console.log('Router types:', { 
   savedRoutesRouter: typeof savedRoutesRouter, 
@@ -185,7 +186,7 @@ console.log('userProfilesRouter:', typeof userProfilesRouter);
 
 app.use('/api/routes', savedRoutesRouter);
 app.use('/api/routes', importRoutesRouter);
-
+app.use('/api/routes', deleteRoutesRouter);
 
 
 // Test route for debugging profile issues

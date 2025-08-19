@@ -171,6 +171,15 @@ router.post('/import-route', requireAuth, async (req, res) => {
       routes = [];
     }
 
+    if (routeName) {
+      let userRoutes = [];
+      const data = await fs.readFile(dataPath, 'utf-8');
+      userRoutes = JSON.parse(data || "{}");
+      if (userRoutes?.some(r => r.username === username && r.routeName.trim().toLowerCase() === routeName.trim().toLowerCase())) {
+        return res.status(409).json({ error: "Route name already exists for this user." });
+      }
+    }
+
     routes.push(newRoute);
     await fs.writeFile(dataPath, JSON.stringify(routes, null, 2));
     console.log('GPX Route imported successfully to routes.json:', newRoute);
@@ -315,6 +324,33 @@ router.get('/profile-data', (req, res) => {
   } catch (err) {
     console.error("Error reading profiles:", err);
     res.status(500).json({ error: "Failed to load profiles" });
+  }
+});
+
+router.delete('/delete-routes/:id', requireAuth, async (req, res) => {
+  try {
+    await ensureDataFile();
+    const routeId = req.params.id;
+    const username = req.session.user.username;
+
+    const raw = await fs.readFile(dataPath, 'utf8');
+    let routes = JSON.parse(raw || '[]');
+    
+    const routeIndex = routes.findIndex(route => String(route.id) === String(routeId));
+    if (routeIndex === -1) {
+      return res.status(404).json({ error: 'Route not found' });
+    }
+    
+    if (routes[routeIndex].username !== username) {
+      return res.status(403).json({ error: 'Unauthorized: You can only delete your own routes' });
+    }
+    
+    routes = routes.filter(route => String(route.id) !== String(routeId));
+    await fs.writeFile(dataPath, JSON.stringify(routes, null, 2));
+    res.status(200).json({ message: 'Route deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting route:', error);
+    res.status(500).json({ error: 'Failed to delete route: ' + error.message });
   }
 });
 
