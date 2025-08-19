@@ -86,7 +86,7 @@ router.post('/plan/save', async (req, res) => {
     const username = req.session.user?.username;
     const { routeName, waypoints, rawStats, cueSheet, preferences } = req.body;
 
-    if (!routeName || !Array.isArray(waypoints)) {
+    if (!Array.isArray(waypoints)) {
       console.log('Save route failed: Missing or invalid routeName/waypoints', { body: req.body });
       return res.status(400).json({ error: 'Missing or invalid route name or waypoints' });
     }
@@ -94,7 +94,7 @@ router.post('/plan/save', async (req, res) => {
     const newRoute = {
       id: Date.now(),
       username,
-      routeName,
+      routeName: routeName || new Date().toISOString(),
       waypoints: waypoints || [],
       rawStats: rawStats || null,
       cueSheet: cueSheet || [],

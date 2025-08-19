@@ -100,7 +100,7 @@ export default function UserProfile() {
               type === 3 ? "Sharp left" :
                 "Continue straight";
 
-      if (type === 6) {
+      if (type === 6 || accumulatedDistance < 0.01) {
         accumulatedDistance += distance;
       } else {
         if (accumulatedDistance > 0) {

@@ -4,10 +4,10 @@ import Button from "./Button";
 import { generateGpxFile, saveRoute } from "../utils/routeApi";
 import { useAuth } from "../contexts/AuthContext";
 
-export default function SaveAndExport({ 
-    routeData, 
-    stats, 
-    cueSheet, 
+export default function SaveAndExport({
+    routeData,
+    stats,
+    cueSheet,
     preferences,
     onSave,
     saveEndpoint = "http://localhost:3000/api/routes/plan/save",
@@ -18,21 +18,23 @@ export default function SaveAndExport({
     title = "Save & Export"
 }) {
     const { user } = useAuth();
-    
+    const [routeName, setRouteName] = useState("");
+    const [gpxName, setGpxName] = useState("");
+
     // Default canSave logic if not provided
     const shouldAllowSave = canSave !== undefined ? canSave : (routeData && routeData.route && user);
-    
+
     // Default canExport logic if not provided
     const shouldAllowExport = canExport !== undefined ? canExport : (routeData && routeData.route && Array.isArray(routeData.route) && routeData.route.length > 0);
-    
+
     const handleExportGpx = () => {
         if (!shouldAllowExport) {
             console.warn("No route data available for export");
             return;
         }
-        
+
         console.log("Exporting route as GPX...", routeData);
-        const routeName = routeData?.gpt_metadata?.gpt_route_name || null;
+        const routeName = gpxName || routeData?.gpt_metadata?.gpt_route_name || null;
         console.log("Route name for export:", routeName);
         generateGpxFile(routeData.route, routeName);
     };
@@ -56,13 +58,13 @@ export default function SaveAndExport({
             }
             return;
         }
-        
+
         console.log("Saving route...");
         try {
-            const routeName = routeData?.gpt_metadata?.gpt_route_name || null;
+            const fileName = routeName.trim() !== "" ? routeName.trim() : null;
             console.log("Route name for export:", routeName);
             const data = await saveRoute({
-                routeName: routeData.routeName || routeName,
+                routeName: fileName,
                 waypoints: routeData.route || [],
                 rawStats: stats,
                 cueSheet,
@@ -98,24 +100,42 @@ export default function SaveAndExport({
             whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
         >
             <h3 className="h3 mb-4 text-n-1">Save & Export</h3>
-            
+
             <div>
                 <div className="mt-4 space-y-3">
-                    <Button
-                        className="w-full"
-                        onClick={handleSaveRoute}
-                        disabled={!shouldAllowSave}
-                    >
-                        {getSaveButtonText()}
-                    </Button>
-                    <Button
-                        className="w-full"
-                        onClick={handleExportGpx}
-                        disabled={!shouldAllowExport}
-                        white
-                    >
-                        {getExportButtonText()}
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button
+                            className="w-1/2"
+                            onClick={handleSaveRoute}
+                            disabled={!shouldAllowSave}
+                        >
+                            {getSaveButtonText()}
+                        </Button>
+                        <input
+                            type="text"
+                            placeholder="As (optional)"
+                            value={routeName}
+                            onChange={(e) => setRouteName(e.target.value)}
+                            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-color-1"
+                        />
+                    </div>
+                    <div className="flex gap-2">
+                        <Button
+                            className="w-1/2"
+                            onClick={handleExportGpx}
+                            disabled={!shouldAllowExport}
+                            white
+                        >
+                            {getExportButtonText()}
+                        </Button>
+                        <input
+                            type="text"
+                            placeholder="As (optional)"
+                            value={gpxName}
+                            onChange={(e) => setGpxName(e.target.value)}
+                            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-color-1"
+                        />
+                    </div>
                 </div>
             </div>
         </motion.div>
