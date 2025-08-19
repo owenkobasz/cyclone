@@ -4,6 +4,7 @@ const fssync = require('fs');
 const path = require('path');
 const router = express.Router();
 const multer = require('multer');
+const { requireAuth } = require('../middleware/auth');
 const dataPath = path.join(__dirname, '../databases/routes.json');
 const profilesPath = path.join(__dirname, '../databases/profiles.json');
 const avatarsDir = path.join(__dirname, '../../client/public/avatars');
@@ -69,26 +70,6 @@ const readProfiles = async () => {
 const writeProfiles = async (profiles) => {
   await fs.writeFile(profilesPath, JSON.stringify(profiles, null, 2));
 };
-
-function requireAuth(req, res, next) {
-  console.log('requireAuth called with session:', {
-    hasSession: !!req.session,
-    hasUser: !!(req.session && req.session.user),
-    username: req.session?.user?.username,
-    sessionKeys: req.session ? Object.keys(req.session) : 'no session'
-  });
-  
-  if (!req.session || !req.session.user || !req.session.user.username) {
-    console.log('Authentication failed: Invalid session', { 
-      hasSession: !!req.session,
-      hasUser: !!(req.session && req.session.user),
-      username: req.session?.user?.username 
-    });
-    return res.status(401).json({ error: 'Please log in first' });
-  }
-  console.log('Authenticated user:', req.session.user);
-  next();
-}
 
 router.post('/plan/save', async (req, res) => {
   try {

@@ -4,7 +4,7 @@ import Card from '../components/Card';
 import Button from './Button';
 import { useAuthModal } from '../contexts/AuthModalContext';
 import { useAuth } from '../contexts/AuthContext';
-import { homeBackground } from '../assets/home';
+import { homeBackground } from '../constants';
 import * as toGeoJSON from '@tmcw/togeojson';
 import { DOMParser } from 'xmldom';
 import { generateGpxFile } from '../utils/routeApi';

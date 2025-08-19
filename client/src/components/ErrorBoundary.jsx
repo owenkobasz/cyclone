@@ -1,5 +1,6 @@
 import React from "react";
 
+// Catches and returns any errors in front end rendering (for debugging purposes)
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);

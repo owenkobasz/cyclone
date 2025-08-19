@@ -1,6 +1,6 @@
-import { curve, CYCLONE, homeBackground as homeBackground } from "../assets/home";
+import { curve, CYCLONE, homeBackground } from "../constants";
 import Button from "./Button";
-import Section from "./Section";
+import Section from "./design/Section";
 import { BackgroundCircles, BottomLine, Gradient, ScrollToAboutAnimation } from "./design/Home";
 import { ScrollParallax } from "react-just-parallax";
 import { motion } from "framer-motion";

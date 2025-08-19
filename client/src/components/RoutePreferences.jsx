@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import LocationAutocomplete from "./LocationAutocomplete";
-import Toggle from "./Toggle";
+import Toggle from "./design/Toggle";
 import { useUnits } from "../contexts/UnitsContext";
 import { kmToUi, uiToKm, distLabel } from "../utils/units";
 
@@ -246,7 +246,6 @@ export default function RoutePreferences({ preferences, setPreferences, userLoca
 
 
             {/* Advanced Options Dropdown Menu */}
-            {/*
             <div className="mb-4">
                 <button
                     onClick={() => setShowAdvanced(!showAdvanced)}
@@ -300,7 +299,7 @@ export default function RoutePreferences({ preferences, setPreferences, userLoca
                         />
                     </div>
                 </div>
-            </motion.div>*/}
+            </motion.div>
         </motion.div>
     );
 }

@@ -14,7 +14,7 @@ const Toggle = ({ checked, onChange, label }) => {
         <motion.div
           className={`w-12 h-6 rounded-full transition-all duration-300 hover:shadow-[0_0_10px_rgba(172,108,255,0.3)] ${
             checked 
-              ? 'bg-gradient-to-r from-color-1 to-color-3 shadow-[0_0_15px_rgba(172,108,255,0.4)]' 
+              ? 'bg-gradient-to-r from-color-1 shadow-[0_0_15px_rgba(172,108,255,0.4)]' 
               : 'bg-n-6 hover:bg-n-5'
           }`}
         >

@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import Section from "./Section";
-import Heading from "./Heading";
+import Section from "./design/Section";
+import Heading from "./ui/HeadingAnimation";
 import Button from "./Button";
 import MapComponent from "./MapComponent";
 import RoutePreferences from "./RoutePreferences";
@@ -215,8 +215,6 @@ const GenerateRoutes = () => {
       setIsGenerating(false);
     }
   };
-
-
 
   const hasPreferences =
     preferences.startingPoint || preferences.endingPoint || location;

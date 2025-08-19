@@ -1,7 +1,7 @@
 import Cards from "./design/Cards"
 import { motion } from "framer-motion";
-import Section from "./Section";
-import Heading from "./Heading";
+import Section from "./design/Section";
+import Heading from "./ui/HeadingAnimation";
 import { Route, Mountain, Landmark, Bike, Users } from "lucide-react";
 
 const About = () => {
