@@ -81,8 +81,8 @@ return (
                 transition={{ duration: 1 }}
                 className="body-1 max-w-2xl mx-auto mb-6 text-n-2 lg:mb-8 mt-10"
               >
-                Tell Cyclone your mileage, elevation, & ride style.
-                We'll craft the perfect path so you can focus on the ride, not on the map.
+                Tell Cyclone your mileage and riding style.
+                We'll craft the perfect path so you can focus on the ride, not on the planning.
               </motion.p>
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -90,9 +90,15 @@ return (
                 transition={{ duration: 1.2 }}
                 className="flex flex-col sm:flex-row gap-4 justify-center items-center"
               >
+                <Button onClick={() => {
+                  window.location.hash = 'generate-routes';
+                  document.getElementById('generate-routes').scrollIntoView({ behavior: 'smooth' });
+                }} white>
+                  Generate a Route
+                </Button>
                 {!user && (
                   <Button onClick={() => openAuthModal("signup")} white>
-                    Get started
+                    Create an Account
                   </Button>
                 )}
                 {user && (
@@ -114,7 +120,9 @@ return (
       )}
 
       {activeTab === "generate-routes" && (
-        <GenerateRoutes />
+        <div id="generate-routes">
+          <GenerateRoutes />
+        </div>
       )}
     </>
   );
