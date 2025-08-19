@@ -205,11 +205,16 @@ export default function RoutePreferences({ preferences, setPreferences, userLoca
                         name="distanceNumber"
                         type="number"
                         inputMode="numeric"
-                        value={preferences.distanceTarget ?? ''}
+                        value={preferences.distanceTarget ? Math.round(kmToUi(preferences.distanceTarget, units)) : ''}
                         placeholder=""
                         onChange={(e) => {
                             const v = e.target.value;
-                            handleChange("distanceTarget")(v === '' ? undefined : Number(v));
+                            if (v === '') {
+                                handleChange("distanceTarget")(undefined);
+                            } else {
+                                const valueInKm = uiToKm(Number(v), units);
+                                handleChange("distanceTarget")(valueInKm);
+                            }
                         }}
                         aria-label="Route distance"
                         className="w-24 px-4 py-3 bg-n-7 border border-n-6 rounded-xl text-n-1 text-center focus:border-color-1 focus:outline-none transition-all duration-300 focus:shadow-[0_0_15px_rgba(172,108,255,0.3)] focus:scale-105 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
