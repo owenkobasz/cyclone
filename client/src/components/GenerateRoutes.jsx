@@ -118,7 +118,7 @@ const GenerateRoutes = () => {
         const startLng = preferences.startingPointCoords.lng;
         const endLat = preferences.endingPointCoords.lat;
         const endLng = preferences.endingPointCoords.lng;
-        
+
         // Calculate center point between start and end
         const centerLat = (startLat + endLat) / 2;
         const centerLng = (startLng + endLng) / 2;
@@ -154,7 +154,7 @@ const GenerateRoutes = () => {
       console.log('Route data received from backend:', data);
       console.log('Route coordinates:', data.route);
       console.log('Route length:', data.route ? data.route.length : 'No route array');
-      
+
       setStats({
         distanceKm: data.total_distance_km || data.total_length_km || null,
         distanceFormatted: data.total_length_formatted || null,
@@ -166,11 +166,11 @@ const GenerateRoutes = () => {
       });
       setElevationProfile(data.elevation_profile || []);
       setElevationStats(data.elevation_stats || null);
-      
+
       // Set instructions from API response
       if (data.instructions && data.instructions.length > 0) {
         setInstructions(data.instructions);
-        setCueSheet([]); 
+        setCueSheet([]);
       } else {
         const destinationText = preferences.endingPoint || 'your destination';
         const distanceKm = data.total_distance_km || data.total_length_km || 0;
@@ -341,9 +341,64 @@ const GenerateRoutes = () => {
             </div>
             {/* Left - Save and Export */}
             <div>
-              <SaveAndExport routeData={routeData} />
-            </div>
+              <div className="mt-4 space-y-3">
+                <Button
+                  className="w-full"
+                  onClick={async () => {
+                    console.log("Saving route...");
+                    if (!user || !routeData) {
+                      alert("You must be logged in and have a generated route to save.");
+                      return;
+                    }
+                    try {
+                      const res = await fetch("http://localhost:3000/api/routes/plan/save", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        credentials: "include",
+                        body: JSON.stringify({
+                          routeName: routeData.routeName || "My Route",
+                          waypoints: routeData.route || [],
+                          rawStats: stats,
+                          cueSheet,
+                          preferences,
+                        }),
+                      });
 
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.error || "Failed to save route");
+
+                      alert("Route saved successfully!");
+                      console.log("Saved route:", data.route);
+                    } catch (err) {
+                      console.error("Save route error:", err);
+                      alert("Failed to save route: " + err.message);
+                    }
+                  }}
+                >
+                  Save Route
+                </Button>
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    console.log("Exporting route as GPX...");
+                    generateGpxFile(routeData.route, routeData.gpt_metadata?.gpt_route_name);
+                  }}
+                  white
+                >
+                  Export GPX
+                </Button>
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    console.log("Sharing route...");
+                  }}
+                  disabled={!canUseRouteActions}
+                  outline
+                >
+                  Share Route
+                </Button>
+              </div>
+            </div>
           </motion.div>
         )}
       </div>

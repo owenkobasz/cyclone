@@ -79,11 +79,11 @@ function requireAuth(req, res, next) {
   next();
 }
 
-router.post('/plan/save', requireAuth, async (req, res) => {
+router.post('/plan/save', async (req, res) => {
   try {
     await ensureDataFile();
 
-    const userId = req.user.id;
+    const username = req.session.user?.username;
     const { routeName, waypoints, rawStats, cueSheet, preferences } = req.body;
 
     if (!routeName || !Array.isArray(waypoints)) {
@@ -93,7 +93,7 @@ router.post('/plan/save', requireAuth, async (req, res) => {
 
     const newRoute = {
       id: Date.now(),
-      userId,
+      username,
       routeName,
       waypoints: waypoints || [],
       rawStats: rawStats || null,
