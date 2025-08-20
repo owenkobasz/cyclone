@@ -5,18 +5,33 @@ const { calculateDistance } = require('../utils/calculationsUtils');
 /**
  * Calculate distance requirements based on target distance
  */
-function calculateDistanceRequirements(targetKM) {
-  // Distance category thresholds for guidance
-  const distanceCategories = {
-    short: { min: 0, max: 5, waypoints: { min: 4, max: 5 }, spacing: "0.5-1 kilometers apart" },
-    medium: { min: 5, max: 13, waypoints: { min: 5, max: 9 }, spacing: "1-2 kilometers apart" },
-    long: { min: 13, max: 24, waypoints: { min: 7, max: 10 }, spacing: "2-3 kilometers apart" },
-    extraLong: { min: 24, max: 1000, waypoints: { min: 9, max: 14 }, spacing: "3-5 kilometers apart" }
+function calculateDistanceRequirements(targetDistance, unitSystem) {
+  // Makes sure unitSystem is valid, default to 'km' if not provided or invalid
+  if (!unitSystem || (unitSystem !== 'mi' && unitSystem !== 'km')) {
+    console.warn(`Invalid or missing unit system in calculateDistanceRequirements: ${unitSystem}, defaulting to 'km'`);
+    unitSystem = 'km';
+  }
+  
+  // Determine unit labels based on unit system from frontend (mi or km)
+  const unitLabelPlural = unitSystem === 'mi' ? 'miles' : 'kilometers';
+  const unitLabelSingular = unitSystem === 'mi' ? 'mile' : 'kilometer';
+  
+  // Distance category thresholds for guidance (adjusted based on unit system from frontend)
+  const distanceCategories = unitSystem === 'mi' ? {
+    short: { min: 0, max: 3, waypoints: { min: 4, max: 5 }, spacing: `0.3-0.6 ${unitLabelPlural} apart` },
+    medium: { min: 3, max: 8, waypoints: { min: 5, max: 9 }, spacing: `0.6-1.2 ${unitLabelPlural} apart` },
+    long: { min: 8, max: 15, waypoints: { min: 7, max: 10 }, spacing: `1.2-1.9 ${unitLabelPlural} apart` },
+    extraLong: { min: 15, max: 1000, waypoints: { min: 9, max: 14 }, spacing: `1.9-3.1 ${unitLabelPlural} apart` }
+  } : {
+    short: { min: 0, max: 5, waypoints: { min: 4, max: 5 }, spacing: `0.5-1 ${unitLabelPlural} apart` },
+    medium: { min: 5, max: 13, waypoints: { min: 5, max: 9 }, spacing: `1-2 ${unitLabelPlural} apart` },
+    long: { min: 13, max: 24, waypoints: { min: 7, max: 10 }, spacing: `2-3 ${unitLabelPlural} apart` },
+    extraLong: { min: 24, max: 1000, waypoints: { min: 9, max: 14 }, spacing: `3-5 ${unitLabelPlural} apart` }
   };
   
   let category;
   for (const [catName, catData] of Object.entries(distanceCategories)) {
-    if (targetKM >= catData.min && targetKM < catData.max) {
+    if (targetDistance >= catData.min && targetDistance < catData.max) {
       category = catData;
       break;
     }
@@ -28,20 +43,22 @@ function calculateDistanceRequirements(targetKM) {
   
   // Generate distance guidance text
   let distanceGuidance;
-  if (targetKM < 8) {
-    distanceGuidance = `For shorter routes like this ${targetKM}-kilometer ride, waypoints should be closer together to ensure you hit the target distance. Consider local loops, neighborhood circuits, or nearby park connections.`;
-  } else if (targetKM < 16) {
-    distanceGuidance = `For medium-distance routes like this ${targetKM}-kilometer ride, balance interesting destinations with practical routing. Consider connecting 2-3 notable areas or landmarks.`;
-  } else {
-    distanceGuidance = `For longer routes like this ${targetKM}-kilometer ride, focus on major destinations and landmarks. Each waypoint should represent a significant milestone in the journey.`;
-  }
+  const shortThreshold = unitSystem === 'mi' ? 1 : 8;
+  const mediumThreshold = unitSystem === 'mi' ? 10 : 16;
+  
+  if (targetDistance < shortThreshold) {
+    distanceGuidance = `For shorter routes like this ${targetDistance}-${unitLabelSingular} ride, waypoints should be closer together to ensure you hit the target distance. Consider local loops, neighborhood circuits, or nearby park connections.`;
+  } else if (targetDistance < mediumThreshold) {
+    distanceGuidance = `For longer routes like this ${targetDistance}-${unitLabelSingular} ride, balance interesting destinations with practical routing. Use as many waypoints needed to help reach the target distance. Be sure to include notable areas or landmarks.`;
+  } 
   
   return {
     minWaypoints: category.waypoints.min,
     maxWaypoints: category.waypoints.max,
     waypointSpacing: category.spacing,
     distanceGuidance,
-    targetKM
+    targetDistance: targetDistance,
+    unitSystem: unitSystem
   };
 }
 
@@ -50,18 +67,32 @@ function calculateDistanceRequirements(targetKM) {
  */
 function generateGPTPrompt(start, end, options) {
   const {
-    route_type = 'scenic',
-    target_distance = 5.0,
-    use_bike_lanes = true,
-    avoid_traffic = false,
-    avoid_hills = false,
+    route_type,
+    target_distance, 
+    use_bike_lanes=true, 
+    avoid_traffic, 
+    avoid_hills, 
+    elevation_focus, 
     starting_point_name,
     destination_name,
-    custom_description
+    custom_description,
+    unit_system 
   } = options;
   
-  // Calculate distance requirements based on target distance
-  const distanceReqs = calculateDistanceRequirements(target_distance);
+  // Validate that required parameters (target distance and unit system) are provided
+  if (!target_distance || target_distance <= 0) {
+    throw new Error('Target distance must be provided and greater than 0');
+  }
+  
+  // Ensure unit_system is valid, default to 'km' if not provided or invalid
+  let validUnitSystem = unit_system;
+  if (!validUnitSystem || (validUnitSystem !== 'mi' && validUnitSystem !== 'km')) {
+    console.warn(`Invalid or missing unit_system: ${validUnitSystem}, defaulting to 'km'`);
+    validUnitSystem = 'km';
+  }
+  
+  // Calculate distance requirements based on target distance and unit system
+  const distanceReqs = calculateDistanceRequirements(target_distance, validUnitSystem);
   
   // Build starting and ending location descriptions
   const startLocation = starting_point_name || `coordinates ${start.lat}, ${start.lon}`;
@@ -74,7 +105,7 @@ function generateGPTPrompt(start, end, options) {
   if (use_bike_lanes) advancedOptionsToggle.push('prioritizing bike lanes');
   if (avoid_traffic) advancedOptionsToggle.push('avoiding high traffic areas');
   if (avoid_hills) advancedOptionsToggle.push('avoiding hills');
-  if (options.elevation_focus) advancedOptionsToggle.push('with elevation focus');
+  if (elevation_focus) advancedOptionsToggle.push('with elevation focus');
   
   const toggleOptions = advancedOptionsToggle.length > 0 ? 
     `focused on ${advancedOptionsToggle.join(' and ')}` : 
@@ -85,9 +116,6 @@ function generateGPTPrompt(start, end, options) {
   switch (route_type) {
     case 'scenic':
       routeTypeDescription = 'focused on scenic routes with paved roads and beautiful views';
-      break;
-    case 'custom':
-      routeTypeDescription = 'customized according to your specific preferences';
       break;
     case 'offroad':
       routeTypeDescription = 'focused on off-road trails with unpaved nature paths and green spaces';
@@ -107,49 +135,53 @@ function generateGPTPrompt(start, end, options) {
     if (custom_description && custom_description.trim()) {
       routeTypeDescription = custom_description.trim();
     } else {
-      routeTypeDescription = 'customized according to your specific preferences (please provide details)';
+      routeTypeDescription = 'customized according to your target distance preferences';
     }
   } else if (custom_description && custom_description.trim()) {
     routeTypeDescription += `. Additionally, ${custom_description.trim()}`;
   }
   
+  // Determine unit labels for prompts (using frontend values mi or km)
+  const unitLabelSingular = validUnitSystem === 'mi' ? 'mile' : 'kilometer';
+  const unitLabelPlural = validUnitSystem === 'mi' ? 'miles' : 'kilometers';
+  
+
+  // Future reference - original scenic route guidance (commented out)
+
   const systemPrompt = `You are a cycling route planning expert. Generate a bicycle route with specific waypoints that can be used to create turn-by-turn directions.
 
 IMPORTANT: You must respond with a JSON object containing:
-1. "waypoints": An array of coordinate objects with "lat" and "lon" properties (${distanceReqs.minWaypoints}-${distanceReqs.maxWaypoints} waypoints)
+1. "waypoints": An array of coordinate objects with "lat" and "lon" properties
 2. "difficulty": A string rating ("Easy", "Moderate", "Challenging", "Expert")
-3. "description": A brief description of the route highlights
+3. "description": A breakdown of the route highlights (key waypoints/names of notable landmarks/points of interest) to look out for
 4. "route_name": A creative, descriptive name for this route (e.g., "Riverside Scenic Loop", "Mountain Training Challenge", "Downtown Urban Explorer")
 
 
-CRITICAL REQUIREMENTS FOR ${target_distance} ROUTES:
+CRITICAL REQUIREMENTS FOR ${target_distance} ${unitLabelSingular.toUpperCase()} ROUTES:
 - The first waypoint MUST be the exact starting location provided: ${start.lat}, ${start.lon}
 - The last waypoint MUST be the exact ending location provided: ${end ? `${end.lat}, ${end.lon}` : `${start.lat}, ${start.lon}`}
-- Only provide intermediate waypoints that are most iconic and align with the user's route type specification
-- ${distanceReqs.distanceGuidance}
-- Intermediate waypoints should be ${distanceReqs.waypointSpacing}
+- Do not limit the number of waypoints when generating a route. Use as many as needed to help the user reach their target distance of ${target_distance} ${unitLabelSingular}. 
+- Each waypoint should be a notable or popular landmark, destination, or area worth visiting on a bike tour around town. 
+- The primary goal is to ensure the user reaches their target distance of ${target_distance} ${unitLabelSingular}. 
+- Be as accurate as possible with the waypoints to ensure the route is close to this ${target_distance} ${unitLabelSingular}.
+- At the same time, tailor the chosen waypoints to match the user's preferences ${route_type}, so that the route not only achieves the distance goal but also reflects the user's interests and enhances their overall experience.
 - For loop routes (same start/end), create waypoints that form a circuit back to the starting point
-- Consider the route type when placing intermediate waypoints (scenic = paved roads with views, custom = user preferences, city = urban neighborhoods, etc.)
+- Consider the route type when placing intermediate waypoints (scenic = paved roads with views, city = urban neighborhoods, etc.)`;
 
+  const userPrompt = `Generate me a bike route ${toggleOptions}. I want to get from ${startLocation} to ${endLocation}. The total distance of the route should be as close to ${target_distance} ${unitLabelPlural} as possible. I want my bike ride to be ${routeTypeDescription}.
 
-
-// Future reference - original scenic route guidance (commented out)
-// - Consider the route type when placing intermediate waypoints (scenic = paved roads with views, city = urban neighborhoods, etc.)
-- CRITICAL: The waypoints must be spaced far enough apart to actually create a ${target_distance} route when connected by roads
-
-The waypoints should create a route that matches both the requested distance and route type preferences.`;
-
-  const userPrompt = `Generate me a bike route ${toggleOptions}. I want to get from ${startLocation} to ${endLocation}. The total distance of the route should be approximately ${target_distance}. I want my bike ride to be ${routeTypeDescription}.
-
-DISTANCE REQUIREMENTS: This is a ${target_distance} route request (${distanceReqs.targetKM.toFixed(1)} kilometers). ${distanceReqs.distanceGuidance}
+DISTANCE REQUIREMENTS: This is a ${target_distance} ${unitLabelSingular} route request. ${distanceReqs.distanceGuidance}
 
 WAYPOINT SPECIFICATIONS:
 - Start at: ${start.lat}, ${start.lon} (EXACT coordinates required)
 - End at: ${end ? `${end.lat}, ${end.lon}` : `${start.lat}, ${start.lon}`} (EXACT coordinates required)
-- Place ${distanceReqs.minWaypoints}-${distanceReqs.maxWaypoints} intermediate waypoints ${distanceReqs.waypointSpacing}
+- Use as many waypoints as needed to reach the target distance of ${target_distance} ${unitLabelSingular}
 - Each waypoint should align with the ${route_type} route type${route_type === 'custom' && custom_description && custom_description.trim() ? ` and incorporate the custom preferences: "${custom_description.trim()}"` : ''}
 
-CRITICAL: Make sure your waypoints are spread out enough to actually create a ${target_distance} route when connected by roads. Roads add significant distance compared to straight-line distances.`;
+CRITICAL: 
+- Your goal is to minimize the error between the actual route distance and the ${target_distance} in ${unitLabelSingular}. 
+- If multiple candidate routes are possible, select the one with the smallest deviation. 
+- You may apply statistical approaches (such as evaluating standard deviation of distance options) to optimize accuracy.`
 
   return { systemPrompt, userPrompt };
 }
@@ -164,7 +196,7 @@ async function callOpenAI(prompts) {
 
   try {
     const response = await axios.post(OPENAI_API_URL, {
-      model: 'gpt-4.1-nano', 
+      model: 'gpt-4.1', 
       messages: [
         {
           role: 'system',

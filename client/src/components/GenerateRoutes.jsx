@@ -27,8 +27,7 @@ const GenerateRoutes = () => {
     startingPointCoords: null,
     endingPoint: "",
     endingPointCoords: null,
-    distanceTarget: 16.1,
-    elevationTarget: 1000,
+    distanceTarget: 10.0,
     routeType: "scenic",
     customDescription: "",
     bikeLanes: false,
@@ -148,6 +147,7 @@ const GenerateRoutes = () => {
         endLat: preferences.endingPointCoords?.lat,
         endLon: preferences.endingPointCoords?.lng,
         location: location,
+        unitSystem: distLabel(units), // Pass current unit system ('mi' or 'km')
       };
 
       const data = await generateRoute(routePreferences);
@@ -157,8 +157,10 @@ const GenerateRoutes = () => {
       console.log('Route length:', data.route ? data.route.length : 'No route array');
 
       setStats({
-        distanceKm: data.total_distance_km || data.total_length_km || null,
-        distanceFormatted: data.total_length_formatted || null,
+        distanceKm: data.total_distance_km || data.total_length_km || data.total_distance || null,
+        distanceFormatted: data.total_length_formatted || 
+          (data.total_distance && data.total_distance_unit ? 
+            `${data.total_distance.toFixed(2)} ${data.total_distance_unit}` : null),
         elevationM: data.elevation_gain_m || data.total_elevation_gain || null,
         totalRideTime: data.total_ride_time || null,
         difficulty: data.difficulty || null,
@@ -174,8 +176,15 @@ const GenerateRoutes = () => {
         setCueSheet([]);
       } else {
         const destinationText = preferences.endingPoint || 'your destination';
-        const distanceKm = data.total_distance_km || data.total_length_km || 0;
-        const distanceFormatted = data.total_length_formatted || `${kmToUi(distanceKm, units).toFixed(2)} ${distLabel(units)}`;
+        
+        let distanceFormatted;
+        if (data.total_distance && data.total_distance_unit) {
+          distanceFormatted = `${data.total_distance.toFixed(2)} ${data.total_distance_unit}`;
+        } else {
+          const distanceKm = data.total_distance_km || data.total_length_km || 0;
+          distanceFormatted = data.total_length_formatted || `${kmToUi(distanceKm, units).toFixed(2)} ${distLabel(units)}`;
+        }
+        
         const generatedCueSheet = [
           `Start your route`,
           `Route distance: ${distanceFormatted}`,

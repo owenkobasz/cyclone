@@ -11,6 +11,7 @@ import MapPinIcon from "../assets/svg/MapPinIcon";
 
 // Direction type mapping for icons
 const getDirectionIcon = (type) => {
+    console.log('getDirectionIcon called with type:', type);
     const iconMap = {
         0: <ArrowLeftIcon className="w-6 h-6" />,  // Left
         1: <ArrowRightIcon className="w-6 h-6" />, // Right
@@ -27,10 +28,11 @@ const getDirectionIcon = (type) => {
         12: <ArrowLeftIcon className="w-6 h-6" />, // Keep left
         13: <ArrowRightIcon className="w-6 h-6" />,// Keep right
     };
-    return iconMap[type] || <ArrowUpIcon className="w-6 h-6" />;
+    const result = iconMap[type] || <ArrowUpIcon className="w-6 h-6" />;
+    console.log('getDirectionIcon returning:', type in iconMap ? `mapped icon for type ${type}` : `default ArrowUpIcon for type ${type}`);
+    return result;
 };
 
-// Seconds -> compact string
 const formatDuration = (seconds) => {
     const s = Number(seconds || 0);
     if (!Number.isFinite(s) || s <= 0) return null;
@@ -56,9 +58,12 @@ const formatStepDistance = (meters, units) => {
 export default function CueSheet({ cueSheet, instructions = [] }) {
     const { units } = useUnits();
 
-    // Normalize instructions:
-    // - If "instructions" prop present, prefer it.
-    // - Else build from cueSheet strings (legacy).
+    // Debug: Log instruction types to console
+    console.log('CueSheet instructions received:', instructions.map(inst => ({ 
+        instruction: inst.instruction, 
+        type: inst.type 
+    })));
+
     const rawInstructions =
         instructions.length > 0
             ? instructions
@@ -70,28 +75,18 @@ export default function CueSheet({ cueSheet, instructions = [] }) {
                 duration: 0,
             }));
 
-    // Deduplicate and clean up "Arrive at destination"
-    const displayInstructions = rawInstructions.filter((step, index, self) => {
-        const isDuplicate =
-            index !== self.findIndex((s) => s.instruction === step.instruction);
-        if (isDuplicate) return false;
-
-        if (
-            step.instruction === "Arrive at destination" ||
-            (typeof step.instruction === "string" &&
-                step.instruction.startsWith("Arrive at "))
-        ) {
-            const hasDetailedDestination = self.some(
-                (s) =>
-                    typeof s.instruction === "string" &&
-                    s.instruction.startsWith("Arrive at ") &&
-                    s.instruction !== "Arrive at destination"
-            );
-            if (hasDetailedDestination && step.instruction === "Arrive at destination") {
-                return false;
-            }
-        }
-        return true;
+  // Filter out duplicate instructions
+  const displayInstructions = rawInstructions
+    .filter((step, index, self) => {
+      const isDuplicate = index !== self.findIndex((s) => s.instruction === step.instruction);
+      if (isDuplicate) return false;
+      
+      if (step.instruction === "Arrive at destination") {
+        const hasDetailedDestination = self.some(s => s.instruction === "Arrive at your destination");
+        if (hasDetailedDestination) return false;
+      }
+      
+      return true;
     });
 
     return (

@@ -6,7 +6,7 @@ const STORAGE_KEY = 'units';
 export const UnitsContextProvider = ({ children }) => {
     const [units, setUnits] = useState(() => {
         const s = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
-        return s === 'imp' || s === 'met' ? s : 'imp';
+        return s === 'imp' || s === 'met' ? s : 'met';
     });
 
     useEffect(() => {

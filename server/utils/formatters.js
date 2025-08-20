@@ -1,21 +1,21 @@
-function formatDistance(meters, unitSystem) {
-  if (unitSystem === 'imperial') {
-    if (meters < 160.9) {
-      const feet = meters * 3.28084;
-      return `${Math.round(feet)} ft`;
-    } else {
-      const miles = meters / 1609.34;
-      return `${miles.toFixed(1)} mi`;
-    }
-  } else {
-    if (meters < 1000) {
-      return `${Math.round(meters)} m`;
-    } else {
-      const km = meters / 1000;
-      return `${km.toFixed(1)} km`;
-    }
-  }
-}
+// function formatDistance(meters, unitSystem) {
+//   if (unitSystem === 'imperial') {
+//     if (meters < 160.9) {
+//       const feet = meters * 3.28084;
+//       return `${Math.round(feet)} ft`;
+//     } else {
+//       const miles = meters / 1609.34;
+//       return `${miles.toFixed(1)} mi`;
+//     }
+//   } else {
+//     if (meters < 1000) {
+//       return `${Math.round(meters)} m`;
+//     } else {
+//       const km = meters / 1000;
+//       return `${km.toFixed(1)} km`;
+//     }
+//   }
+// }
 
 function formatDuration(seconds) {
   if (seconds < 60) {
@@ -42,6 +42,6 @@ function formatDuration(seconds) {
 }
 
 module.exports = {
-  formatDistance,
+  // formatDistance,
   formatDuration
 };

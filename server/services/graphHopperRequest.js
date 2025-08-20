@@ -1,7 +1,8 @@
 const axios = require('axios');
 const { ROUTING_APIS } = require('../config/config');
 const { decodeGraphHopperPolyline } = require('../utils/polylineDecoder');
-const { formatDistance, formatDuration } = require('../utils/formatters');
+const { formatDuration } = require('../utils/formatters');
+// const { formatDistance } = require('../utils/formatters'); 
 const { getInstructionType } = require('../utils/instructionMappers');
 const { extractStreetName } = require('../utils/extractStreet');
 const { getOpenElevation } = require('./openElevationRequest');
@@ -186,10 +187,24 @@ async function formatGraphHopperResponse(route, options) {
     console.log('No elevation data available from Open Elevation API');
   }
 
+  // Determine unit system and calculate total_distance
+  const unitSystem = options?.unit_system || 'km';
+  let totalDistance, totalDistanceUnit;
+  
+  if (unitSystem === 'mi') {
+    totalDistance = Math.round((distance / 1000) * 0.621371 * 100) / 100; // Convert km to miles, round to 2 decimal places
+    totalDistanceUnit = 'mi';
+  } else {
+    totalDistance = Math.round((distance / 1000) * 100) / 100; // Convert to km, round to 2 decimal places
+    totalDistanceUnit = 'km';
+  }
+
   return {
     route: coordinates,
     total_length_km: distance / 1000,
     total_length_formatted: distance,
+    total_distance: totalDistance,
+    total_distance_unit: totalDistanceUnit,
     total_elevation_gain: elevationGain,
     total_ride_time: formatDuration(totalRideTimeSeconds),
     total_ride_time_minutes: totalRideTimeMinutes,

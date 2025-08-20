@@ -154,7 +154,7 @@ This document provides comprehensive documentation for all API endpoints, reques
   "starting_point_name": "string",
   "avoid_hills": false,
   "use_bike_lanes": true,
-  "target_distance": 5.0,
+  "target_distance": 10.0,
   "max_elevation_gain": 100.0,
   "unit_system": "imperial",
   "route_type": "scenic",

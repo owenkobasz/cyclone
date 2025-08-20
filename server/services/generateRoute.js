@@ -71,15 +71,16 @@ async function generateRoute(userPreferences) {
     
     // Extract route options with defaults
     const {
-      route_type = 'scenic',
-      target_distance = 5.0,
-      use_bike_lanes = true,
-      avoid_traffic = false,
-      avoid_hills = false,
+      route_type,
+      target_distance, 
+      use_bike_lanes, 
+      avoid_traffic,
+      avoid_hills, 
       starting_point_name,
       destination_name,
       custom_description,
-      routing_backend = 'gpt_powered'
+      routing_backend = 'gpt_powered',
+      unit_system
     } = userOptions || {};
 
     console.log('Route generation request:', {
@@ -87,7 +88,8 @@ async function generateRoute(userPreferences) {
       end,
       route_type,
       target_distance,
-      routing_backend
+      routing_backend,
+      unit_system
     });
 
     const options = {
@@ -99,7 +101,8 @@ async function generateRoute(userPreferences) {
       starting_point_name,
       destination_name,
       custom_description,
-      routing_backend
+      routing_backend,
+      unit_system
     };
 
     let routeData;
@@ -152,16 +155,24 @@ async function generateRoute(userPreferences) {
         console.log('Falling back to direct routing without waypoints...');
         
         try {
-          const fallbackWaypoints = end ? [start, end] : [start, start];
-          routeData = await generateRouteWithWaypoints(fallbackWaypoints, options);
-          routeData.data_source = 'direct_fallback';
+          let fallbackWaypoints;
           
-          gptMetadata = {
-            gpt_description: 'Direct route due to GPT failure',
-            gpt_difficulty: 'Not specified',
-            gpt_route_name: 'Direct Route',
-            waypoints_count: fallbackWaypoints.length
-          };
+          if (end) {
+            // Point-to-point route
+            fallbackWaypoints = [start, end];
+            routeData = await generateRouteWithWaypoints(fallbackWaypoints, options);
+            routeData.data_source = 'direct_fallback';
+            
+            gptMetadata = {
+              gpt_description: 'Direct route due to GPT failure',
+              gpt_difficulty: 'Not specified',
+              gpt_route_name: 'Direct Route',
+              waypoints_count: fallbackWaypoints.length
+            };
+          } else {
+            // For loop routes without GPT waypoints, we can't generate a meaningful route
+            throw new Error('Loop route generation requires GPT waypoints');
+          }
           
         } catch (fallbackError) {
           console.error('All routing methods failed:', fallbackError.message);

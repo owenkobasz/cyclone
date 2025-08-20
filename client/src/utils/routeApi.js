@@ -1,5 +1,6 @@
 // calls the route generation backend
 import locationService from './locationService.js';
+import { distLabel } from './units.js'; // Import distLabel to get unit system
 
 const API_BASE_URL = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
 
@@ -37,13 +38,27 @@ export async function generateRoute(preferences) {
     starting_point_name: preferences.startingPoint || null,
     avoid_hills: preferences.avoidHills || false,
     include_elevation: preferences.includeElevation || false,
-    use_bike_lanes: preferences.bikeLanes !== false, // Default to true
-    // If the user didn't provide a valid number, default to 5
+    elevation_focus: preferences.elevationFocus || false, 
+    use_bike_lanes: preferences.bikeLanes !== false, 
+    // Convert distance to match the unit system being sent to backend
     target_distance: (function() {
       const d = parseFloat(preferences.distanceTarget);
-      return Number.isFinite(d) ? d : 5.0;
+      if (!Number.isFinite(d)) return 5.0;
+      
+      const unitSystem = preferences.unitSystem || "km";
+      let convertedDistance;
+      if (unitSystem === "mi") {
+        // Convert km to miles for backend
+        convertedDistance = d / 1.60934; // distanceTarget is stored in km, convert to miles
+        console.log(`Converting distance: ${d} km → ${convertedDistance.toFixed(2)} mi`);
+      } else {
+        // Keep as km
+        convertedDistance = d;
+        console.log(`Keeping distance: ${d} km`);
+      }
+      return convertedDistance;
     })(),
-    unit_system: preferences.unitSystem || "imperial",
+    unit_system: preferences.unitSystem || "km", 
     route_type: preferences.routeType || "scenic",
     custom_description: preferences.customDescription || null,
     avoid_traffic: preferences.avoidHighTraffic || false,

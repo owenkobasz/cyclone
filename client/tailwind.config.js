@@ -91,7 +91,7 @@ module.exports = {
             {},
         },
         ".h3": {
-          "@apply text-[2rem] leading-normal md:text-[2.5rem]": {},
+          "@apply text-[1.75rem] leading-normal md:text-[2rem]": {},
         },
         ".h4": {
           "@apply text-[2rem] leading-normal": {},

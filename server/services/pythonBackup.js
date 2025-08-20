@@ -45,6 +45,17 @@ function callPythonRouteBackend(preferences) {
   });
 }
 
+// Wrapper function that matches the expected name
+async function callPythonBackend(start, end, options) {
+  const preferences = {
+    start,
+    end,
+    options
+  };
+  return await callPythonRouteBackend(preferences);
+}
+
 module.exports = {
-  callPythonRouteBackend
+  callPythonRouteBackend,
+  callPythonBackend
 };

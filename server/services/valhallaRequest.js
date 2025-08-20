@@ -1,21 +1,30 @@
 const axios = require('axios');
 const { ROUTING_APIS } = require('../config/config');
 const { decodeValhallaPolyline } = require('../utils/polylineDecoder');
-const { formatDistance, formatDuration } = require('../utils/formatters');
+const { formatDuration } = require('../utils/formatters');
+// const { formatDistance } = require('../utils/formatters'); // Commented out
 const { getValhallaInstructionType } = require('../utils/instructionMappers');
 const { getOpenElevation } = require('./openElevationRequest');
 
 async function getValhallaRoute(waypoints, options) {
+  console.log('=== STARTING VALHALLA REQUEST ===');
+  
   // Build Valhalla request payload
   const locations = waypoints.map(waypoint => ({
     lat: waypoint.lat,
     lon: waypoint.lon
   }));
 
+  // Determine Valhalla units based on user preference
+  const valhallaUnits = (options.unit_system === 'mi') ? 'miles' : 'kilometers';
+  console.log(`Using Valhalla units: ${valhallaUnits} (based on user preference: ${options.unit_system})`);
+
+  console.log('=== BEFORE AXIOS REQUEST ===');
+  
   const requestBody = {
     locations: locations,
     costing: 'bicycle',
-    directions_options: { units: 'kilometers' },
+    directions_options: { units: valhallaUnits },
     shape_match: 'edge_walk',
     filters: {
       attributes: ['edge.length', 'edge.speed', 'edge.elevation'],
@@ -31,6 +40,8 @@ async function getValhallaRoute(waypoints, options) {
     body: requestBody
   });
 
+  console.log('=== MAKING AXIOS REQUEST ===');
+
   const response = await axios.post(ROUTING_APIS.VALHALLA.url, requestBody, {
     headers: {
       'Content-Type': 'application/json'
@@ -38,14 +49,26 @@ async function getValhallaRoute(waypoints, options) {
     timeout: 20000
   });
 
+  console.log('=== AXIOS REQUEST COMPLETED ===');
+  console.log('Response data trip legs:', response.data.trip ? response.data.trip.legs?.length : 'No trip data');
+
   if (response.data.trip && response.data.trip.legs) {
-    return await formatValhallaResponse(response.data.trip, options);
+    console.log('=== CALLING formatValhallaResponse ===');
+    console.log('valhallaUnits before function call:', valhallaUnits);
+    const result = await formatValhallaResponse(response.data.trip, options, valhallaUnits);
+    console.log('=== formatValhallaResponse COMPLETED ===');
+    return result;
   }
 
   throw new Error('No valid route found from Valhalla');
 }
 
-async function formatValhallaResponse(trip, options) {
+async function formatValhallaResponse(trip, options, valhallaUnits) {
+  console.log(`=== VALHALLA RESPONSE FORMATTING START ===`);
+  console.log(`valhallaUnits parameter received:`, valhallaUnits, `(type: ${typeof valhallaUnits})`);
+  console.log(`trip.legs.length:`, trip.legs ? trip.legs.length : 'trip.legs is undefined');
+  console.log(`===========================================`);
+  
   // Extract coordinates from all legs
   const coordinates = [];
   let totalDistance = 0;
@@ -76,10 +99,12 @@ async function formatValhallaResponse(trip, options) {
     }
 
     const legDistance = leg.summary?.length || 0;
-    totalDistance += legDistance; // in km for Valhalla
+    totalDistance += legDistance; // in user's preferred units (km or miles)
     totalTime += leg.summary?.time || 0; // in seconds
     
-    console.log(`Leg ${legIndex} distance: ${legDistance} km, Running total: ${totalDistance} km`);
+    console.log(`DEBUG: valhallaUnits parameter is:`, valhallaUnits, `(type: ${typeof valhallaUnits})`);
+    const distanceUnit = valhallaUnits === 'miles' ? 'mi' : 'km';
+    console.log(`Leg ${legIndex} distance: ${legDistance} ${distanceUnit}, Running total: ${totalDistance} ${distanceUnit}`);
     
     // Extract elevation gain from Valhalla if available
     if (leg.summary && leg.summary.elevation_gain !== undefined) {
@@ -102,7 +127,13 @@ async function formatValhallaResponse(trip, options) {
             modifier: null,
           });
         } else if (maneuver.type !== 4) { // Skip destination maneuvers except the final one
-          const distance = maneuver.length * 1000; // Convert km to meters for consistency
+          // Convert distance to meters for consistency
+          const distance = valhallaUnits === 'miles' ? 
+            maneuver.length * 1609.34 : // Convert miles to meters
+            maneuver.length * 1000;     // Convert km to meters
+          
+          const mappedType = getValhallaInstructionType(maneuver.type);
+          console.log(`Valhalla instruction mapping: type ${maneuver.type} -> ${mappedType} (${maneuver.instruction})`);
           
           instructions.push({
             instruction: maneuver.instruction || `Continue for ${distance}`,
@@ -132,8 +163,10 @@ async function formatValhallaResponse(trip, options) {
     modifier: null,
   });
 
-  // Convert distance from km to meters 
-  const totalDistanceMeters = totalDistance * 1000;
+  // Convert distance to meters 
+  const totalDistanceMeters = valhallaUnits === 'miles' ? 
+    totalDistance * 1609.34 : // Convert miles to meters
+    totalDistance * 1000;     // Convert km to meters
 
   // Always use Open Elevation API for elevation data
   let elevationGain = null;
@@ -157,20 +190,29 @@ async function formatValhallaResponse(trip, options) {
   });
 
   // Debug: Log the final route data being returned to frontend
+  const distanceUnit = valhallaUnits === 'miles' ? 'mi' : 'km';
+  const conversionFactor = valhallaUnits === 'miles' ? '1609.34' : '1000';
   console.log(`=== ROUTE DATA DEBUG ===`);
   console.log(`Number of legs processed: ${trip.legs.length}`);
-  console.log(`total_length_km: ${totalDistance}`);
+  console.log(`total_distance_raw: ${totalDistance} ${distanceUnit}`);
   console.log(`total_elevation_gain: ${elevationGain}`);
-  console.log(`totalDistanceMeters calculation: ${totalDistance} km * 1000 = ${totalDistanceMeters} meters`);
+  console.log(`totalDistanceMeters calculation: ${totalDistance} ${distanceUnit} * ${conversionFactor} = ${totalDistanceMeters} meters`);
   console.log(`========================`);
+
+  // Return distance in user's preferred units (no forced conversion to km)
+  const totalDistanceUserSpecified = totalDistance; // Keep in original units requested by user
+  const unitLabel = valhallaUnits === 'miles' ? 'mi' : 'km';
 
   return {
     route: coordinates,
-    total_length_km: totalDistance,
+    total_distance: totalDistanceUserSpecified,  
+    total_distance_unit: unitLabel,          
+    total_length_km: totalDistanceUserSpecified, 
     total_elevation_gain: elevationGain,
     total_ride_time: formatDuration(totalTime),
     total_ride_time_minutes: totalTime / 60,
     instructions,
+    unit_system: options.unit_system,
     data_source: 'valhalla'
   };
 }

@@ -171,8 +171,6 @@ app.use(session({
 // Import route modules
 const savedRoutesRouter = require('./saveRoutesFeature.js');
 const userProfilesRouter = require('./userProfilesFeature.js');
-const importRoutesRouter = require('./routes/routes.js');
-const deleteRoutesRouter = require('./routes/routes.js')
 
 console.log('Router types:', { 
   savedRoutesRouter: typeof savedRoutesRouter, 
@@ -185,9 +183,48 @@ console.log('savedRoutesRouter:', typeof savedRoutesRouter);
 console.log('userProfilesRouter:', typeof userProfilesRouter);
 
 app.use('/api/routes', savedRoutesRouter);
-app.use('/api/routes', importRoutesRouter);
-app.use('/api/routes', deleteRoutesRouter);
 
+app.post('/api/import-route', async (req, res) => {
+  if (!req.session?.user || !req.session.user.id) {
+    console.log('Authentication failed: Invalid user');
+    return res.status(401).json({ error: 'Please log in first' });
+  }
+
+  try {
+    await ensureRoutesFile();
+    const username = req.session.user.username;
+    const { routeName, waypoints, rawStats, cueSheet } = req.body;
+
+    if (!routeName || !Array.isArray(waypoints) || waypoints.length === 0) {
+      console.log('Import route failed: Missing or invalid routeName/waypoints', { body: req.body });
+      return res.status(400).json({ error: 'Missing or invalid route name or waypoints' });
+    }
+
+    const newRoute = {
+      id: Date.now(),
+      username,
+      routeName,
+      waypoints,
+      rawStats: rawStats || null,
+      cueSheet: cueSheet || [],
+      preferences: null,
+      createdAt: new Date().toISOString(),
+    };
+    let routes = await readRoutes();
+    if (!Array.isArray(routes)) {
+      console.warn('routes.json corrupted, resetting to empty array');
+      routes = [];
+    }
+    routes.push(newRoute);
+    await writeRoutes(routes);
+
+    console.log('GPX Route imported successfully to routes.json:', newRoute);
+    res.json({ message: 'GPX Route imported successfully' });
+  } catch (err) {
+    console.error('Error importing GPX route:', err);
+    res.status(500).json({ error: `Failed to import GPX route: ${err.message}` });
+  }
+});
 
 // Test route for debugging profile issues
 app.get('/api/debug-profile-test', async (req, res) => {
@@ -765,15 +802,13 @@ app.post('/api/generate-custom-route', async (req, res) => {
     end_lon,
     destination_name,
     starting_point_name,
-    avoid_hills = false,
-    use_bike_lanes = true,
-    target_distance = 5.0,
-    max_elevation_gain = 100.0,
-    unit_system = "imperial",
-    route_type = "scenic",
-    avoid_traffic = false,
-    elevation_focus = false,
-    custom_description = ""
+    avoid_hills, 
+    use_bike_lanes, 
+    target_distance, 
+    unit_system, 
+    route_type, 
+    avoid_traffic, 
+    elevation_focus 
   } = req.body;
 
   console.log('Route generation request received:', {
@@ -826,7 +861,6 @@ app.post('/api/generate-custom-route', async (req, res) => {
         avoid_traffic,
         elevation_focus,
         unit_system,
-        max_elevation_gain,
         destination_name,
         starting_point_name
       },

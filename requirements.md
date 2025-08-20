@@ -56,7 +56,6 @@ npm install
 If you need to manually install any missing packages:
 ```sh
 npm install react@^18.2.0 react-dom@^18.2.0 react-router-dom@^6.30.1 leaflet@^1.9.4 react-leaflet@^4.2.1 framer-motion@^12.23.12 lucide-react@^0.536.0 react-google-autocomplete@^2.7.5 react-just-parallax@^3.1.16 scroll-lock@^2.1.5
-npm install -D @vitejs/plugin-react@^4.7.0 tailwindcss@^3.4.1 postcss@^8.4.31 autoprefixer@^10.4.21 vite@^6.3.5
 ```
 
 ---

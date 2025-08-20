@@ -6,6 +6,7 @@ import L from 'leaflet';
 import LocationAutocomplete from './LocationAutocomplete';
 import { useUnits } from '../contexts/UnitsContext';
 import { kmToUi, distLabel } from '../utils/units';
+import { ChevronDown } from 'lucide-react';
 
 // Add custom marker styles
 const customMarkerStyles = `
@@ -373,6 +374,7 @@ const MapComponent = ({
   const [showPreciseLocationPrompt, setShowPreciseLocationPrompt] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [glow, setGlow] = useState(true);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const { units } = useUnits();
 
   // Debug route data
@@ -505,13 +507,38 @@ const MapComponent = ({
       {/* Title and Search Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
         <div className="flex flex-col">
-          <h3 className="h3 text-n-1">
-            {routeData?.gpt_metadata?.gpt_route_name || 'Route Map'}
-          </h3>
-          {routeData?.gpt_metadata?.gpt_route_name && (
-            <p className="text-sm text-n-3 mt-1">
-              {routeData.gpt_metadata.gpt_description}
-            </p>
+          <div 
+            className={`flex items-center ${routeData?.gpt_metadata?.gpt_description ? 'cursor-pointer' : ''}`}
+            onClick={() => routeData?.gpt_metadata?.gpt_description && setIsDescriptionExpanded(!isDescriptionExpanded)}
+          >
+            <h3 className="h3 text-n-1">
+              {routeData?.gpt_metadata?.gpt_route_name || 'Route Map'}
+            </h3>
+            {routeData?.gpt_metadata?.gpt_description && (
+              <motion.div
+                animate={{ rotate: isDescriptionExpanded ? 180 : 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="ml-2"
+              >
+                <ChevronDown className="w-5 h-5 text-color-1" />
+              </motion.div>
+            )}
+          </div>
+          
+          {routeData?.gpt_metadata?.gpt_description && (
+            <motion.div
+              initial={false}
+              animate={{ 
+                height: isDescriptionExpanded ? "auto" : 0,
+                opacity: isDescriptionExpanded ? 1 : 0
+              }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="overflow-hidden"
+            >
+              <p className="text-sm text-n-3 mt-2 pt-2 border-t border-color-1/10">
+                {routeData.gpt_metadata.gpt_description}
+              </p>
+            </motion.div>
           )}
         </div>
         <div className="flex-1 max-w-md">
@@ -721,7 +748,10 @@ const MapComponent = ({
                     <div className="text-sm text-center">
                       <strong>Destination</strong><br />
                       <span className="text-xs text-gray-600">
-                        Total distance: {routeData.total_length_formatted || `${kmToUi(routeData.total_length_km || 0, units).toFixed(1)} ${distLabel(units)}`}
+                        Total distance: {routeData.total_length_formatted || 
+                          (routeData.total_distance && routeData.total_distance_unit ? 
+                            `${routeData.total_distance.toFixed(1)} ${routeData.total_distance_unit}` :
+                            `${kmToUi(routeData.total_length_km || 0, units).toFixed(1)} ${distLabel(units)}`)}
                       </span>
                     </div>
                   </Popup>

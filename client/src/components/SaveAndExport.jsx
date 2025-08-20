@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Button from "./Button";
 import { generateGpxFile, saveRoute } from "../utils/routeApi";
 import { useAuth } from "../contexts/AuthContext";
+import { ChevronDown } from 'lucide-react';
 
 export default function SaveAndExport({
     routeData,
@@ -20,6 +21,7 @@ export default function SaveAndExport({
     const { user } = useAuth();
     const [routeName, setRouteName] = useState(routeData?.gpt_metadata?.gpt_route_name || "");
     const [gpxName, setGpxName] = useState(routeData?.gpt_metadata?.gpt_route_name || "");
+    const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
     // Default canSave logic if not provided
     const shouldAllowSave = canSave !== undefined ? canSave : (routeData && routeData.route && user);
@@ -101,39 +103,96 @@ export default function SaveAndExport({
             viewport={{ once: true }}
             whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
         >
-            <h3 className="h3 mb-4 text-n-1">Save & Export</h3>
+            <h3 className="h3 mb-4 text-n-1">{title}</h3>
 
-            <div>
-                <div className="mt-4 space-y-3">
-                    <div className="flex gap-2">
+            {/* Route Name and Description Display */}
+            {stats?.routeName && (
+                <motion.div 
+                    className="mb-6 p-4 bg-gradient-to-r from-color-1/10 to-color-2/10 border border-color-1/20 rounded-xl"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                >
+                    <div 
+                        className="flex items-center justify-between cursor-pointer"
+                        onClick={() => stats?.routeDescription && setIsDescriptionExpanded(!isDescriptionExpanded)}
+                    >
+                        <h4 className="text-lg font-semibold text-color-1">{stats.routeName}</h4>
+                        {stats?.routeDescription && (
+                            <motion.div
+                                animate={{ rotate: isDescriptionExpanded ? 180 : 0 }}
+                                transition={{ duration: 0.3, ease: "easeInOut" }}
+                                className="ml-2"
+                            >
+                                <ChevronDown className="w-5 h-5 text-color-1" />
+                            </motion.div>
+                        )}
+                    </div>
+                    
+                    {stats?.routeDescription && (
+                        <motion.div
+                            initial={false}
+                            animate={{ 
+                                height: isDescriptionExpanded ? "auto" : 0,
+                                opacity: isDescriptionExpanded ? 1 : 0
+                            }}
+                            transition={{ duration: 0.3, ease: "easeInOut" }}
+                            className="overflow-hidden"
+                        >
+                            <p className="text-sm text-n-3 mt-2 pt-2 border-t border-color-1/10">
+                                {stats.routeDescription}
+                            </p>
+                        </motion.div>
+                    )}
+                </motion.div>
+            )}
+
+            <div className="space-y-6">
+                {/* Save Route Section */}
+                <div>
+                    <label htmlFor="routeName" className="body-2 text-n-3 mb-2 block">
+                        Save Route Name (Optional)
+                    </label>
+                    <div className="flex gap-3">
                         <input
+                            id="routeName"
                             type="text"
-                            placeholder="As (optional)"
+                            placeholder="Enter route name..."
                             value={routeName}
                             onChange={(e) => setRouteName(e.target.value)}
-                            className="w-48 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-color-1"
+                            className="flex-1 px-4 py-3 bg-n-7 border border-n-6 rounded-xl text-n-1 placeholder-n-4 focus:border-color-1 focus:outline-none transition-all duration-300 focus:shadow-[0_0_15px_rgba(172,108,255,0.3)] focus:scale-105"
+                            aria-label="Route name for saving"
                         />
                         <Button
-                            className="flex-1"
                             onClick={handleSaveRoute}
                             disabled={!shouldAllowSave}
+                            className="px-6"
                         >
                             {getSaveButtonText()}
                         </Button>
                     </div>
-                    <div className="flex gap-2">
+                </div>
+
+                {/* Export GPX Section */}
+                <div>
+                    <label htmlFor="gpxName" className="body-2 text-n-3 mb-2 block">
+                        GPX Export Name (Optional)
+                    </label>
+                    <div className="flex gap-3">
                         <input
+                            id="gpxName"
                             type="text"
-                            placeholder="As (optional)"
+                            placeholder="Enter GPX filename..."
                             value={gpxName}
                             onChange={(e) => setGpxName(e.target.value)}
-                            className="w-48 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-color-1"
+                            className="flex-1 px-4 py-3 bg-n-7 border border-n-6 rounded-xl text-n-1 placeholder-n-4 focus:border-color-1 focus:outline-none transition-all duration-300 focus:shadow-[0_0_15px_rgba(172,108,255,0.3)] focus:scale-105"
+                            aria-label="GPX filename for export"
                         />
                         <Button
-                            className="flex-1"
                             onClick={handleExportGpx}
                             disabled={!shouldAllowExport}
                             white
+                            className="px-6"
                         >
                             {getExportButtonText()}
                         </Button>
