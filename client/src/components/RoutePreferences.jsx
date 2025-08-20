@@ -250,7 +250,7 @@ export default function RoutePreferences({ preferences, setPreferences, userLoca
 
 
 
-            {/* Advanced Options Dropdown Menu */}
+            {/* Advanced Options Dropdown Menu 
             <div className="mb-4">
                 <button
                     onClick={() => setShowAdvanced(!showAdvanced)}
@@ -304,7 +304,7 @@ export default function RoutePreferences({ preferences, setPreferences, userLoca
                         />
                     </div>
                 </div>
-            </motion.div>
+            </motion.div>*/}
         </motion.div>
     );
 }

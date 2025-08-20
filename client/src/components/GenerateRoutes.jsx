@@ -27,7 +27,7 @@ const GenerateRoutes = () => {
     startingPointCoords: null,
     endingPoint: "",
     endingPointCoords: null,
-    distanceTarget: 10.0,
+    distanceTarget: 16.1,
     routeType: "scenic",
     customDescription: "",
     bikeLanes: false,

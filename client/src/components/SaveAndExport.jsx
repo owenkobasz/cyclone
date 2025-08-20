@@ -96,19 +96,19 @@ export default function SaveAndExport({
 
     return (
         <motion.div
-            className="relative p-6 bg-n-8/40 backdrop-blur-sm rounded-2xl border border-n-2/20 transition-all duration-300 hover:border-color-1/50 hover:shadow-[0_0_25px_rgba(172,108,255,0.3)] hover:scale-105"
+            className="relative p-4 bg-n-8/40 backdrop-blur-sm rounded-2xl border border-n-2/20 transition-all duration-300 hover:border-color-1/50 hover:shadow-[0_0_25px_rgba(172,108,255,0.3)] hover:scale-105"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.2, delay: 0.1, ease: "easeOut" }}
             viewport={{ once: true }}
             whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
         >
-            <h3 className="h3 mb-4 text-n-1">{title}</h3>
+            <h3 className="h3 mb-3 text-n-1">{title}</h3>
 
             {/* Route Name and Description Display */}
             {stats?.routeName && (
                 <motion.div 
-                    className="mb-6 p-4 bg-gradient-to-r from-color-1/10 to-color-2/10 border border-color-1/20 rounded-xl"
+                    className="mb-4 p-3 bg-gradient-to-r from-color-1/10 to-color-2/10 border border-color-1/20 rounded-xl"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, ease: "easeOut" }}
@@ -147,10 +147,10 @@ export default function SaveAndExport({
                 </motion.div>
             )}
 
-            <div className="space-y-6">
+            <div className="space-y-3">
                 {/* Save Route Section */}
-                <div>
-                    <label htmlFor="routeName" className="body-2 text-n-3 mb-2 block">
+                <div className="space-y-1">
+                    <label htmlFor="routeName" className="body-2 text-n-3 block">
                         Save Route Name (Optional)
                     </label>
                     <div className="flex gap-3">
@@ -160,7 +160,7 @@ export default function SaveAndExport({
                             placeholder="Enter route name..."
                             value={routeName}
                             onChange={(e) => setRouteName(e.target.value)}
-                            className="flex-1 px-4 py-3 bg-n-7 border border-n-6 rounded-xl text-n-1 placeholder-n-4 focus:border-color-1 focus:outline-none transition-all duration-300 focus:shadow-[0_0_15px_rgba(172,108,255,0.3)] focus:scale-105"
+                            className="w-64 px-3 py-1.5 bg-n-7 border border-n-6 rounded-xl text-n-1 placeholder-n-4 focus:border-color-1 focus:outline-none transition-all duration-300 focus:shadow-[0_0_15px_rgba(172,108,255,0.3)] focus:scale-105"
                             aria-label="Route name for saving"
                         />
                         <Button
@@ -174,8 +174,8 @@ export default function SaveAndExport({
                 </div>
 
                 {/* Export GPX Section */}
-                <div>
-                    <label htmlFor="gpxName" className="body-2 text-n-3 mb-2 block">
+                <div className="space-y-1">
+                    <label htmlFor="gpxName" className="body-2 text-n-3 block">
                         GPX Export Name (Optional)
                     </label>
                     <div className="flex gap-3">
@@ -185,7 +185,7 @@ export default function SaveAndExport({
                             placeholder="Enter GPX filename..."
                             value={gpxName}
                             onChange={(e) => setGpxName(e.target.value)}
-                            className="flex-1 px-4 py-3 bg-n-7 border border-n-6 rounded-xl text-n-1 placeholder-n-4 focus:border-color-1 focus:outline-none transition-all duration-300 focus:shadow-[0_0_15px_rgba(172,108,255,0.3)] focus:scale-105"
+                            className="w-64 px-3 py-1.5 bg-n-7 border border-n-6 rounded-xl text-n-1 placeholder-n-4 focus:border-color-1 focus:outline-none transition-all duration-300 focus:shadow-[0_0_15px_rgba(172,108,255,0.3)] focus:scale-105"
                             aria-label="GPX filename for export"
                         />
                         <Button
