@@ -13,8 +13,17 @@ const SQLiteStore = require('connect-sqlite3')(session);
 const multer = require('multer');
 const fs = require('fs').promises;
 const path = require('path');
-const profilesPath = path.join(__dirname, 'databases', 'profiles.json');
-const routesPath = path.join(__dirname, 'databases', 'routes.json');
+// Central writable data directory (Render Disk recommended). Fallback to repo dir for dev
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'databases');
+// Ensure data directory exists synchronously
+const fsSync = require('fs');
+try {
+  fsSync.mkdirSync(DATA_DIR, { recursive: true });
+} catch (e) {
+  // ignore if already exists
+}
+const profilesPath = path.join(DATA_DIR, 'profiles.json');
+const routesPath = path.join(DATA_DIR, 'routes.json');
 const bodyParser = require('body-parser');
 app.use(bodyParser.json({ limit: '100mb' }));
 
@@ -120,7 +129,7 @@ app.use(express.json());
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, 'public/avatars/'));
+    cb(null, path.join(DATA_DIR, 'avatars'));
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -144,17 +153,17 @@ const upload = multer({
 });
 
 // Makes sure avatars directory exists
-const avatarsDir = path.join(__dirname, 'public/avatars');
+const avatarsDir = path.join(DATA_DIR, 'avatars');
 fs.mkdir(avatarsDir, { recursive: true }).catch(console.error);
 
 // Serve static files (including avatars)
-app.use('/avatars', express.static(path.join(__dirname, 'public/avatars')));
+app.use('/avatars', express.static(avatarsDir));
 
 // Set up sessions
 app.use(session({
   store: new SQLiteStore({
     db: 'sessions.db', 
-    dir: './databases'     
+    dir: DATA_DIR     
   }),
   secret: 'cycloneisagreatapplicationandeveryonelovesitsomuch',
   resave: false,
