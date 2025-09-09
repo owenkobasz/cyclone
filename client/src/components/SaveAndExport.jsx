@@ -103,7 +103,7 @@ export default function SaveAndExport({
             viewport={{ once: true }}
             whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
         >
-            <h3 className="h3 mb-3 text-n-1">{title}</h3>
+            <h3 className="h3 mb-4 text-n-1">{title}</h3>
 
             {/* Route Name and Description Display */}
             {stats?.routeName && (
@@ -147,26 +147,26 @@ export default function SaveAndExport({
                 </motion.div>
             )}
 
-            <div className="space-y-3">
+            <div className="space-y-5">
                 {/* Save Route Section */}
-                <div className="space-y-1">
+                <div className="space-y-2">
                     <label htmlFor="routeName" className="body-2 text-n-3 block">
                         Save Route Name (Optional)
                     </label>
-                    <div className="flex gap-3">
+                    <div className="flex gap-4 items-end flex-wrap">
                         <input
                             id="routeName"
                             type="text"
                             placeholder="Enter route name..."
                             value={routeName}
                             onChange={(e) => setRouteName(e.target.value)}
-                            className="w-64 px-3 py-1.5 bg-n-7 border border-n-6 rounded-xl text-n-1 placeholder-n-4 focus:border-color-1 focus:outline-none transition-all duration-300 focus:shadow-[0_0_15px_rgba(172,108,255,0.3)] focus:scale-105"
+                            className="flex-1 min-w-[220px] px-3 py-1.5 bg-n-7 border border-n-6 rounded-xl text-n-1 placeholder-n-4 focus:border-color-1 focus:outline-none transition-all duration-300 focus:shadow-[0_0_15px_rgba(172,108,255,0.3)]"
                             aria-label="Route name for saving"
                         />
                         <Button
                             onClick={handleSaveRoute}
                             disabled={!shouldAllowSave}
-                            className="px-6"
+                            className="px-6 self-start"
                         >
                             {getSaveButtonText()}
                         </Button>
@@ -174,25 +174,25 @@ export default function SaveAndExport({
                 </div>
 
                 {/* Export GPX Section */}
-                <div className="space-y-1">
+                <div className="space-y-2">
                     <label htmlFor="gpxName" className="body-2 text-n-3 block">
                         GPX Export Name (Optional)
                     </label>
-                    <div className="flex gap-3">
+                    <div className="flex gap-4 items-end flex-wrap">
                         <input
                             id="gpxName"
                             type="text"
                             placeholder="Enter GPX filename..."
                             value={gpxName}
                             onChange={(e) => setGpxName(e.target.value)}
-                            className="w-64 px-3 py-1.5 bg-n-7 border border-n-6 rounded-xl text-n-1 placeholder-n-4 focus:border-color-1 focus:outline-none transition-all duration-300 focus:shadow-[0_0_15px_rgba(172,108,255,0.3)] focus:scale-105"
+                            className="flex-1 min-w-[220px] px-3 py-1.5 bg-n-7 border border-n-6 rounded-xl text-n-1 placeholder-n-4 focus:border-color-1 focus:outline-none transition-all duration-300 focus:shadow-[0_0_15px_rgba(172,108,255,0.3)]"
                             aria-label="GPX filename for export"
                         />
                         <Button
                             onClick={handleExportGpx}
                             disabled={!shouldAllowExport}
                             white
-                            className="px-6"
+                            className="px-6 self-start"
                         >
                             {getExportButtonText()}
                         </Button>
