@@ -104,6 +104,11 @@ const writeRoutes = async (routes) => {
 // Configure allowed frontend origin for CORS (use REACT_APP_API_BASE_URL or FRONTEND_ORIGIN env)
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || process.env.REACT_APP_API_BASE_URL || 'http://localhost:5173';
 
+console.log('CORS Configuration:', {
+  FRONTEND_ORIGIN,
+  NODE_ENV: process.env.NODE_ENV
+});
+
 // If running behind a proxy (e.g. in Docker with a reverse proxy), enable trust proxy when requested
 if (process.env.TRUST_PROXY === '1' || process.env.NODE_ENV === 'production') {
   app.set('trust proxy', 1);
@@ -111,20 +116,52 @@ if (process.env.TRUST_PROXY === '1' || process.env.NODE_ENV === 'production') {
 
 app.use(cors({
   origin: function(origin, callback) {
+    console.log('CORS Origin check:', { origin, FRONTEND_ORIGIN });
+    
     // Allow requests with no origin like curl/postman
-    if (!origin) return callback(null, true);
-    // Allow the configured frontend origin and localhost variants
-    const allowed = [FRONTEND_ORIGIN, 'http://localhost', 'http://127.0.0.1', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:80'];
-    if (allowed.indexOf(origin) !== -1) {
+    if (!origin) {
+      console.log('Allowing request with no origin');
       return callback(null, true);
     }
+    
+    // Allow the configured frontend origin and localhost variants
+    const allowed = [
+      FRONTEND_ORIGIN, 
+      'http://localhost', 
+      'http://127.0.0.1', 
+      'http://localhost:5173', 
+      'http://localhost:5174', 
+      'http://localhost:80',
+      'https://cyclone-front-end.onrender.com'  // Explicitly add your frontend URL
+    ];
+    
+    console.log('Allowed origins:', allowed);
+    
+    if (allowed.indexOf(origin) !== -1) {
+      console.log('Origin allowed:', origin);
+      return callback(null, true);
+    }
+    
+    console.log('Origin rejected:', origin);
     return callback(new Error('CORS policy does not allow access from the specified Origin.'), false);
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 // allow json parsing
 app.use(express.json());
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    dataDir: DATA_DIR,
+    frontendOrigin: FRONTEND_ORIGIN
+  });
+});
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
