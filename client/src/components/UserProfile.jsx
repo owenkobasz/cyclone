@@ -31,7 +31,7 @@ export default function UserProfile() {
       return '/avatars/default-avatar.png';
     }
     if (avatar.startsWith('http')) return avatar;
-    const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+    const base = import.meta.env.VITE_API_BASE_URL || import.meta.env.REACT_APP_API_BASE_URL || 'https://cyclone-nrby.onrender.com';
     return `${base}${avatar}`;
   };
 
@@ -145,7 +145,7 @@ export default function UserProfile() {
 
   const fetchRoutes = async () => {
     try {
-      const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+      const base = import.meta.env.VITE_API_BASE_URL || import.meta.env.REACT_APP_API_BASE_URL || 'https://cyclone-nrby.onrender.com';
       const res = await fetch(`${base}/api/routes`, { credentials: 'include' });
       if (!res.ok) {
         if (res.status === 401) {
@@ -242,7 +242,7 @@ export default function UserProfile() {
         }, 0),
       };
 
-      const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+      const base = import.meta.env.VITE_API_BASE_URL || import.meta.env.REACT_APP_API_BASE_URL || 'https://cyclone-nrby.onrender.com';
       const response = await fetch(`${base}/api/routes/import-route`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -307,7 +307,7 @@ export default function UserProfile() {
 
     const fetchProfile = async () => {
       try {
-        const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+        const base = import.meta.env.VITE_API_BASE_URL || import.meta.env.REACT_APP_API_BASE_URL || 'https://cyclone-nrby.onrender.com';
         const res = await fetch(`${base}/api/user/profile`, { credentials: 'include' });
         if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
         const profileData = await res.json();
@@ -321,7 +321,7 @@ export default function UserProfile() {
 
     const fetchStats = async (username) => {
       try {
-        const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+        const base = import.meta.env.VITE_API_BASE_URL || import.meta.env.REACT_APP_API_BASE_URL || 'https://cyclone-nrby.onrender.com';
         const res = await fetch(`${base}/api/user/profile/${username}/stats`, { credentials: 'include' });
         if (res.ok) setStats(await res.json());
       } catch (err) {
@@ -382,7 +382,7 @@ export default function UserProfile() {
     event.stopPropagation(); // Prevent route click when clicking delete button
 
     try {
-      const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+      const base = import.meta.env.VITE_API_BASE_URL || import.meta.env.REACT_APP_API_BASE_URL || 'https://cyclone-nrby.onrender.com';
       const response = await fetch(`${base}/api/routes/delete-routes/${routeId}`, {
         method: 'DELETE',
         credentials: 'include',

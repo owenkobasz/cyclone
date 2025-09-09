@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect } from "react";
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 // Use Vite-style env var; fall back to window.location for same-origin in dev
-const API_URL = (import.meta.env.VITE_API_BASE_URL || import.meta.env.REACT_APP_API_BASE_URL || "").trim() || `${window.location.protocol}//${window.location.hostname}:3000`;
+const API_URL = (import.meta.env.VITE_API_BASE_URL || import.meta.env.REACT_APP_API_BASE_URL || "").trim() || `https://cyclone-nrby.onrender.com`;
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(undefined); // undefined = loading, null = logged out, object = logged in

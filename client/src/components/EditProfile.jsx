@@ -27,7 +27,7 @@ export default function EditProfile() {
     
     const fetchProfile = async () => {
       try {
-        const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+        const base = import.meta.env.VITE_API_BASE_URL || import.meta.env.REACT_APP_API_BASE_URL || 'https://cyclone-nrby.onrender.com';
         const res = await fetch(`${base}/api/user/profile`, { credentials: 'include' });
         if (res.ok) {
           const data = await res.json();
@@ -95,7 +95,7 @@ export default function EditProfile() {
         formData.append('avatar', avatarFile);
       }
 
-      const res = await fetch(`${import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000'}/api/user/profile/${profile.id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || import.meta.env.REACT_APP_API_BASE_URL || 'https://cyclone-nrby.onrender.com'}/api/user/profile/${profile.id}`, {
         method: 'PUT',
         credentials: 'include',
         body: formData

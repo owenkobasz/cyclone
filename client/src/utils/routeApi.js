@@ -2,7 +2,7 @@
 import locationService from './locationService.js';
 import { distLabel } from './units.js'; // Import distLabel to get unit system
 
-const API_BASE_URL = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.REACT_APP_API_BASE_URL || 'https://cyclone-nrby.onrender.com';
 
 export async function generateRoute(preferences) {
   // Check multiple sources for starting location coordinates

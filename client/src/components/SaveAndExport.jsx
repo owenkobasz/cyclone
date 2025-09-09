@@ -11,7 +11,7 @@ export default function SaveAndExport({
     cueSheet,
     preferences,
     onSave,
-    saveEndpoint = "http://localhost:3000/api/routes/plan/save",
+    saveEndpoint = (import.meta.env.VITE_API_BASE_URL || import.meta.env.REACT_APP_API_BASE_URL || 'https://cyclone-nrby.onrender.com') + "/api/routes/plan/save",
     canSave = true,
     canExport = true,
     saveButtonText = "Save Route",

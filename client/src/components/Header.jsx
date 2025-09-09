@@ -27,7 +27,7 @@ const Header = () => {
       return '/avatars/default-avatar.png';
     }
     if (avatar.startsWith('http')) return avatar;
-    const base = import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+    const base = import.meta.env.VITE_API_BASE_URL || import.meta.env.REACT_APP_API_BASE_URL || 'https://cyclone-nrby.onrender.com';
     return `${base}${avatar}`;
   };
 
