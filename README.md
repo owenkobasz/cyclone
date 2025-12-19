@@ -52,7 +52,8 @@ Cyclone is a modern web application that generates personalized cycling routes b
 ### Data Storage
 - **SQLite: Users Database** - User authentication (usernames, hashed passwords)
 - **SQLite: Sessions Database** - Session persistence and management
-- **SQLite: Routes Database** - Saved user routes and preferences
+- **JSON: Routes Database** - Saved user routes and preferences (stored in `routes.json`)
+- **JSON: Profiles Database** - User profile information (stored in `profiles.json`)
 
 ## 🚀 Quick Start
 
@@ -76,9 +77,9 @@ cd ../server
 npm install
 pip3 install -r requirements.txt
 
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your API keys
+# Set up environment variables (automated)
+node server/setup.js
+# This will create .env template and validate API keys
 
 # Start development servers
 cd ..
@@ -95,18 +96,26 @@ Create a `.env` file in the project root:
 GRAPHHOPPER_API_KEY=your_graphhopper_key_here
 OPENAI_API_KEY=your_openai_key_here
 
+# Optional API Keys
+GEOAPIFY_API_KEY=your_geoapify_key_here  # Optional, for enhanced geocoding
+OPENAI_MODEL=gpt-4o  # Optional, defaults to gpt-4o
+
 # Server Configuration
 PORT=3000
 NODE_ENV=development
+DATA_DIR=./server/databases  # Optional, defaults to ./server/databases
+FRONTEND_ORIGIN=http://localhost:5173  # CORS origin for frontend
 
-# Frontend Configuration
-REACT_APP_API_BASE_URL=http://localhost:3000
-FRONTEND_ORIGIN=http://localhost:5173
+# Frontend Configuration (Vite uses VITE_ prefix)
+VITE_API_BASE_URL=http://localhost:3000
+# Note: REACT_APP_API_BASE_URL is also supported for backward compatibility
 ```
 
 ### API Keys Setup
 1. **GraphHopper API**: Get your free key at [graphhopper.com](https://www.graphhopper.com/)
 2. **OpenAI API**: Create an account at [platform.openai.com](https://platform.openai.com/)
+
+**Note**: The setup script (`node server/setup.js`) will automatically create a `.env` template and validate your API keys.
 
 ## 🎯 Usage
 
@@ -126,41 +135,59 @@ FRONTEND_ORIGIN=http://localhost:5173
 
 #### Route Generation
 ```javascript
-// Generate a custom route
-const route = await generateRoute({
-  startLocation: "Philadelphia, PA",
-  distance: 25,
-  elevation: "moderate",
-  routeType: "scenic"
+// Generate a custom route via API
+const response = await fetch('http://localhost:3000/api/generate-custom-route', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    start_lat: 39.9526,
+    start_lon: -75.1652,
+    target_distance: 25,
+    route_type: "scenic",
+    avoid_hills: false,
+    use_bike_lanes: true,
+    unit_system: "imperial"
+  })
 });
+const route = await response.json();
 ```
 
 #### User Authentication
 ```javascript
-// Login user
-const user = await loginUser({
-  username: "cyclist123",
-  password: "securePassword"
+// Login user via API
+const response = await fetch('http://localhost:3000/api/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  credentials: 'include',
+  body: JSON.stringify({
+    username: "cyclist123",
+    password: "securePassword"
+  })
 });
+const user = await response.json();
 ```
 
 ## 🌐 API Endpoints
 
 ### Authentication
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
-- `POST /api/auth/logout` - User logout
+- `POST /api/register` - User registration
+- `POST /api/login` - User login
+- `POST /api/logout` - User logout
+- `GET /api/status` - Check authentication status
 
 ### Routes
-- `POST /api/routes/generate` - Generate new route
-- `GET /api/routes/saved` - Get user's saved routes
-- `POST /api/routes/save` - Save a route
-- `DELETE /api/routes/:id` - Delete a saved route
+- `POST /api/generate-custom-route` - Generate new route
+- `GET /api/routes` - Get user's saved routes (requires authentication)
+- `POST /api/routes/save` - Save a route (requires authentication)
+- `GET /api/routes/user/:username` - Get routes by username
 
 ### User Profiles
-- `GET /api/profile` - Get user profile
-- `PUT /api/profile` - Update user profile
-- `POST /api/profile/avatar` - Upload profile picture
+- `GET /api/user/profile` - Get current user's profile (requires authentication)
+- `PUT /api/user/profile/:id` - Update user profile with optional avatar upload (requires authentication)
+- `GET /api/user/profile/:username` - Get profile by username
+
+### Geolocation
+- `GET /api/location` - Get user's location based on IP address
 
 ## 🧪 Development
 
@@ -182,7 +209,7 @@ npm run preview      # Preview production build
 
 # Backend
 npm start            # Start production server
-node setup.js        # Run setup and validation
+npm run setup        # Run setup and validation (or: node server/setup.js)
 ```
 
 ### Development Workflow
