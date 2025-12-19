@@ -2,6 +2,7 @@ require('dotenv').config({ path: '../.env' });
 
 // Environment variables
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || null;
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o'; // Default to gpt-4o, a valid current model
 const GRAPHHOPPER_API_KEY = process.env.GRAPHHOPPER_API_KEY || null;
 
 // API URLs
@@ -27,6 +28,7 @@ const GEOAPIFY_API_KEY = process.env.GEOAPIFY_API_KEY || null;
 module.exports = {
   // Environment variables
   OPENAI_API_KEY,
+  OPENAI_MODEL,
   GRAPHHOPPER_API_KEY,
   
   // API URLs

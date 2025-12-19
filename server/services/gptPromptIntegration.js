@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { OPENAI_API_KEY, OPENAI_API_URL } = require('../config/config');
+const { OPENAI_API_KEY, OPENAI_API_URL, OPENAI_MODEL } = require('../config/config');
 const { calculateDistance } = require('../utils/calculationsUtils');
 
 /**
@@ -196,7 +196,7 @@ async function callOpenAI(prompts) {
 
   try {
     const response = await axios.post(OPENAI_API_URL, {
-      model: 'gpt-4.1', 
+      model: OPENAI_MODEL, 
       messages: [
         {
           role: 'system',
