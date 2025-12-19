@@ -129,7 +129,7 @@ VITE_API_BASE_URL=http://localhost:3000
 
 **Note**: The setup script (`node server/setup.js`) will automatically create a `.env` template and validate your API keys.
 
-## 🎯 Usage
+## Usage
 
 ### Starting the Application
 ```bash
