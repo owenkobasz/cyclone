@@ -13,8 +13,7 @@ const SQLiteStore = require('connect-sqlite3')(session);
 const multer = require('multer');
 const fs = require('fs').promises;
 const path = require('path');
-// Central writable data directory (Render Disk recommended). Fallback to repo dir for dev
-const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'databases');
+const { DATA_DIR } = require('./config/config.js');
 // Ensure data directory exists synchronously
 const fsSync = require('fs');
 try {
@@ -276,8 +275,7 @@ app.post('/api/import-route', async (req, res) => {
 app.get('/api/debug-profile-test', async (req, res) => {
   try {
     const fs = require('fs').promises;
-    const path = require('path');
-    const profilesPath = path.join(__dirname, 'databases/profiles.json');
+    const profilesPath = path.join(DATA_DIR, 'profiles.json');
     
     console.log('Reading profiles from:', profilesPath);
     const profilesData = await fs.readFile(profilesPath, 'utf8');
@@ -611,7 +609,7 @@ app.put('/api/user/profile/:id', upload.single('avatar'), async (req, res) => {
 
   try {
     // Read profiles.json
-    const profilesPath = path.join(__dirname, 'databases/profiles.json');
+    const profilesPath = path.join(DATA_DIR, 'profiles.json');
     console.log('Reading profiles from:', profilesPath);
     
     const profilesData = await fs.readFile(profilesPath, 'utf8');
@@ -739,7 +737,7 @@ app.get('/api/user/profile', async (req, res) => {
   }
 
   try {
-    const profilesPath = path.join(__dirname, 'databases/profiles.json');
+    const profilesPath = path.join(DATA_DIR, 'profiles.json');
     const profilesData = await fs.readFile(profilesPath, 'utf8');
     const profiles = JSON.parse(profilesData);
     

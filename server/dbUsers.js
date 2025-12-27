@@ -2,10 +2,11 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
+const { DATA_DIR } = require('./config/config.js');
 
 // Use a writable data directory in production (Render Disk mounted at /data)
 // Falls back to repo-local databases dir for local dev
-const dataDir = process.env.DATA_DIR || path.join(__dirname, 'databases');
+const dataDir = DATA_DIR;
 try {
   fs.mkdirSync(dataDir, { recursive: true });
 } catch (e) {
