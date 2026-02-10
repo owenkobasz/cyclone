@@ -40,17 +40,30 @@ async function getValhallaRoute(waypoints, options) {
     body: requestBody
   });
 
-  console.log('=== MAKING AXIOS REQUEST ===');
+  console.log('=== MAKING VALHALLA AXIOS REQUEST ===');
+  console.log('Valhalla request body:', JSON.stringify(requestBody, null, 2));
 
-  const response = await axios.post(ROUTING_APIS.VALHALLA.url, requestBody, {
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    timeout: 20000
-  });
+  let response;
+  try {
+    response = await axios.post(ROUTING_APIS.VALHALLA.url, requestBody, {
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      timeout: 30000  // Increased from 20s to 30s for multi-waypoint rerouting
+    });
 
-  console.log('=== AXIOS REQUEST COMPLETED ===');
-  console.log('Response data trip legs:', response.data.trip ? response.data.trip.legs?.length : 'No trip data');
+    console.log('=== VALHALLA REQUEST SUCCESS ===');
+    console.log('Response status:', response.status);
+    console.log('Response data trip legs:', response.data.trip ? response.data.trip.legs?.length : 'No trip data');
+  } catch (error) {
+    console.error('=== VALHALLA REQUEST FAILED ===');
+    console.error('Error code:', error.code);
+    console.error('Error message:', error.message);
+    console.error('Is timeout?', error.code === 'ECONNABORTED');
+    console.error('Response data:', error.response?.data);
+    console.error('Response status:', error.response?.status);
+    throw error;
+  }
 
   if (response.data.trip && response.data.trip.legs) {
     console.log('=== CALLING formatValhallaResponse ===');
@@ -60,6 +73,8 @@ async function getValhallaRoute(waypoints, options) {
     return result;
   }
 
+  console.error('=== VALHALLA NO VALID ROUTE ===');
+  console.error('Response data:', JSON.stringify(response.data));
   throw new Error('No valid route found from Valhalla');
 }
 

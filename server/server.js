@@ -2,7 +2,7 @@ require('dotenv').config({ path: '../.env' });
 const express = require('express')
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
-const { generateRoute } = require('./services/generateRoute.js');
+const { generateRoute, routeWaypointsOnly } = require('./services/generateRoute.js');
 const { getLocationFromIP, getClientIP } = require('./utils/geolocation.js');
 const app = express();
 const port = process.env.PORT || 3000;
@@ -932,6 +932,78 @@ app.post('/api/generate-custom-route', async (req, res) => {
     console.error('Route generation error:', error);
     res.status(500).json({ 
       detail: "Route generation failed: " + error.message 
+    });
+  }
+});
+
+// Reroute with user-modified waypoints (no GPT involved)
+app.post('/api/reroute-with-waypoints', async (req, res) => {
+  console.log('\n=== REROUTE ENDPOINT CALLED ===');
+  console.log('Timestamp:', new Date().toISOString());
+  console.log('Request body keys:', Object.keys(req.body));
+  console.log('Request body:', JSON.stringify(req.body, null, 2));
+
+  const { waypoints, preferences } = req.body;
+
+  console.log('Extracted waypoints:', JSON.stringify(waypoints));
+  console.log('Waypoint count:', waypoints?.length);
+  console.log('Extracted preferences:', JSON.stringify(preferences));
+
+  // Validate required parameters
+  if (!waypoints || !Array.isArray(waypoints) || waypoints.length < 2) {
+    console.error('VALIDATION FAILED: Not enough waypoints');
+    return res.status(422).json({
+      detail: 'At least 2 waypoints are required. Each waypoint must have lat and lon.'
+    });
+  }
+
+  // Validate each waypoint
+  for (let i = 0; i < waypoints.length; i++) {
+    const wp = waypoints[i];
+    if (!wp || typeof wp.lat !== 'number' || typeof wp.lon !== 'number') {
+      console.error(`VALIDATION FAILED: Invalid waypoint at index ${i}:`, wp);
+      return res.status(422).json({
+        detail: `Invalid waypoint at index ${i}: each waypoint must have numeric lat and lon.`
+      });
+    }
+  }
+
+  console.log('Validation passed. Calling routeWaypointsOnly...');
+
+  try {
+    const routeData = await routeWaypointsOnly(waypoints, preferences || {});
+
+    console.log('=== routeWaypointsOnly SUCCESS ===');
+    console.log('Route data keys:', Object.keys(routeData));
+    console.log('Reroute data being sent to frontend:', {
+      total_elevation_gain: routeData.total_elevation_gain,
+      total_ride_time: routeData.total_ride_time,
+      data_source: routeData.data_source,
+      route_coordinates_count: routeData.route ? routeData.route.length : 0
+    });
+
+    res.json(routeData);
+  } catch (error) {
+    console.error('=== REROUTE ENDPOINT ERROR ===');
+    console.error('Error message:', error.message);
+    console.error('Error code:', error.code);
+    console.error('Error type:', error.constructor.name);
+    console.error('Failed waypoints:', JSON.stringify(waypoints));
+    console.error('Full error:', error);
+    
+    // Provide more specific error type for frontend handling
+    let errorType = 'UNKNOWN';
+    if (error.message.includes('timeout') || error.code === 'ECONNABORTED') {
+      errorType = 'TIMEOUT';
+    } else if (error.message.includes('No valid route')) {
+      errorType = 'NO_ROUTE';
+    } else if (error.message.includes('Invalid waypoint')) {
+      errorType = 'INVALID_WAYPOINTS';
+    }
+    
+    res.status(500).json({
+      detail: 'Rerouting failed: ' + error.message,
+      error_type: errorType
     });
   }
 });

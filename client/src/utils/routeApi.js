@@ -113,6 +113,82 @@ export async function generateRoute(preferences) {
 }
 
 /**
+ * Reroute using user-modified waypoints directly (bypasses GPT).
+ * Called when the user drags a waypoint on the map.
+ * @param {Array<{lat: number, lon: number}>} waypoints - The updated waypoints
+ * @param {Object} preferences - Route preferences (bike lanes, avoid hills, etc.)
+ * @returns {Promise<Object>} The new route data
+ */
+export async function rerouteWithWaypoints(waypoints, preferences = {}) {
+  console.log('=== rerouteWithWaypoints START ===');
+  console.log('Waypoints received:', JSON.stringify(waypoints));
+  console.log('Preferences received:', JSON.stringify(preferences));
+
+  if (!waypoints || waypoints.length < 2) {
+    console.error('Invalid waypoints - too few:', waypoints);
+    throw new Error('At least 2 waypoints are required for rerouting');
+  }
+
+  const base = API_BASE_URL || '';
+  const requestBody = {
+    waypoints,
+    preferences: {
+      use_bike_lanes: preferences.bikeLanes !== false,
+      avoid_hills: preferences.avoidHills || false,
+      avoid_traffic: preferences.avoidHighTraffic || false,
+      unit_system: preferences.unitSystem || 'km',
+      route_type: preferences.routeType || 'scenic'
+    }
+  };
+
+  const url = `${base}/api/reroute-with-waypoints`;
+  console.log('API URL:', url);
+  console.log('Request body:', JSON.stringify(requestBody, null, 2));
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(requestBody)
+  });
+
+  console.log('Response status:', response.status);
+  console.log('Response ok?', response.ok);
+
+  if (!response.ok) {
+    let errorBody = null;
+    try {
+      const errorText = await response.text();
+      console.error('Response error body:', errorText);
+      errorBody = JSON.parse(errorText);
+    } catch (parseErr) {
+      console.error('Could not parse error response body');
+    }
+
+    if (response.status === 422) {
+      throw new Error('INVALID_WAYPOINTS');
+    } else if (response.status >= 500) {
+      // Forward specific error type from backend if available
+      const errorType = errorBody?.error_type;
+      if (errorType === 'TIMEOUT') {
+        throw new Error('TIMEOUT');
+      } else if (errorType === 'NO_ROUTE') {
+        throw new Error('No valid route');
+      } else if (errorType === 'INVALID_WAYPOINTS') {
+        throw new Error('INVALID_WAYPOINTS');
+      }
+      throw new Error('REROUTE_SERVER_ERROR');
+    } else {
+      throw new Error('REROUTE_NETWORK_ERROR');
+    }
+  }
+
+  const data = await response.json();
+  console.log('=== rerouteWithWaypoints SUCCESS ===');
+  console.log('Response data keys:', Object.keys(data));
+  return data;
+}
+
+/**
  * Saves a route to the user's profile
  * @param {Object} routeData - The route data to save
  * @param {string} routeData.routeName - Name of the route
