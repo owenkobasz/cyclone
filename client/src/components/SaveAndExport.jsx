@@ -1,31 +1,18 @@
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Button from "./Button";
-import { generateGpxFile, saveRoute } from "../utils/routeApi";
-import { useAuth } from "../contexts/AuthContext";
+import { generateGpxFile } from "../utils/routeApi";
 import { ChevronDown } from 'lucide-react';
-import { API_BASE_URL } from "../utils/apiBase.js";
 
 export default function SaveAndExport({
     routeData,
     stats,
-    cueSheet,
-    preferences,
-    onSave,
-    saveEndpoint = ((API_BASE_URL || "").trim() ? API_BASE_URL : "") + "/api/routes/plan/save",
-    canSave = true,
     canExport = true,
-    saveButtonText = "Save Route",
     exportButtonText = "Export GPX",
-    title = "Save & Export"
+    title = "Export Route"
 }) {
-    const { user } = useAuth();
-    const [routeName, setRouteName] = useState(routeData?.gpt_metadata?.gpt_route_name || "");
     const [gpxName, setGpxName] = useState(routeData?.gpt_metadata?.gpt_route_name || "");
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-
-    // Default canSave logic if not provided
-    const shouldAllowSave = canSave !== undefined ? canSave : (routeData && routeData.route && user);
 
     // Default canExport logic if not provided
     const shouldAllowExport = canExport !== undefined ? canExport : (routeData && routeData.route && Array.isArray(routeData.route) && routeData.route.length > 0);
@@ -40,54 +27,6 @@ export default function SaveAndExport({
         const routeName = gpxName || routeData?.gpt_metadata?.gpt_route_name || null;
         console.log("Route name for export:", routeName);
         generateGpxFile(routeData.route, routeName);
-    };
-
-    const handleSaveRoute = async () => {
-        // If custom save handler is provided, use it
-        if (onSave) {
-            onSave();
-            return;
-        }
-
-        // Default save logic
-        if (!shouldAllowSave) {
-            if (!user) {
-                alert("You must be logged in to save a route.");
-                return;
-            }
-            if (!routeData) {
-                alert("No route data available to save.");
-                return;
-            }
-            return;
-        }
-
-        console.log("Saving route...");
-        try {
-            const fileName = routeName.trim() !== "" ? routeName.trim() : null;
-            console.log("Route name for export:", routeName);
-            const data = await saveRoute({
-                routeName: fileName,
-                waypoints: routeData.route || [],
-                rawStats: stats,
-                cueSheet,
-                preferences,
-            });
-            alert("Route saved successfully!");
-        } catch (err) {
-            if (err.message.includes("409")) {
-                alert("That route name is already taken. Please enter a different one.");
-            } else {
-                console.error("Save route error:", err);
-                alert("Failed to save route: " + err.message);
-            }
-        }
-    };
-
-    const getSaveButtonText = () => {
-        if (!user) return "Login to Save";
-        if (!routeData?.route) return "No Route to Save";
-        return saveButtonText;
     };
 
     const getExportButtonText = () => {
@@ -148,56 +87,29 @@ export default function SaveAndExport({
                 </motion.div>
             )}
 
-            <div className="space-y-5">
-                {/* Save Route Section */}
-                <div className="space-y-2">
-                    <label htmlFor="routeName" className="body-2 text-n-3 block">
-                        Save Route Name (Optional)
-                    </label>
-                    <div className="flex gap-4 items-end flex-wrap">
-                        <input
-                            id="routeName"
-                            type="text"
-                            placeholder="Enter route name..."
-                            value={routeName}
-                            onChange={(e) => setRouteName(e.target.value)}
-                            className="flex-1 min-w-[220px] px-3 py-1.5 bg-n-7 border border-n-6 rounded-xl text-n-1 placeholder-n-4 focus:border-color-1 focus:outline-none transition-all duration-300 focus:shadow-[0_0_15px_rgba(172,108,255,0.3)]"
-                            aria-label="Route name for saving"
-                        />
-                        <Button
-                            onClick={handleSaveRoute}
-                            disabled={!shouldAllowSave}
-                            className="px-6 self-start"
-                        >
-                            {getSaveButtonText()}
-                        </Button>
-                    </div>
-                </div>
-
-                {/* Export GPX Section */}
-                <div className="space-y-2">
-                    <label htmlFor="gpxName" className="body-2 text-n-3 block">
-                        GPX Export Name (Optional)
-                    </label>
-                    <div className="flex gap-4 items-end flex-wrap">
-                        <input
-                            id="gpxName"
-                            type="text"
-                            placeholder="Enter GPX filename..."
-                            value={gpxName}
-                            onChange={(e) => setGpxName(e.target.value)}
-                            className="flex-1 min-w-[220px] px-3 py-1.5 bg-n-7 border border-n-6 rounded-xl text-n-1 placeholder-n-4 focus:border-color-1 focus:outline-none transition-all duration-300 focus:shadow-[0_0_15px_rgba(172,108,255,0.3)]"
-                            aria-label="GPX filename for export"
-                        />
-                        <Button
-                            onClick={handleExportGpx}
-                            disabled={!shouldAllowExport}
-                            white
-                            className="px-6 self-start"
-                        >
-                            {getExportButtonText()}
-                        </Button>
-                    </div>
+            {/* Export GPX Section */}
+            <div className="space-y-2">
+                <label htmlFor="gpxName" className="body-2 text-n-3 block">
+                    GPX Export Name (Optional)
+                </label>
+                <div className="flex gap-4 items-end flex-wrap">
+                    <input
+                        id="gpxName"
+                        type="text"
+                        placeholder="Enter GPX filename..."
+                        value={gpxName}
+                        onChange={(e) => setGpxName(e.target.value)}
+                        className="flex-1 min-w-[220px] px-3 py-1.5 bg-n-7 border border-n-6 rounded-xl text-n-1 placeholder-n-4 focus:border-color-1 focus:outline-none transition-all duration-300 focus:shadow-[0_0_15px_rgba(172,108,255,0.3)]"
+                        aria-label="GPX filename for export"
+                    />
+                    <Button
+                        onClick={handleExportGpx}
+                        disabled={!shouldAllowExport}
+                        white
+                        className="px-6 self-start"
+                    >
+                        {getExportButtonText()}
+                    </Button>
                 </div>
             </div>
         </motion.div>
