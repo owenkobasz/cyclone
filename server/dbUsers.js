@@ -10,7 +10,10 @@ const dataDir = DATA_DIR;
 try {
   fs.mkdirSync(dataDir, { recursive: true });
 } catch (e) {
-  // ignore if already exists
+  // ignore if already exists, but log other errors
+  if (e.code !== 'EEXIST') {
+    console.warn(`Warning: Could not create data directory ${dataDir}: ${e.message}`);
+  }
 }
 const dbPath = path.join(dataDir, 'users.db');
 const dbUsers = new sqlite3.Database(dbPath);

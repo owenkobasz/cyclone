@@ -11,7 +11,13 @@ const avatarsDir = path.join(DATA_DIR, 'avatars');
 
 // Ensure avatars directory exists
 if (!fssync.existsSync(avatarsDir)) {
-  fssync.mkdirSync(avatarsDir, { recursive: true });
+  try {
+    fssync.mkdirSync(avatarsDir, { recursive: true });
+  } catch (err) {
+    if (err.code !== 'EEXIST') {
+      console.error(`Error creating avatars directory ${avatarsDir}: ${err.message}`);
+    }
+  }
 }
 
 // Configure multer for avatar uploads

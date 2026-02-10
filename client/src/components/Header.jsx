@@ -8,6 +8,7 @@ import { HamburgerMenu } from './design/Header';
 import { useState, useEffect, useRef } from 'react';
 import { useAuthModal} from '../contexts/AuthModalContext';
 import { useAuth } from '../contexts/AuthContext';
+import { API_BASE_URL } from '../utils/apiBase.js';
 
 const Header = () => {
   const location = useLocation();
@@ -27,8 +28,8 @@ const Header = () => {
       return '/avatars/default-avatar.png';
     }
     if (avatar.startsWith('http')) return avatar;
-    const base = import.meta.env.VITE_API_BASE_URL || import.meta.env.REACT_APP_API_BASE_URL || 'https://cyclone-nrby.onrender.com';
-    return `${base}${avatar}`;
+    // If API_BASE_URL is not configured (e.g. same-origin prod), keep relative path.
+    return API_BASE_URL ? `${API_BASE_URL}${avatar}` : avatar;
   };
 
   useEffect(() => {

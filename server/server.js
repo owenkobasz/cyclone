@@ -19,7 +19,10 @@ const fsSync = require('fs');
 try {
   fsSync.mkdirSync(DATA_DIR, { recursive: true });
 } catch (e) {
-  // ignore if already exists
+  // ignore if already exists or permission error (handled in config)
+  if (e.code !== 'EEXIST') {
+    console.warn(`Warning: Could not create DATA_DIR ${DATA_DIR}: ${e.message}`);
+  }
 }
 const profilesPath = path.join(DATA_DIR, 'profiles.json');
 const routesPath = path.join(DATA_DIR, 'routes.json');
@@ -190,7 +193,11 @@ const upload = multer({
 
 // Makes sure avatars directory exists
 const avatarsDir = path.join(DATA_DIR, 'avatars');
-fs.mkdir(avatarsDir, { recursive: true }).catch(console.error);
+fs.mkdir(avatarsDir, { recursive: true }).catch((err) => {
+  if (err.code !== 'EEXIST') {
+    console.error(`Error creating avatars directory ${avatarsDir}: ${err.message}`);
+  }
+});
 
 // Serve static files (including avatars)
 app.use('/avatars', express.static(avatarsDir));

@@ -1,8 +1,7 @@
 // calls the route generation backend
 import locationService from './locationService.js';
 import { distLabel } from './units.js'; // Import distLabel to get unit system
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.REACT_APP_API_BASE_URL || 'https://cyclone-nrby.onrender.com';
+import { API_BASE_URL } from './apiBase.js';
 
 export async function generateRoute(preferences) {
   // Check multiple sources for starting location coordinates
@@ -70,7 +69,8 @@ export async function generateRoute(preferences) {
 
   console.log('Sending preferences to backend:', backendPreferences);
 
-  const response = await fetch(`${API_BASE_URL}/api/generate-custom-route`, {
+  const base = API_BASE_URL || '';
+  const response = await fetch(`${base}/api/generate-custom-route`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(backendPreferences)
@@ -123,7 +123,8 @@ export async function generateRoute(preferences) {
  * @returns {Promise<Object>} The saved route data
  */
 export async function saveRoute(routeData) {
-  const response = await fetch(`${API_BASE_URL}/api/routes/plan/save`, {
+  const base = API_BASE_URL || '';
+  const response = await fetch(`${base}/api/routes/plan/save`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
@@ -143,7 +144,8 @@ export async function saveRoute(routeData) {
  * @returns {Promise<Array>} Array of saved routes
  */
 export async function getSavedRoutes() {
-  const response = await fetch(`${API_BASE_URL}/api/routes`, {
+  const base = API_BASE_URL || '';
+  const response = await fetch(`${base}/api/routes`, {
     method: 'GET',
     credentials: 'include'
   });

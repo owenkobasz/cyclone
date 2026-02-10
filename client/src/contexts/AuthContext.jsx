@@ -1,9 +1,10 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import { API_BASE_URL } from "../utils/apiBase.js";
 
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
-// Use Vite-style env var; fall back to window.location for same-origin in dev
-const API_URL = (import.meta.env.VITE_API_BASE_URL || import.meta.env.REACT_APP_API_BASE_URL || "").trim() || `https://cyclone-nrby.onrender.com`;
+// Prefer configured API base; otherwise use same-origin relative URLs.
+const API_URL = API_BASE_URL || "";
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(undefined); // undefined = loading, null = logged out, object = logged in

@@ -12,7 +12,13 @@ const avatarsDir = path.join(DATA_DIR, 'avatars');
 const axios = require('axios');
 
 if (!fssync.existsSync(avatarsDir)) {
-  fssync.mkdirSync(avatarsDir, { recursive: true });
+  try {
+    fssync.mkdirSync(avatarsDir, { recursive: true });
+  } catch (err) {
+    if (err.code !== 'EEXIST') {
+      console.error(`Error creating avatars directory ${avatarsDir}: ${err.message}`);
+    }
+  }
 }
 
 const storage = multer.diskStorage({

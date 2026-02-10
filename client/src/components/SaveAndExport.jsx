@@ -4,6 +4,7 @@ import Button from "./Button";
 import { generateGpxFile, saveRoute } from "../utils/routeApi";
 import { useAuth } from "../contexts/AuthContext";
 import { ChevronDown } from 'lucide-react';
+import { API_BASE_URL } from "../utils/apiBase.js";
 
 export default function SaveAndExport({
     routeData,
@@ -11,7 +12,7 @@ export default function SaveAndExport({
     cueSheet,
     preferences,
     onSave,
-    saveEndpoint = (import.meta.env.VITE_API_BASE_URL || import.meta.env.REACT_APP_API_BASE_URL || 'https://cyclone-nrby.onrender.com') + "/api/routes/plan/save",
+    saveEndpoint = ((API_BASE_URL || "").trim() ? API_BASE_URL : "") + "/api/routes/plan/save",
     canSave = true,
     canExport = true,
     saveButtonText = "Save Route",

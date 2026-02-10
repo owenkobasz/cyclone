@@ -99,8 +99,14 @@ function setupTempDirectories() {
   
   tempDirs.forEach(dir => {
     if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-      console.log(`📁 Created directory: ${path.relative(__dirname, dir)}`);
+      try {
+        fs.mkdirSync(dir, { recursive: true });
+        console.log(`📁 Created directory: ${path.relative(__dirname, dir)}`);
+      } catch (err) {
+        if (err.code !== 'EEXIST') {
+          console.error(`❌ Error creating directory ${dir}: ${err.message}`);
+        }
+      }
     }
   });
   
