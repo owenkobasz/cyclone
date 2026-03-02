@@ -85,11 +85,11 @@ return (
               >
                 <ScrollToAboutAnimation 
                   onScrollClick={() => {
-                    const el = document.getElementById('about');
+                    const el = document.getElementById('generate-routes');
                     if (el) {
                       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     } else {
-                      window.location.hash = '#about';
+                      window.location.hash = '#generate-routes';
                     }
                   }}
                 />

@@ -462,12 +462,12 @@ const GenerateRoutes = () => {
             </Button>
 
             {/* DEBUG: Test Reroute Button */}
-            <Button
+            {/* <Button
               className="w-full mt-2 !bg-yellow-600 hover:!bg-yellow-700"
               onClick={testReroute}
             >
               [DEBUG] Test Reroute API
-            </Button>
+            </Button> */}
 
             {/* Error Display */}
             {error && (

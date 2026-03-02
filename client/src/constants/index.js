@@ -28,6 +28,11 @@ export const navigation = [
     title: "Generate Routes",
     url: "#generate-routes",
   },
+  /*{
+    id: "3",
+    title: "View saved routes",
+    url: "#saved-routes",
+  },*/
   {
     id: "4",
     title: "New account",

@@ -1,7 +1,6 @@
 const { generateGPTRoute, parseWaypointsFromGPT } = require('./gptPromptIntegration');
 const { getValhallaRoute } = require('./valhallaRequest');
 const { getGraphHopperRoute, formatGraphHopperResponse } = require('./graphHopperRequest');
-const { getOpenElevation } = require('./openElevationRequest');
 const { callPythonBackend } = require('./pythonBackup');
 const { calculateRouteDifficulty } = require('../utils/calculationsUtils');
 const { ROUTING_APIS } = require('../config/config');
@@ -79,7 +78,7 @@ async function generateRouteWithWaypoints(waypoints, options, gptResponse = null
       
       if (response.data.paths && response.data.paths.length > 0) {
         const route = response.data.paths[0];
-        const routeData = await formatGraphHopperResponse(route, options);
+        const routeData = formatGraphHopperResponse(route, options);
         routeData.data_source = 'graphhopper_gpt_fallback';
         console.log('=== GRAPHHOPPER FALLBACK SUCCEEDED ===');
         
@@ -160,9 +159,11 @@ async function generateRoute(userPreferences) {
       console.log('Using GPT-powered routing...');
       
       try {
+        const DISTANCE_TOLERANCE = 0.25;
+
         // Generate route using GPT for waypoints
         const gptResult = await generateGPTRoute(start, end, options);
-        
+
         // Store GPT metadata
         gptMetadata = {
           gpt_description: gptResult.gptDescription,
@@ -170,18 +171,52 @@ async function generateRoute(userPreferences) {
           gpt_route_name: gptResult.gptRouteName,
           waypoints_count: gptResult.waypoints.length
         };
-        
+
         // Generate actual route with GPT waypoints
         routeData = await generateRouteWithWaypoints(
-          gptResult.waypoints, 
-          options, 
-          gptResult.gptResponse, 
-          start, 
+          gptResult.waypoints,
+          options,
+          gptResult.gptResponse,
+          start,
           end
         );
-        
+
         if (!routeData.data_source) {
           routeData.data_source = 'valhalla_gpt';
+        }
+
+        // Validate distance; retry once with a hint if too far off
+        const targetDist = parseFloat(options.target_distance);
+        const actualDist = routeData.total_distance;
+        if (targetDist > 0 && actualDist > 0) {
+          const ratio = actualDist / targetDist;
+          if (ratio < (1 - DISTANCE_TOLERANCE) || ratio > (1 + DISTANCE_TOLERANCE)) {
+            console.log(`Distance off target: got ${actualDist}, wanted ${targetDist} (ratio ${ratio.toFixed(2)}). Retrying with hint.`);
+            const direction = ratio < 1 ? 'too short' : 'too long';
+            const retryOptions = {
+              ...options,
+              _distanceHint: `The previous attempt was ${direction} (${actualDist.toFixed(1)} ${routeData.total_distance_unit} vs target ${targetDist} ${options.unit_system}). Adjust waypoint spread so the routed distance is closer to ${targetDist} ${options.unit_system}.`
+            };
+            const retryResult = await generateGPTRoute(start, end, retryOptions);
+            const retryRouteData = await generateRouteWithWaypoints(
+              retryResult.waypoints,
+              options,
+              retryResult.gptResponse,
+              start,
+              end
+            );
+            if (!retryRouteData.data_source) {
+              retryRouteData.data_source = 'valhalla_gpt_retry';
+            }
+            const retryRatio = retryRouteData.total_distance / targetDist;
+            if (Math.abs(retryRatio - 1) < Math.abs(ratio - 1)) {
+              routeData = retryRouteData;
+              gptMetadata.waypoints_count = retryResult.waypoints.length;
+              console.log(`Retry improved distance: ${retryRouteData.total_distance.toFixed(1)} ${retryRouteData.total_distance_unit}`);
+            } else {
+              console.log(`Retry did not improve distance; keeping original result.`);
+            }
+          }
         }
         
       } catch (error) {
